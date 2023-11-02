@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "assyst-core",
+    "assyst-cache",
+    "assyst-gateway",
+    "assyst-slash-client",
+]
