@@ -6,3 +6,4 @@ members = [
     "assyst-slash-client",
     "playground",
 ]
+resolver = "2"
