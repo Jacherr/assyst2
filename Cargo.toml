@@ -5,5 +5,10 @@ members = [
     "assyst-gateway",
     "assyst-slash-client",
     "playground",
+    "assyst-common", 
+    "assyst-tag",
+    "assyst-webserver",
+    "assyst-logger",
+    "assyst-database",
 ]
 resolver = "2"
