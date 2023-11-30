@@ -3,6 +3,12 @@ name = "assyst-slash-client"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
+twilight-http = "0.15.4"
+serde = { version = "1.0.190", features = ["derive"] }
+tokio = { version = "1.33.0", features = ["full"] }
+twilight-gateway = "0.15.4"
+twilight-model = "0.15.4"
+anyhow = "1.0.75"
+toml = "0.8.8"
+futures-util = { version = "0.3", default-features = false }
