@@ -2,7 +2,7 @@
 
 Complete rewrite of Assyst, open-sourced. Designed to integrate both with traditional text-based commands as well as slash commands.
 
-Assyst is a multi-purpose bot with a focus on image processing and manipulation, custom commands via a tag parser, and other unique features. A more detailed overview of the Assyst feature-set can be located on the [Top.gg listing page for Assyst](https://top.gg/bot/571661221854707713).
+Assyst is a multi-purpose Discord bot with a focus on image processing and manipulation, custom commands via a tag parser, and other unique features. A more detailed overview of the Assyst feature-set can be located on the [Top.gg listing page for Assyst](https://top.gg/bot/571661221854707713).
 
 Assyst2 is split into a number of separate crates, as described below.
 
