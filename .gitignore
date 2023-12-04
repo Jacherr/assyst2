@@ -1,6 +1,6 @@
 debug/
 target/
 Cargo.lock
-Config.toml
+config.toml
 **/*.rs.bk
 *.pdb
