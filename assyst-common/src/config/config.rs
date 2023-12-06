@@ -1,16 +1,15 @@
 // See config.toml for information on the variables here.
 
 use serde::Deserialize;
-use toml::from_str;
 
 #[derive(Deserialize)]
 pub struct AssystConfig {
-    urls: Urls,
-    authentication: Authentication,
-    database: Database,
-    prefix: Prefixes,
-    logging_webhooks: LoggingWebhooks,
-    dev: DevAttributes,
+    pub urls: Urls,
+    pub authentication: Authentication,
+    pub database: Database,
+    pub prefix: Prefixes,
+    pub logging_webhooks: LoggingWebhooks,
+    pub dev: DevAttributes,
 }
 
 #[derive(Deserialize)]
@@ -20,16 +19,16 @@ pub struct Urls {
 
 #[derive(Deserialize)]
 pub struct Authentication {
-    discord_token: String
+    pub discord_token: String
 }
 
 #[derive(Deserialize)]
 pub struct Database {
-    host: String,
-    username: String,
-    password: String,
-    database: String,
-    port: u16
+    pub host: String,
+    pub username: String,
+    pub password: String,
+    pub database: String,
+    pub port: u16
 }
 
 #[derive(Deserialize)]
@@ -44,9 +43,9 @@ pub struct LoggingWebhooks {
 
 #[derive(Deserialize)]
 pub struct DevAttributes {
-    admin_users: Vec<u64>,
-    prefix_override: Option<String>,
-    disable_bad_translator_channels: bool,
-    disable_reminder_check: bool,
-    db_logs: bool
+    pub admin_users: Vec<u64>,
+    pub prefix_override: Option<String>,
+    pub disable_bad_translator_channels: bool,
+    pub disable_reminder_check: bool,
+    pub db_logs: bool
 }
