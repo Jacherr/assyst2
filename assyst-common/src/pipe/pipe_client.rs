@@ -3,25 +3,17 @@ use bincode::{deserialize, serialize};
 use serde::{de::DeserializeOwned, Serialize};
 use tokio::{net::{UnixListener, UnixStream}, sync::Mutex, io::{AsyncReadExt, AsyncWriteExt}};
 
-pub struct PipeServer {
-    listener: UnixListener,
+pub struct PipeClient {
     stream: Option<Mutex<UnixStream>>,
     path: String
 }
-impl PipeServer {
-    pub fn listen(pipe_location: String) -> anyhow::Result<PipeServer> {
-        let listener = UnixListener::bind(pipe_location.clone())?;
-        Ok(PipeServer {
-            listener,
+impl PipeClient {
+    pub async fn connect(pipe_location: String) -> anyhow::Result<PipeClient> {
+        let stream = UnixStream::connect(pipe_location.clone()).await?;
+        Ok(PipeClient {
             stream: None,
             path: pipe_location
         })
-    }
-
-    pub async fn accept_connection(&mut self) -> anyhow::Result<()> {
-        let (stream, _) = self.listener.accept().await?;
-        self.stream = Some(Mutex::new(stream));
-        Ok(())
     }
 
     pub async fn read_object<T: DeserializeOwned>(&mut self) -> anyhow::Result<T> {
