@@ -1,13 +1,11 @@
 use std::sync::Arc;
 
-use assyst_common::config::CONFIG;
-use futures_util::stream::StreamExt;
-use parser::{handle_raw_event, incoming_event::IncomingEvent};
+use assyst_common::{config::CONFIG, pipe::Pipe};
 use tokio::sync::Mutex;
 use tracing::info;
 use twilight_gateway::{
-    stream::{create_recommended, ShardMessageStream},
-    Config as GatewayConfig, EventTypeFlags, Intents, Message,
+    stream::create_recommended,
+    Config as GatewayConfig, Intents,
 };
 use twilight_http::Client as HttpClient;
 use twilight_model::gateway::{
@@ -15,6 +13,9 @@ use twilight_model::gateway::{
     presence::{Activity, ActivityType, Status},
 };
 
+use crate::gateway_state::GatewayState;
+
+pub mod gateway_state;
 pub mod parser;
 
 lazy_static::lazy_static! {
@@ -56,7 +57,7 @@ async fn main() {
     .presence(presence)
     .build();
 
-    info!("Calculating recommended number of shards...");
+    info!("Calculating recommended number of shards");
 
     let mut shards = create_recommended(&http_client, gateway_config.clone(), |_, _| {
         gateway_config.clone()
@@ -67,28 +68,9 @@ async fn main() {
 
     info!("Spawning {} shard(s)", shards.len());
 
-    let stream = Arc::new(Mutex::new(ShardMessageStream::new(shards.iter_mut())));
-
-    while let Some((_, event)) = stream.lock().await.next().await {
-        if let Ok(Message::Text(event)) = event {
-            let parsed_event = twilight_gateway::parse(
-                event,
-                EventTypeFlags::GUILD_CREATE
-                    | EventTypeFlags::GUILD_DELETE
-                    | EventTypeFlags::MESSAGE_CREATE
-                    | EventTypeFlags::MESSAGE_DELETE
-                    | EventTypeFlags::MESSAGE_UPDATE
-                    | EventTypeFlags::READY,
-            ).ok().flatten();
-
-            if let Some(parsed_event) = parsed_event {
-                let try_incoming_event: Result<IncomingEvent, _> = parsed_event.try_into();
-                if let Ok(incoming_event) = try_incoming_event {
-                    tokio::spawn(async {
-                        handle_raw_event(incoming_event);
-                    });
-                }
-            }
-        }
-    }
+    let state = Arc::new(Mutex::new(GatewayState::new(
+        Pipe::connect("/tmp/unknown".to_owned()).await.unwrap(),
+        http_client,
+        shards,
+    )));
 }

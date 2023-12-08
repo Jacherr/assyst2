@@ -1,6 +1,6 @@
 use tokio::{net::UnixListener, sync::Mutex};
 
-use super::pipe::Pipe;
+use super::Pipe;
 
 pub struct PipeServer {
     listener: UnixListener,
