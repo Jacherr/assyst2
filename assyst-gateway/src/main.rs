@@ -1,11 +1,15 @@
 use std::sync::Arc;
 
-use assyst_common::{config::CONFIG, pipe::Pipe};
-use tokio::sync::Mutex;
+use assyst_common::{
+    config::CONFIG,
+    pipe::{Pipe, GATEWAY_PIPE_PATH}, command::Command,
+};
+use futures_util::StreamExt;
+use tokio::sync::{Mutex, mpsc::unbounded_channel};
 use tracing::info;
 use twilight_gateway::{
-    stream::create_recommended,
-    Config as GatewayConfig, Intents,
+    stream::{create_recommended, ShardMessageStream},
+    Config as GatewayConfig, EventTypeFlags, Intents, Message,
 };
 use twilight_http::Client as HttpClient;
 use twilight_model::gateway::{
@@ -13,9 +17,8 @@ use twilight_model::gateway::{
     presence::{Activity, ActivityType, Status},
 };
 
-use crate::gateway_state::GatewayState;
+use crate::parser::incoming_event::IncomingEvent;
 
-pub mod gateway_state;
 pub mod parser;
 
 lazy_static::lazy_static! {
@@ -57,8 +60,6 @@ async fn main() {
     .presence(presence)
     .build();
 
-    info!("Calculating recommended number of shards");
-
     let mut shards = create_recommended(&http_client, gateway_config.clone(), |_, _| {
         gateway_config.clone()
     })
@@ -66,11 +67,42 @@ async fn main() {
     .unwrap()
     .collect::<Vec<_>>();
 
-    info!("Spawning {} shard(s)", shards.len());
+    info!("Spawned {} shard(s)", shards.len());
+    info!("Attempting to connect to assyst-core");
 
-    let state = Arc::new(Mutex::new(GatewayState::new(
-        Pipe::connect("/tmp/unknown".to_owned()).await.unwrap(),
-        http_client,
-        shards,
-    )));
+    let pipe = match Pipe::poll_connect(GATEWAY_PIPE_PATH).await {
+        Ok(p) => p,
+        Err(e) => panic!("Failed to connect to assyst-core via {}: {}", GATEWAY_PIPE_PATH, e.to_string())
+    };
+
+    info!(
+        "Successfully connected to assyst-core via {}",
+        GATEWAY_PIPE_PATH
+    );
+
+    // event receiving thread
+    tokio::spawn(async move {
+        let message_stream = Arc::new(Mutex::new(ShardMessageStream::new(shards.iter_mut())));
+
+        while let Some((_, event)) = message_stream.lock().await.next().await {
+            if let Ok(Message::Text(event)) = event {
+                let parsed_event = twilight_gateway::parse(
+                    event,
+                    EventTypeFlags::GUILD_CREATE
+                        | EventTypeFlags::GUILD_DELETE
+                        | EventTypeFlags::MESSAGE_CREATE
+                        | EventTypeFlags::MESSAGE_DELETE
+                        | EventTypeFlags::MESSAGE_UPDATE
+                        | EventTypeFlags::READY,
+                )
+                .ok()
+                .flatten();
+
+                if let Some(parsed_event) = parsed_event {
+                    let try_incoming_event: Result<IncomingEvent, _> = parsed_event.try_into();
+                    if let Ok(incoming_event) = try_incoming_event {}
+                }
+            }
+        }
+    });
 }
