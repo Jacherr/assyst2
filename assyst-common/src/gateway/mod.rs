@@ -1,1 +1,1 @@
-pub mod gateway_event;
+pub mod core_event;

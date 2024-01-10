@@ -47,5 +47,4 @@ pub struct DevAttributes {
     pub prefix_override: Option<String>,
     pub disable_bad_translator_channels: bool,
     pub disable_reminder_check: bool,
-    pub db_logs: bool
 }

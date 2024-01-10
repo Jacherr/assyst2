@@ -1,6 +1,6 @@
 pub mod config;
 
-static CONFIG_LOCATION: &'static str = "../config.toml";
+static CONFIG_LOCATION: &str = "../config.toml";
 
 use lazy_static::lazy_static;
 use toml::from_str;

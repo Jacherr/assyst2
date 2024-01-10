@@ -1,29 +1,30 @@
 use self::incoming_event::IncomingEvent;
-use tracing::info;
+use assyst_common::gateway::core_event::CoreEventSender;
 
 pub mod incoming_event;
+pub mod event_handlers;
 
-pub fn handle_raw_event(event: IncomingEvent) {
+/// Checks the enum variant of this IncomingEvent and calls the appropriate handler function
+/// for further processing.
+pub async fn handle_raw_event(event: IncomingEvent, tx: CoreEventSender) {
     match event {
         IncomingEvent::ShardReady(ready) => {
-            if let Some(shard) = ready.shard {
-                info!("Shard {} of {}: READY in {} guilds", shard.number(), shard.total() - 1, ready.guilds.len())
-            }
+            event_handlers::ready::handle(ready);
         },
-        IncomingEvent::MessageCreate(_) => {
-            //println!("message create");
+        IncomingEvent::MessageCreate(event) => {
+            event_handlers::message_create::handle(event, tx).await;
         },
-        IncomingEvent::MessageUpdate(_) => {
-            //println!("message update");
+        IncomingEvent::MessageUpdate(event) => {
+            event_handlers::message_update::handle(event, tx).await;
         },
-        IncomingEvent::MessageDelete(_) => {
-            //println!("message delete");
+        IncomingEvent::MessageDelete(event) => {
+            event_handlers::message_delete::handle(event);
         },
-        IncomingEvent::GuildCreate(_) => {
-            //println!("guild create");
+        IncomingEvent::GuildCreate(event) => {
+            event_handlers::guild_create::handle(event);
         },
-        IncomingEvent::GuildDelete(_) => {
-            //println!("guild delete");
+        IncomingEvent::GuildDelete(event) => {
+            event_handlers::guild_delete::handle(event);
         }
     }
 }

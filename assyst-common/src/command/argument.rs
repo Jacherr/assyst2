@@ -1,4 +1,5 @@
 /// Arguments are passed to commands when executed in order to provide data to the commands.
+#[derive(Debug, Clone)]
 pub struct Argument {
     /// The name of the argument is used in slash commands and the help command.
     pub name: String,
@@ -7,6 +8,7 @@ pub struct Argument {
 }
 
 /// The inner type of the argument.
+#[derive(Debug, Clone)]
 pub enum ArgumentType {
     /// A single 'word'. Words are separated by whitespaces.
     Word,

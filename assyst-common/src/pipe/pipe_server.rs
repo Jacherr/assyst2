@@ -1,23 +1,25 @@
-use tokio::{net::UnixListener, sync::Mutex};
+use tokio::net::UnixListener;
 
 use super::Pipe;
 
+/// PipeServer is a utility class wrapping [UnixListener] that provides utility functions
+/// for listening on a specific file descriptor ("pipe") and accepting a connection from it.
 pub struct PipeServer {
     listener: UnixListener,
-    pub pipe: Option<Mutex<Pipe>>,
 }
 impl PipeServer {
+    /// Listen on a specific file descriptor.
     pub fn listen(pipe_location: &str) -> anyhow::Result<PipeServer> {
         let listener = UnixListener::bind(pipe_location)?;
         Ok(PipeServer {
             listener,
-            pipe: None
         })
     }
 
-    pub async fn accept_connection(&mut self) -> anyhow::Result<()> {
+    /// Asynchronously wait for a connection to be recieved from the current listener.
+    pub async fn accept_connection(&mut self) -> anyhow::Result<Pipe> {
         let (stream, _) = self.listener.accept().await?;
-        self.pipe = Some(Mutex::new(Pipe::new(stream)));
-        Ok(())
+        let pipe = Pipe::new(stream);
+        Ok(pipe)
     }
 }
