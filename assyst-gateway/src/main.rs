@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use assyst_common::{
     config::CONFIG,
-    pipe::{Pipe, GATEWAY_PIPE_PATH}, command::Command,
+    pipe::{Pipe, GATEWAY_PIPE_PATH, pipe_server::PipeServer}, command::Command,
 };
 use futures_util::StreamExt;
 use tokio::sync::{Mutex, mpsc::unbounded_channel};
@@ -70,13 +70,10 @@ async fn main() {
     info!("Spawned {} shard(s)", shards.len());
     info!("Attempting to connect to assyst-core");
 
-    let pipe = match Pipe::poll_connect(GATEWAY_PIPE_PATH).await {
-        Ok(p) => p,
-        Err(e) => panic!("Failed to connect to assyst-core via {}: {}", GATEWAY_PIPE_PATH, e.to_string())
-    };
+    let pipe_server = PipeServer::listen(GATEWAY_PIPE_PATH).unwrap();
 
     info!(
-        "Successfully connected to assyst-core via {}",
+        "Listening for incoming connections on {}",
         GATEWAY_PIPE_PATH
     );
 
@@ -100,7 +97,9 @@ async fn main() {
 
                 if let Some(parsed_event) = parsed_event {
                     let try_incoming_event: Result<IncomingEvent, _> = parsed_event.try_into();
-                    if let Ok(incoming_event) = try_incoming_event {}
+                    if let Ok(incoming_event) = try_incoming_event {
+                        // now we need to handle the event - check the type, parse, etc. etc.
+                    }
                 }
             }
         }

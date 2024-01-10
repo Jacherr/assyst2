@@ -8,7 +8,7 @@ pub struct Argument {
 
 /// The inner type of the argument.
 pub enum ArgumentType {
-    /// A single 'word'. Words are separated by whitespaces,.
+    /// A single 'word'. Words are separated by whitespaces.
     Word,
     /// The entire collection of arguments as a string, from this point onwards.
     String,
@@ -20,7 +20,7 @@ pub enum ArgumentType {
     Integer,
     /// A floating-point number, parsed as a f64.
     Float,
-    /// A selection between different string options.
+    /// A selection between different Word options.
     Choice(&'static [&'static str]),
     /// An optional argument.
     Optional(Box<ArgumentType>),

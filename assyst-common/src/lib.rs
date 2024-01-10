@@ -1,5 +1,6 @@
 pub mod command;
 pub mod config;
+pub mod gateway;
 pub mod pipe;
 
 pub fn add(left: usize, right: usize) -> usize {

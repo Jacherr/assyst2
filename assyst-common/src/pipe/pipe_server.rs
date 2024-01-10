@@ -7,8 +7,8 @@ pub struct PipeServer {
     pub pipe: Option<Mutex<Pipe>>,
 }
 impl PipeServer {
-    pub fn listen(pipe_location: String) -> anyhow::Result<PipeServer> {
-        let listener = UnixListener::bind(pipe_location.clone())?;
+    pub fn listen(pipe_location: &str) -> anyhow::Result<PipeServer> {
+        let listener = UnixListener::bind(pipe_location)?;
         Ok(PipeServer {
             listener,
             pipe: None
