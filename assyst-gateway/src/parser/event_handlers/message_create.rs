@@ -2,6 +2,8 @@ use assyst_common::gateway::core_event::CoreEventSender;
 use tracing::debug;
 use twilight_model::gateway::payload::incoming::MessageCreate;
 
+use crate::gateway_context::ThreadSafeGatewayContext;
+
 /// Handle a [MessageCreate] event received from the Discord gateway.
 ///
 /// This function undertakes the following steps:
@@ -9,7 +11,7 @@ use twilight_model::gateway::payload::incoming::MessageCreate;
 ///    prematurely.
 /// 2. Passes the message to the command parser, which then attempts to convert the message to a
 ///    command for further processing.
-pub async fn handle(event: MessageCreate, tx: CoreEventSender) {
+pub async fn handle(context: ThreadSafeGatewayContext, event: MessageCreate) {
     // ignore all bot and webhook messages
     if event.author.bot || event.webhook_id.is_some() {
         debug!(

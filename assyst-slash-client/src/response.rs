@@ -1,13 +1,9 @@
 use std::fmt::Display;
 
-use twilight_model::{
-    application::command::CommandOptionChoice,
-    channel::message::{AllowedMentions, Embed, MessageFlags},
-    http::{
-        attachment::Attachment,
-        interaction::{InteractionResponse, InteractionResponseType},
-    },
-};
+use twilight_model::application::command::CommandOptionChoice;
+use twilight_model::channel::message::{AllowedMentions, Embed, MessageFlags};
+use twilight_model::http::attachment::Attachment;
+use twilight_model::http::interaction::{InteractionResponse, InteractionResponseType};
 
 pub struct ResponseBuilder(InteractionResponse);
 

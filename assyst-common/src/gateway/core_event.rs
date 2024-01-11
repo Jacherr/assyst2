@@ -4,6 +4,4 @@ use tokio::sync::mpsc::UnboundedSender;
 pub type CoreEventSender = UnboundedSender<CoreEvent>;
 
 #[derive(Serialize, Debug)]
-pub enum CoreEvent {
-    
-}
+pub enum CoreEvent {}

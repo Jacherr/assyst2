@@ -5,5 +5,5 @@ pub enum Availability {
     /// Server managers (those with the 'manage server' permission) can use this command.
     ServerManagers,
     /// Only developers, as configured, can use this command.
-    Dev
+    Dev,
 }

@@ -1,9 +1,10 @@
-use assyst_common::gateway::core_event::CoreEventSender;
 use tracing::debug;
 use twilight_model::channel::message::MessageType;
 use twilight_model::channel::Message;
 use twilight_model::gateway::payload::incoming::MessageUpdate;
 use twilight_model::util::Timestamp;
+
+use crate::gateway_context::ThreadSafeGatewayContext;
 
 /// Handle a [MessageUpdate] event sent from the Discord gateway.
 ///
@@ -12,7 +13,7 @@ use twilight_model::util::Timestamp;
 /// 2. A message was edited into a different command, in which case execute the new command and edit
 ///    the response message,
 /// 3. A command message was edited to a non-command, in which case delete the old command response.
-pub async fn handle(event: MessageUpdate, tx: CoreEventSender) {
+pub async fn handle(context: ThreadSafeGatewayContext, event: MessageUpdate) {
     // ignore all bot and webhook messages
     if event.author.clone().map(|a| a.bot).unwrap_or(false) || event.edited_timestamp.is_none() {
         debug!(

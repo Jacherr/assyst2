@@ -1,9 +1,11 @@
 use std::time::Duration;
 
-use super::{argument::{Argument, ParsedArgument}, category::Category};
+use super::argument::{Argument, ParsedArgument};
+use super::category::Category;
 
-/// Main command definition. Contains all key details about command definitions, for both gateway and slash command use.
-/// 
+/// Main command definition. Contains all key details about command definitions, for both gateway
+/// and slash command use.
+///
 /// Declared commands are used by the gateway, slash command and core crate for processing.
 pub struct Command {
     /// Main name for the command. This is the 'ID' for the command,
@@ -12,8 +14,8 @@ pub struct Command {
     /// Aliases are alternative names for the command, and only used when invoking
     /// the command. Usually shorthand versions of the command name.
     pub aliases: Vec<String>,
-    /// This is a hard-coded global flag to say if this command is disabled for non-developer users. May be used
-    /// for in-development commands, or commands with known faults.
+    /// This is a hard-coded global flag to say if this command is disabled for non-developer users.
+    /// May be used for in-development commands, or commands with known faults.
     pub disabled: bool,
     /// If the command can only be used in age-restricted channels.
     pub age_restricted: bool,
@@ -31,17 +33,19 @@ pub struct Command {
     /// Command usage syntax, used in the help command.
     pub usage: String,
     /// If this command works in direct messages (DMs).
-    pub supported_in_dms: bool
+    pub supported_in_dms: bool,
 }
 
 /// A command after being parsed by the gateway or slash client.
 pub struct ParsedCommand {
-    /// The prefix used when calling this command. Can be the guild-specific prefix, any prefix override, or mentioning the bot.
+    /// The prefix used when calling this command. Can be the guild-specific prefix, any prefix
+    /// override, or mentioning the bot.
     pub prefix: String,
-    /// The invocation name used to call the command. This could be the command name, or any of its aliases.
+    /// The invocation name used to call the command. This could be the command name, or any of its
+    /// aliases.
     pub invoked_name: String,
     /// A Vec of arguments the command was called with.
-    pub arguments: Vec<ParsedArgument>
+    pub arguments: Vec<ParsedArgument>,
 }
 
 /// Builder utility structure to create a [Command] object.
@@ -56,7 +60,7 @@ pub struct CommandBuilder {
     description: Option<String>,
     examples: Vec<String>,
     usage: Option<String>,
-    supported_in_dms: bool
+    supported_in_dms: bool,
 }
 impl CommandBuilder {
     pub fn new() -> Self {
@@ -71,7 +75,7 @@ impl CommandBuilder {
             description: None,
             examples: vec![],
             usage: None,
-            supported_in_dms: false
+            supported_in_dms: false,
         }
     }
 
@@ -84,10 +88,13 @@ impl CommandBuilder {
             cooldown: self.cooldown.expect("cooldown is required in Command object"),
             category: self.category.clone().expect("category is required in Command object"),
             arguments: self.arguments.clone(),
-            descripton: self.description.clone().expect("description is required in Command object"),
+            descripton: self
+                .description
+                .clone()
+                .expect("description is required in Command object"),
             examples: self.examples.clone(),
             usage: self.usage.clone().expect("usage is required in Command object"),
-            supported_in_dms: self.supported_in_dms
+            supported_in_dms: self.supported_in_dms,
         }
     }
 

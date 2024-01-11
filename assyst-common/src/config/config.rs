@@ -13,13 +13,11 @@ pub struct AssystConfig {
 }
 
 #[derive(Deserialize)]
-pub struct Urls {
-    
-}
+pub struct Urls {}
 
 #[derive(Deserialize)]
 pub struct Authentication {
-    pub discord_token: String
+    pub discord_token: String,
 }
 
 #[derive(Deserialize)]
@@ -28,18 +26,16 @@ pub struct Database {
     pub username: String,
     pub password: String,
     pub database: String,
-    pub port: u16
+    pub port: u16,
 }
 
 #[derive(Deserialize)]
 pub struct Prefixes {
-    pub default: String
+    pub default: String,
 }
 
 #[derive(Deserialize)]
-pub struct LoggingWebhooks {
-
-}
+pub struct LoggingWebhooks {}
 
 #[derive(Deserialize)]
 pub struct DevAttributes {

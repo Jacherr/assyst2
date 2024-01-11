@@ -4,7 +4,7 @@ pub struct Argument {
     /// The name of the argument is used in slash commands and the help command.
     pub name: String,
     /// The type of argument, to aid with command processing.
-    pub r#type: ArgumentType
+    pub r#type: ArgumentType,
 }
 
 /// The inner type of the argument.
@@ -27,12 +27,13 @@ pub enum ArgumentType {
     /// An optional argument.
     Optional(Box<ArgumentType>),
     /// An optional argument, with a default value.
-    OptionalWithDefault(Box<ArgumentType>, &'static str)
+    OptionalWithDefault(Box<ArgumentType>, &'static str),
 }
 
 /// An argument after parsing.
 pub enum ParsedArgument {
-    /// Text argument. Can be constructed from ArgumentType::Word, ArgumentType::String, ArgumentType::MediaUrl, ArgumentType::Choice, ArgumentType::OptionalWithDefault
+    /// Text argument. Can be constructed from ArgumentType::Word, ArgumentType::String,
+    /// ArgumentType::MediaUrl, ArgumentType::Choice, ArgumentType::OptionalWithDefault
     Text(String),
     /// Integer argument. Can be constructed from ArgumentType::Integer
     Integer(i128),
@@ -41,5 +42,5 @@ pub enum ParsedArgument {
     /// Buffer argument. Can be constructed from ArgumentType::MediaBuffer
     Buffer(Vec<u8>),
     /// No provided value for argument. Can be constructed from ArgumentType::Optional
-    Empty
+    Empty,
 }

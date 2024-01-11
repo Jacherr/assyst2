@@ -1,11 +1,12 @@
 use std::sync::Arc;
 
 use anyhow::Error;
-use twilight_http::{client::InteractionClient, Client};
-use twilight_model::{
-    application::interaction::{application_command::CommandData, Interaction},
-    id::{marker::ApplicationMarker, Id},
-};
+use twilight_http::client::InteractionClient;
+use twilight_http::Client;
+use twilight_model::application::interaction::application_command::CommandData;
+use twilight_model::application::interaction::Interaction;
+use twilight_model::id::marker::ApplicationMarker;
+use twilight_model::id::Id;
 
 use crate::response::ResponseBuilder;
 
@@ -38,16 +39,8 @@ pub struct InnerContext<T> {
 
 impl<T> InnerContext<T> {
     #[must_use]
-    pub fn new(
-        ctx: Box<Context<T>>,
-        interaction: Box<Interaction>,
-        data: Box<CommandData>,
-    ) -> Self {
-        Self {
-            ctx,
-            interaction,
-            data,
-        }
+    pub fn new(ctx: Box<Context<T>>, interaction: Box<Interaction>, data: Box<CommandData>) -> Self {
+        Self { ctx, interaction, data }
     }
 
     pub async fn respond(&self, data: ResponseBuilder) -> Result<(), Error> {

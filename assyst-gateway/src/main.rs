@@ -16,9 +16,11 @@ use twilight_http::Client as HttpClient;
 use twilight_model::gateway::payload::outgoing::update_presence::UpdatePresencePayload;
 use twilight_model::gateway::presence::{Activity, ActivityType, Status};
 
+use crate::gateway_context::{GatewayContext, ThreadSafeGatewayContext};
 use crate::parser::handle_raw_event;
 use crate::parser::incoming_event::IncomingEvent;
 
+pub mod gateway_context;
 pub mod parser;
 
 lazy_static::lazy_static! {
@@ -59,12 +61,9 @@ async fn main() {
 
     let intents = Intents::MESSAGE_CONTENT | Intents::GUILDS | Intents::GUILD_MESSAGES;
     debug!("intents={:?}", intents);
-    let gateway_config = GatewayConfig::builder(
-        CONFIG.authentication.discord_token.clone(),
-        intents,
-    )
-    .presence(presence)
-    .build();
+    let gateway_config = GatewayConfig::builder(CONFIG.authentication.discord_token.clone(), intents)
+        .presence(presence)
+        .build();
 
     let mut shards = create_recommended(&http_client, gateway_config.clone(), |_, _| gateway_config.clone())
         .await
@@ -73,18 +72,20 @@ async fn main() {
 
     info!("Recommended shard count: {}", shards.len());
 
-    let mut pipe_server = PipeServer::listen(GATEWAY_PIPE_PATH).unwrap();
-    info!(
-        "Listening for incoming connections from assyst-core on {}",
-        GATEWAY_PIPE_PATH
-    );
+    // pipe thread tx/rx
+    let (tx, mut rx) = unbounded_channel::<CoreEvent>();
+
+    let gateway_context: ThreadSafeGatewayContext = Arc::new(Mutex::new(GatewayContext::new()));
+    gateway_context.lock().await.start_core_listener().unwrap();
+    gateway_context.lock().await.set_core_event_sender(tx);
+    let pipe_gateway_context = gateway_context.clone();
+    info!("Core listener started on {}", GATEWAY_PIPE_PATH);
 
     // pipe thread
-    let (tx, mut rx) = unbounded_channel::<CoreEvent>();
     tokio::spawn(async move {
         loop {
             info!("Awaiting connection from assyst-core");
-            if let Ok(mut stream) = pipe_server.accept_connection().await {
+            if let Ok(mut stream) = pipe_gateway_context.lock().await.accept_core_connection().await {
                 info!("Connection received from assyst-core");
                 loop {
                     if let Some(data) = rx.recv().await {
@@ -119,7 +120,7 @@ async fn main() {
             if let Some(parsed_event) = parsed_event {
                 let try_incoming_event: Result<IncomingEvent, _> = parsed_event.try_into();
                 if let Ok(incoming_event) = try_incoming_event {
-                    handle_raw_event(incoming_event, tx.clone()).await;
+                    handle_raw_event(gateway_context.clone(), incoming_event).await;
                 }
             }
         }

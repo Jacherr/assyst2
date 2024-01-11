@@ -1,15 +1,14 @@
-use std::{fmt::Display, future::Future, pin::Pin};
+use std::fmt::Display;
+use std::future::Future;
+use std::pin::Pin;
 
 use crate::context::{Context, InnerContext};
 
-use twilight_model::{
-    application::command::{Command as TwilightCommand, CommandOption, CommandType},
-    guild::Permissions,
-    id::Id,
-};
+use twilight_model::application::command::{Command as TwilightCommand, CommandOption, CommandType};
+use twilight_model::guild::Permissions;
+use twilight_model::id::Id;
 
-pub type Response<T> =
-    Box<dyn Fn(InnerContext<T>) -> Pin<Box<dyn Future<Output = anyhow::Result<()>>>>>;
+pub type Response<T> = Box<dyn Fn(InnerContext<T>) -> Pin<Box<dyn Future<Output = anyhow::Result<()>>>>>;
 
 pub struct Cmd<T> {
     pub context: Box<Context<T>>,

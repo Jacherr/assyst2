@@ -12,12 +12,12 @@ use context::{Context, InnerContext};
 use futures_util::StreamExt;
 use response::ResponseBuilder;
 use serde::Deserialize;
-use twilight_gateway::{stream::ShardEventStream, Event, Intents};
+use twilight_gateway::stream::ShardEventStream;
+use twilight_gateway::{Event, Intents};
 use twilight_http::Client;
 
-use twilight_model::application::{
-    command::CommandType, interaction::InteractionData::ApplicationCommand,
-};
+use twilight_model::application::command::CommandType;
+use twilight_model::application::interaction::InteractionData::ApplicationCommand;
 use utils::to_multimap;
 
 #[derive(Deserialize, Clone)]
@@ -71,10 +71,9 @@ async fn main() -> anyhow::Result<()> {
         }
     }
 
-    let mut shards =
-        twilight_gateway::stream::create_recommended(&client, config, |_, b| b.build())
-            .await?
-            .collect::<Vec<_>>();
+    let mut shards = twilight_gateway::stream::create_recommended(&client, config, |_, b| b.build())
+        .await?
+        .collect::<Vec<_>>();
 
     let mut st = ShardEventStream::new(shards.iter_mut());
 
@@ -88,7 +87,7 @@ async fn main() -> anyhow::Result<()> {
                 }
 
                 continue;
-            }
+            },
         };
 
         process(ctx.clone(), &cmds, e).await;
@@ -129,17 +128,15 @@ pub async fn process<T>(client: Context<T>, cmds: &[Cmd<T>], event: Event) {
 
     let Some(cmd) = cmds.iter().find(|x| x.data.name == d.name) else {
         println!(
-                    "\x1b[1;33mwarning\x1b[0m: ignored unlistened interaction \x1b[34m{}\x1b[0m (trigger a cleanup?)", d.name
-                );
+            "\x1b[1;33mwarning\x1b[0m: ignored unlistened interaction \x1b[34m{}\x1b[0m (trigger a cleanup?)",
+            d.name
+        );
         return;
     };
 
     let ictx = InnerContext::new(Box::new(client), Box::new(i), Box::new(d));
 
     if let Err(e) = (cmd.response)(ictx).await {
-        println!(
-            "\x1b[1;31merror\x1b[0m: command {} failed: {e}",
-            cmd.data.name
-        );
+        println!("\x1b[1;31merror\x1b[0m: command {} failed: {e}", cmd.data.name);
     };
 }

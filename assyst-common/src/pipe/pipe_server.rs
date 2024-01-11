@@ -11,9 +11,7 @@ impl PipeServer {
     /// Listen on a specific file descriptor.
     pub fn listen(pipe_location: &str) -> anyhow::Result<PipeServer> {
         let listener = UnixListener::bind(pipe_location)?;
-        Ok(PipeServer {
-            listener,
-        })
+        Ok(PipeServer { listener })
     }
 
     /// Asynchronously wait for a connection to be recieved from the current listener.
