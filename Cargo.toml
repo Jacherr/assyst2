@@ -10,7 +10,6 @@ members = [
     "assyst-common", 
     "assyst-tag",
     "assyst-webserver",
-    "assyst-logger",
     "assyst-database",
 ]
 resolver = "2"
