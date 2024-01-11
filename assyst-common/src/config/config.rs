@@ -28,6 +28,14 @@ pub struct Database {
     pub database: String,
     pub port: u16,
 }
+impl Database {
+    pub fn to_url(&self) -> String {
+        format!(
+            "postgres://{}:{}@{}:{}/{}",
+            self.username, self.password, self.host, self.port, self.database
+        )
+    }
+}
 
 #[derive(Deserialize)]
 pub struct Prefixes {

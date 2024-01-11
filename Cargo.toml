@@ -7,7 +7,7 @@ members = [
     "assyst-gateway",
     "assyst-slash-client",
     "playground",
-    "assyst-common", 
+    "assyst-common",
     "assyst-tag",
     "assyst-webserver",
     "assyst-database",
