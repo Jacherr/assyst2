@@ -1,5 +1,6 @@
 use cache::DatabaseCache;
 use sqlx::postgres::{PgPool, PgPoolOptions};
+use tracing::info;
 
 mod cache;
 pub mod model;
@@ -14,10 +15,17 @@ pub struct DatabaseHandler {
 }
 impl DatabaseHandler {
     pub async fn new(url: String) -> anyhow::Result<Self> {
+        info!(
+            "Connecting to database on {} with {} max connections",
+            url, MAX_CONNECTIONS
+        );
+
         let pool = PgPoolOptions::new()
             .max_connections(MAX_CONNECTIONS)
             .connect(&url)
             .await?;
+
+        info!("Connected to database on {}", url);
         let cache = DatabaseCache::new();
         Ok(Self { pool, cache })
     }

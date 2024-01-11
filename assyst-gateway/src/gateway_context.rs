@@ -1,9 +1,11 @@
 use std::sync::Arc;
 
 use anyhow::bail;
+use assyst_common::config::CONFIG;
 use assyst_common::gateway::core_event::CoreEventSender;
 use assyst_common::pipe::pipe_server::PipeServer;
 use assyst_common::pipe::{Pipe, GATEWAY_PIPE_PATH};
+use assyst_database::DatabaseHandler;
 use tokio::sync::Mutex;
 
 pub type ThreadSafeGatewayContext = Arc<Mutex<GatewayContext>>;
@@ -12,15 +14,15 @@ pub type ThreadSafeGatewayContext = Arc<Mutex<GatewayContext>>;
 pub struct GatewayContext {
     core_listener: Option<PipeServer>,
     core_event_sender: Option<CoreEventSender>,
-    // cache stream here
-    // database connection here
-    // ... anything else here
+    database_handler: DatabaseHandler, /* database connection here
+                                        * ... anything else here */
 }
 impl GatewayContext {
-    pub fn new() -> Self {
+    pub async fn new() -> Self {
         GatewayContext {
             core_listener: None,
             core_event_sender: None,
+            database_handler: DatabaseHandler::new(CONFIG.database.to_url()).await.unwrap(),
         }
     }
 

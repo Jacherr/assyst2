@@ -6,6 +6,7 @@ use assyst_common::ok_or_break;
 use assyst_common::pipe::pipe_server::PipeServer;
 use assyst_common::pipe::GATEWAY_PIPE_PATH;
 use futures_util::StreamExt;
+use std::path::Path;
 use std::sync::Arc;
 use tokio::sync::mpsc::unbounded_channel;
 use tokio::sync::Mutex;
@@ -50,7 +51,7 @@ async fn main() {
 
     info!("Initialising");
 
-    if std::fs::try_exists(GATEWAY_PIPE_PATH).is_ok() {
+    if Path::new(GATEWAY_PIPE_PATH).exists() {
         info!("Deleting old pipe file {}", GATEWAY_PIPE_PATH);
         std::fs::remove_file(GATEWAY_PIPE_PATH).unwrap();
     }
@@ -75,7 +76,7 @@ async fn main() {
     // pipe thread tx/rx
     let (tx, mut rx) = unbounded_channel::<CoreEvent>();
 
-    let gateway_context: ThreadSafeGatewayContext = Arc::new(Mutex::new(GatewayContext::new()));
+    let gateway_context: ThreadSafeGatewayContext = Arc::new(Mutex::new(GatewayContext::new().await));
     gateway_context.lock().await.start_core_listener().unwrap();
     gateway_context.lock().await.set_core_event_sender(tx);
     let pipe_gateway_context = gateway_context.clone();
