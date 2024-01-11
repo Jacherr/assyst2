@@ -1,14 +1,13 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+use cache::DatabaseCache;
+use sqlx::PgPool;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+mod cache;
+pub mod model;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+/// Database hendler providing a connection to the database and helper methods for inserting,
+/// fetching, deleting and modifying Assyst database data.
+pub struct DatabaseHandler {
+    pool: PgPool,
+    cache: DatabaseCache,
 }
+impl DatabaseHandler {}
