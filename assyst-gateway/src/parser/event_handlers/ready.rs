@@ -8,6 +8,6 @@ use assyst_common::ansi::Ansi;
 /// In addition, it provides a good gauge as to how much of the bot has started up, after a gateway restart.
 pub fn handle(event: Ready) {
     if let Some(shard) = event.shard {
-        info!("Shard {} (total {}): {} in {} guilds", shard.number(), shard.total() - 1, "READY".fg_green(), event.guilds.len())
+        info!("Shard {} (total {}): {} in {} guilds", shard.number(), shard.total(), "READY".fg_green(), event.guilds.len())
     }
 }
