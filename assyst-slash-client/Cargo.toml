@@ -12,3 +12,4 @@ twilight-model = "0.15.4"
 anyhow = "1.0.75"
 toml = "0.8.8"
 futures-util = { version = "0.3", default-features = false }
+tracing = "0.1.37"
