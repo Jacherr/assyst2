@@ -5,7 +5,7 @@ pub struct Prefix {
     pub prefix: String,
 }
 impl Prefix {
-    async fn set(&self, handler: &mut DatabaseHandler, guild_id: u64) -> anyhow::Result<()> {
+    pub async fn set(&self, handler: &mut DatabaseHandler, guild_id: u64) -> anyhow::Result<()> {
         let query = r#"INSERT INTO prefixes(guild, prefix) VALUES($1, $2) ON CONFLICT (guild) DO UPDATE SET prefix = $2 WHERE prefixes.guild = $1"#;
 
         sqlx::query(query)
@@ -19,7 +19,7 @@ impl Prefix {
         Ok(())
     }
 
-    async fn get(handler: &mut DatabaseHandler, guild_id: u64) -> anyhow::Result<Option<Self>> {
+    pub async fn get(handler: &mut DatabaseHandler, guild_id: u64) -> anyhow::Result<Option<Self>> {
         if let Some(prefix) = handler.cache.get_prefix(guild_id) {
             return Ok(Some(prefix));
         }

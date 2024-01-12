@@ -1,8 +1,8 @@
-use assyst_common::gateway::core_event::CoreEventSender;
-use tracing::debug;
+use tracing::{debug, error};
 use twilight_model::gateway::payload::incoming::MessageCreate;
 
 use crate::gateway_context::ThreadSafeGatewayContext;
+use crate::parser::message_parser::parse_message_into_command;
 
 /// Handle a [MessageCreate] event received from the Discord gateway.
 ///
@@ -21,5 +21,10 @@ pub async fn handle(context: ThreadSafeGatewayContext, event: MessageCreate) {
         return;
     }
 
-    // call command parser here
+    match parse_message_into_command(context, event.0).await {
+        Err(error) => {
+            error!("error: {}", error);
+        },
+        _ => {},
+    };
 }

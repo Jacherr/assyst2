@@ -2,7 +2,7 @@ use crate::DatabaseHandler;
 
 pub struct Blacklist;
 impl Blacklist {
-    pub async fn is_blacklisted(handler: &DatabaseHandler, user_id: u64) -> anyhow::Result<Option<Self>> {
+    pub async fn is_blacklisted(handler: &DatabaseHandler, user_id: u64) -> anyhow::Result<bool> {
         let query = r#"SELECT user_id FROM blacklist"#;
 
         match sqlx::query_as::<_, (i64,)>(query)
@@ -11,8 +11,8 @@ impl Blacklist {
             .await
             .map(|result| result.0)
         {
-            Ok(_) => Ok(Some(Blacklist {})),
-            Err(sqlx::Error::RowNotFound) => Ok(None),
+            Ok(_) => Ok(true),
+            Err(sqlx::Error::RowNotFound) => Ok(false),
             Err(err) => Err(err.into()),
         }
     }
@@ -25,7 +25,7 @@ impl Blacklist {
         Ok(())
     }
 
-    pub async fn remove_blacklist(&self, handler: &DatabaseHandler, user_id: u64) -> Result<(), sqlx::Error> {
+    pub async fn remove_user_from_blacklist(&self, handler: &DatabaseHandler, user_id: u64) -> Result<(), sqlx::Error> {
         let query = r#"DELETE FROM blacklist WHERE user_id = $1"#;
 
         sqlx::query(query)

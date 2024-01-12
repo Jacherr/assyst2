@@ -77,16 +77,16 @@ async fn main() {
     let (tx, mut rx) = unbounded_channel::<CoreEvent>();
 
     let gateway_context: ThreadSafeGatewayContext = Arc::new(Mutex::new(GatewayContext::new().await));
-    gateway_context.lock().await.start_core_listener().unwrap();
     gateway_context.lock().await.set_core_event_sender(tx);
-    let pipe_gateway_context = gateway_context.clone();
+
+    let mut core_pipe_server = PipeServer::listen(GATEWAY_PIPE_PATH).unwrap();
     info!("Core listener started on {}", GATEWAY_PIPE_PATH);
 
     // pipe thread
     tokio::spawn(async move {
         loop {
             info!("Awaiting connection from assyst-core");
-            if let Ok(mut stream) = pipe_gateway_context.lock().await.accept_core_connection().await {
+            if let Ok(mut stream) = core_pipe_server.accept_connection().await {
                 info!("Connection received from assyst-core");
                 loop {
                     if let Some(data) = rx.recv().await {
