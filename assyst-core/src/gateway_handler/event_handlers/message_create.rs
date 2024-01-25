@@ -1,8 +1,7 @@
 use tracing::{debug, error};
 use twilight_model::gateway::payload::incoming::MessageCreate;
 
-use crate::gateway_context::ThreadSafeGatewayContext;
-use crate::parser::message_parser::parse_message_into_command;
+use crate::{gateway_handler::message_parser::parser::parse_message_into_command, ThreadSafeAssyst};
 
 /// Handle a [MessageCreate] event received from the Discord gateway.
 ///
@@ -11,7 +10,7 @@ use crate::parser::message_parser::parse_message_into_command;
 ///    prematurely.
 /// 2. Passes the message to the command parser, which then attempts to convert the message to a
 ///    command for further processing.
-pub async fn handle(context: ThreadSafeGatewayContext, event: MessageCreate) {
+pub async fn handle(assyst: ThreadSafeAssyst, event: MessageCreate) {
     // ignore all bot and webhook messages
     if event.author.bot || event.webhook_id.is_some() {
         debug!(
@@ -21,7 +20,7 @@ pub async fn handle(context: ThreadSafeGatewayContext, event: MessageCreate) {
         return;
     }
 
-    match parse_message_into_command(context, event.0).await {
+    match parse_message_into_command(assyst, event.0).await {
         Err(error) => {
             error!("error: {}", error);
         },

@@ -1,14 +1,14 @@
-use crate::gateway_context::{GatewayContext, ThreadSafeGatewayContext};
+use crate::assyst::ThreadSafeAssyst;
 
 use self::incoming_event::IncomingEvent;
 
-pub mod event_handlers;
 pub mod incoming_event;
 pub mod message_parser;
+pub mod event_handlers;
 
 /// Checks the enum variant of this IncomingEvent and calls the appropriate handler function
 /// for further processing.
-pub async fn handle_raw_event(context: ThreadSafeGatewayContext, event: IncomingEvent) {
+pub async fn handle_raw_event(context: ThreadSafeAssyst, event: IncomingEvent) {
     match event {
         IncomingEvent::ShardReady(event) => {
             event_handlers::ready::handle(event);

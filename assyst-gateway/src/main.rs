@@ -1,7 +1,6 @@
 #![feature(fs_try_exists)]
 
 use assyst_common::config::CONFIG;
-use assyst_common::gateway::core_event::CoreEvent;
 use assyst_common::ok_or_break;
 use assyst_common::pipe::pipe_server::PipeServer;
 use assyst_common::pipe::GATEWAY_PIPE_PATH;
@@ -12,17 +11,10 @@ use tokio::sync::mpsc::unbounded_channel;
 use tokio::sync::Mutex;
 use tracing::{debug, info, trace};
 use twilight_gateway::stream::{create_recommended, ShardMessageStream};
-use twilight_gateway::{Config as GatewayConfig, EventTypeFlags, Intents, Message};
+use twilight_gateway::{Config as GatewayConfig, Intents, Message};
 use twilight_http::Client as HttpClient;
 use twilight_model::gateway::payload::outgoing::update_presence::UpdatePresencePayload;
 use twilight_model::gateway::presence::{Activity, ActivityType, Status};
-
-use crate::gateway_context::{GatewayContext, ThreadSafeGatewayContext};
-use crate::parser::handle_raw_event;
-use crate::parser::incoming_event::IncomingEvent;
-
-pub mod gateway_context;
-pub mod parser;
 
 lazy_static::lazy_static! {
     static ref ACTIVITY: Activity = Activity {
@@ -74,10 +66,7 @@ async fn main() {
     info!("Recommended shard count: {}", shards.len());
 
     // pipe thread tx/rx
-    let (tx, mut rx) = unbounded_channel::<CoreEvent>();
-
-    let gateway_context: ThreadSafeGatewayContext = Arc::new(Mutex::new(GatewayContext::new().await));
-    gateway_context.lock().await.set_core_event_sender(tx);
+    let (tx, mut rx) = unbounded_channel::<String>();
 
     let mut core_pipe_server = PipeServer::listen(GATEWAY_PIPE_PATH).unwrap();
     info!("Core listener started on {}", GATEWAY_PIPE_PATH);
@@ -89,12 +78,8 @@ async fn main() {
             if let Ok(mut stream) = core_pipe_server.accept_connection().await {
                 info!("Connection received from assyst-core");
                 loop {
-                    if let Some(data) = rx.recv().await {
-                        debug!("core event received: {:?}", data);
-                        ok_or_break!(stream.write_object(data).await);
-                    } else {
-                        break;
-                    };
+                    let data = ok_or_break!(rx.recv().await.ok_or(()));
+                    ok_or_break!(stream.write_string(data).await);
                 }
             }
         }
@@ -106,24 +91,7 @@ async fn main() {
         if let Ok(Message::Text(event)) = event {
             trace!("discord message received: {}", event);
 
-            let parsed_event = twilight_gateway::parse(
-                event,
-                EventTypeFlags::GUILD_CREATE
-                    | EventTypeFlags::GUILD_DELETE
-                    | EventTypeFlags::MESSAGE_CREATE
-                    | EventTypeFlags::MESSAGE_DELETE
-                    | EventTypeFlags::MESSAGE_UPDATE
-                    | EventTypeFlags::READY,
-            )
-            .ok()
-            .flatten();
-
-            if let Some(parsed_event) = parsed_event {
-                let try_incoming_event: Result<IncomingEvent, _> = parsed_event.try_into();
-                if let Ok(incoming_event) = try_incoming_event {
-                    handle_raw_event(gateway_context.clone(), incoming_event).await;
-                }
-            }
+            tx.send(event).unwrap();
         }
     }
 }

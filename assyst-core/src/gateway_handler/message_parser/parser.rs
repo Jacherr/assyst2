@@ -7,7 +7,7 @@ use assyst_database::model::prefix::Prefix;
 use tracing::debug;
 use twilight_model::channel::Message;
 
-use crate::gateway_context::ThreadSafeGatewayContext;
+use crate::ThreadSafeAssyst;
 
 #[derive(Debug)]
 pub enum ParseError {
@@ -70,10 +70,8 @@ fn message_mention_prefix(content: &str) -> Option<String> {
 /// ratelimit isn't exceeded?
 ///
 /// Step 6: Pass the parsed Command and its arguments to assyst-core for execution.
-pub async fn parse_message_into_command(context: ThreadSafeGatewayContext, message: Message) -> Result<(), ParseError> {
-    println!("a");
-    let blacklisted = Blacklist::is_blacklisted(&context.lock().await.database_handler, message.author.id.get()).await;
-    println!("b");
+pub async fn parse_message_into_command(assyst: ThreadSafeAssyst, message: Message) -> Result<(), ParseError> {
+    let blacklisted = Blacklist::is_blacklisted(&assyst.lock().await.database_handler, message.author.id.get()).await;
     match blacklisted {
         Ok(false) => {
             debug!(
@@ -98,8 +96,10 @@ pub async fn parse_message_into_command(context: ThreadSafeGatewayContext, messa
     // if in guild: guild prefix, mention, or prefix override
     // if prefix override: "normal" prefix ignored
     //
-    // prefix override takes precedence over all others
-    // and disables all other prefixes
+    // prefix precendence:
+    // 1. prefix override (disabling other prefixes)
+    // 2. mention prefix
+    // 3. no prefix/guild prefix (depending on context)
     let parsed_prefix = if let Some(ref r#override) = CONFIG.dev.prefix_override {
         r#override.clone()
     } else if let Some(mention_prefix) = message_mention_prefix(&message.content) {
@@ -108,7 +108,7 @@ pub async fn parse_message_into_command(context: ThreadSafeGatewayContext, messa
         "".to_owned()
     } else {
         let guild_id = message.guild_id.unwrap().get();
-        let guild_prefix = Prefix::get(&mut context.lock().await.database_handler, guild_id).await;
+        let guild_prefix = Prefix::get(&mut assyst.lock().await.database_handler, guild_id).await;
         match guild_prefix {
             // found prefix in db/cache
             Ok(Some(p)) => p.prefix.clone(),
@@ -119,7 +119,7 @@ pub async fn parse_message_into_command(context: ThreadSafeGatewayContext, messa
                 };
 
                 default_prefix
-                    .set(&mut context.lock().await.database_handler, guild_id)
+                    .set(&mut assyst.lock().await.database_handler, guild_id)
                     .await
                     .map_err(|e| {
                         ParseError::PreParseFail(format!("failed to set default prefix: {}", e.to_string()))
