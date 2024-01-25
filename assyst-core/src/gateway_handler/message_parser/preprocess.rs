@@ -33,24 +33,6 @@ fn message_mention_prefix(content: &str) -> Option<String> {
 /// - Checking that the message starts with the correct prefix for the context, and returning any
 ///   identified prefix.
 pub async fn preprocess(assyst: ThreadSafeAssyst, message: Message) -> Result<PreprocessResult, PreParseError> {
-    let blacklisted = Blacklist::is_blacklisted(&assyst.lock().await.database_handler, message.author.id.get()).await;
-    match blacklisted {
-        Ok(false) => {
-            debug!(
-                "parser: ignoring message: user blacklisted ({})",
-                message.author.id.get()
-            );
-            return Err(PreParseError::UserGloballyBlacklisted);
-        },
-        Err(error) => {
-            return Err(PreParseError::Failure(format!(
-                "failed to fetch global blacklist: {}",
-                error.to_string()
-            )));
-        },
-        _ => (),
-    }
-
     let is_in_dm = message.guild_id.is_none();
 
     // determine which prefixes apply to this message
@@ -100,6 +82,26 @@ pub async fn preprocess(assyst: ThreadSafeAssyst, message: Message) -> Result<Pr
     };
 
     debug!("parser: parsed prefix: {:?}", parsed_prefix);
+
+    // check blacklist second to prevent large database spam
+    // from all incoming messages
+    let blacklisted = Blacklist::is_blacklisted(&assyst.lock().await.database_handler, message.author.id.get()).await;
+    match blacklisted {
+        Ok(false) => {
+            debug!(
+                "parser: ignoring message: user blacklisted ({})",
+                message.author.id.get()
+            );
+            return Err(PreParseError::UserGloballyBlacklisted);
+        },
+        Err(error) => {
+            return Err(PreParseError::Failure(format!(
+                "failed to fetch global blacklist: {}",
+                error.to_string()
+            )));
+        },
+        _ => (),
+    }
 
     Ok(PreprocessResult {
         prefix: parsed_prefix
