@@ -1,7 +1,9 @@
 use tracing::{debug, error};
 use twilight_model::gateway::payload::incoming::MessageCreate;
 
-use crate::{gateway_handler::message_parser::parser::parse_message_into_command, ThreadSafeAssyst};
+use crate::gateway_handler::message_parser::error::{get_parser_error_severity, ErrorSeverity};
+use crate::gateway_handler::message_parser::parser::parse_message_into_command;
+use crate::ThreadSafeAssyst;
 
 /// Handle a [MessageCreate] event received from the Discord gateway.
 ///
@@ -22,7 +24,9 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: MessageCreate) {
 
     match parse_message_into_command(assyst, event.0).await {
         Err(error) => {
-            error!("error: {}", error);
+            if get_parser_error_severity(&error) == ErrorSeverity::High {
+                error!("error parsing message: {}", error);
+            }
         },
         _ => {},
     };

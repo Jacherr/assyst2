@@ -1,2 +1,3 @@
-pub mod preprocess;
+pub mod error;
 pub mod parser;
+pub mod preprocess;

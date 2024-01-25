@@ -2,9 +2,9 @@ use crate::assyst::ThreadSafeAssyst;
 
 use self::incoming_event::IncomingEvent;
 
+pub mod event_handlers;
 pub mod incoming_event;
 pub mod message_parser;
-pub mod event_handlers;
 
 /// Checks the enum variant of this IncomingEvent and calls the appropriate handler function
 /// for further processing.
