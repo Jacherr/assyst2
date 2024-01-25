@@ -46,10 +46,14 @@ lazy_static::lazy_static! {
 
 #[tokio::main]
 async fn main() {
-    tracing_subscriber::fmt::init();
+    if std::env::consts::OS != "linux" {
+        panic!("Assyst is supported on Linux only.")
+    }
 
     info!("Initialising");
 
+    tracing_subscriber::fmt::init();
+    
     if Path::new(GATEWAY_PIPE_PATH).exists() {
         info!("Deleting old pipe file {}", GATEWAY_PIPE_PATH);
         std::fs::remove_file(GATEWAY_PIPE_PATH).unwrap();
