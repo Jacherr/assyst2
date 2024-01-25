@@ -12,6 +12,13 @@ use twilight_gateway::EventTypeFlags;
 mod assyst;
 mod gateway_handler;
 
+// Jemallocator is probably unnecessary for the average instance,
+// but when handling hundreds of events per second the performance improvement
+// can be measurable
+#[cfg(target_os = "linux")]
+#[global_allocator]
+static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
+
 #[tokio::main]
 async fn main() {
     info!("Initialising");

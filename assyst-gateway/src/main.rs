@@ -16,6 +16,13 @@ use twilight_http::Client as HttpClient;
 use twilight_model::gateway::payload::outgoing::update_presence::UpdatePresencePayload;
 use twilight_model::gateway::presence::{Activity, ActivityType, Status};
 
+// Jemallocator is probably unnecessary for the average instance,
+// but when handling hundreds of events per second the performance improvement
+// can be measurable
+#[cfg(target_os = "linux")]
+#[global_allocator]
+static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
+
 lazy_static::lazy_static! {
     static ref ACTIVITY: Activity = Activity {
         application_id: None,
