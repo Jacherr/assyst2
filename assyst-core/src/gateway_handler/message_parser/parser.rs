@@ -1,10 +1,5 @@
 use super::error::ParseError;
 use super::preprocess::preprocess;
-use assyst_common::config::CONFIG;
-use assyst_common::BOT_ID;
-use assyst_database::model::blacklist::Blacklist;
-use assyst_database::model::prefix::Prefix;
-use tracing::debug;
 use twilight_model::channel::Message;
 
 use crate::ThreadSafeAssyst;

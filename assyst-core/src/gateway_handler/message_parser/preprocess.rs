@@ -3,8 +3,6 @@ use assyst_database::model::{blacklist::Blacklist, prefix::Prefix};
 use tracing::debug;
 use twilight_model::channel::Message;
 
-use super::error::ParseError;
-
 use crate::{assyst::ThreadSafeAssyst, gateway_handler::message_parser::error::PreParseError};
 
 pub struct PreprocessResult {

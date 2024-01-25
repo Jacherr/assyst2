@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-trait GetErrorSeverity {
+pub trait GetErrorSeverity {
     fn get_severity(&self) -> ErrorSeverity;
 }
 
@@ -66,8 +66,4 @@ impl From<PreParseError> for ParseError {
 pub enum ErrorSeverity {
     Low,
     High
-}
-
-pub fn get_parser_error_severity<T: GetErrorSeverity>(error: &T) -> ErrorSeverity {
-    error.get_severity()
 }
