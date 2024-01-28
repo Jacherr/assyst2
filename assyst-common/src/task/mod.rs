@@ -1,16 +1,20 @@
-use std::{future::Future, pin::Pin, time::Duration};
-use tokio::{spawn, task::JoinHandle, time::sleep};
+use std::future::Future;
+use std::pin::Pin;
+use std::time::Duration;
+use tokio::spawn;
+use tokio::task::JoinHandle;
+use tokio::time::sleep;
 use tracing::debug;
 
 use crate::assyst::ThreadSafeAssyst;
 
 pub type TaskResult = Pin<Box<dyn Future<Output = ()> + Send>>;
-pub type TaskRun =
-    Box<dyn Fn(ThreadSafeAssyst) -> TaskResult + Send + Sync>;
+pub type TaskRun = Box<dyn Fn(ThreadSafeAssyst) -> TaskResult + Send + Sync>;
 
 /// A Task is a function which is called repeatedly on a set interval.
-/// 
-/// A Task can be created to run on its own thread, and once per interval the provided function will be executed.
+///
+/// A Task can be created to run on its own thread, and once per interval the provided function will
+/// be executed.
 pub struct Task {
     thread: JoinHandle<()>,
 }
@@ -23,9 +27,7 @@ impl Task {
             }
         });
 
-        Task {
-            thread
-        }
+        Task { thread }
     }
 
     pub fn new_delayed(assyst: ThreadSafeAssyst, interval: Duration, delay: Duration, callback: TaskRun) -> Task {
@@ -37,9 +39,7 @@ impl Task {
             }
         });
 
-        Task {
-            thread
-        }
+        Task { thread }
     }
 
     pub fn terminate(&mut self) {

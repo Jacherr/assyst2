@@ -12,7 +12,7 @@ pub enum PreParseError {
     /// Invocating user is a bot or webhook.
     UserIsBotOrWebhook,
     /// Other unknown failure. Unexpected error with high severity.
-    Failure(String)
+    Failure(String),
 }
 impl Display for PreParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -22,7 +22,7 @@ impl Display for PreParseError {
             },
             Self::UserIsBotOrWebhook => {
                 write!(f, "User is a bot or webhook")
-            }
+            },
             Self::Failure(message) => {
                 write!(f, "Preprocessor failure: {}", message)
             },
@@ -33,7 +33,7 @@ impl GetErrorSeverity for PreParseError {
     fn get_severity(&self) -> ErrorSeverity {
         match self {
             PreParseError::Failure(_) => ErrorSeverity::High,
-            _ => ErrorSeverity::Low
+            _ => ErrorSeverity::Low,
         }
     }
 }
@@ -57,7 +57,7 @@ impl GetErrorSeverity for ParseError {
     fn get_severity(&self) -> ErrorSeverity {
         match self {
             ParseError::PreParseFail(e) => e.get_severity(),
-            _ => ErrorSeverity::Low
+            _ => ErrorSeverity::Low,
         }
     }
 }
@@ -70,5 +70,5 @@ impl From<PreParseError> for ParseError {
 #[derive(PartialEq, Eq)]
 pub enum ErrorSeverity {
     Low,
-    High
+    High,
 }

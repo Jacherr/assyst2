@@ -4,7 +4,7 @@ use tokio::time::Instant;
 use tracing::debug;
 
 /// Struct to allow the tracking of how fast a value increases, or how fast a state changes.
-/// 
+///
 /// For example, can be used to determine how frequently a command is ran over a time period,
 /// or the rate of events being received.
 pub struct RateTracker {
@@ -20,9 +20,9 @@ impl RateTracker {
     }
 
     /// Add a sample to the tracker.
-    /// 
-    /// The sample can take a value. When a sample is added, the entire sample list is re-ordered from
-    /// largest to smallest value.
+    ///
+    /// The sample can take a value. When a sample is added, the entire sample list is re-ordered
+    /// from largest to smallest value.
     pub fn add_sample(&mut self, value: usize) {
         // add new sample
         self.samples.push((value, Instant::now()));

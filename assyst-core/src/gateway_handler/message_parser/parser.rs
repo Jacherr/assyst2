@@ -24,8 +24,8 @@ use crate::ThreadSafeAssyst;
 /// This function identifies the prefix and checks if it is valid for this particular invocation.
 /// If it is not, then prematurely return.
 ///
-/// **Step 3**: Check if this Message already has an associated reply (if, for example, the invocation
-/// was updated).
+/// **Step 3**: Check if this Message already has an associated reply (if, for example, the
+/// invocation was updated).
 /// These events have a timeout for handling, to prevent editing of very old
 /// messages. If it is expired, prematurely return.
 ///
@@ -34,7 +34,7 @@ use crate::ThreadSafeAssyst;
 /// **Step 5**: Using the parsed Command, identify some metadata conditionals, is the command
 /// age-restricted, allowed in dms, the user has permission to use it, the cooldown
 /// ratelimit isn't exceeded?
-/// 
+///
 /// Once all steps are complete, a Command is returned, ready for execution.
 pub async fn parse_message_into_command(assyst: ThreadSafeAssyst, message: Message) -> Result<(), ParseError> {
     let preprocess = preprocess(assyst.clone(), message).await?;

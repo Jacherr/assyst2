@@ -1,8 +1,6 @@
 use crate::DatabaseHandler;
 
-pub struct Blacklist {
-    
-}
+pub struct Blacklist {}
 impl Blacklist {
     pub async fn is_blacklisted(handler: &DatabaseHandler, user_id: u64) -> anyhow::Result<bool> {
         let query = r#"SELECT user_id FROM blacklist"#;

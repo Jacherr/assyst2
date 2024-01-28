@@ -1,5 +1,8 @@
-use assyst_common::{assyst::ThreadSafeAssyst, config::CONFIG, BOT_ID};
-use assyst_database::model::{blacklist::Blacklist, prefix::Prefix};
+use assyst_common::assyst::ThreadSafeAssyst;
+use assyst_common::config::CONFIG;
+use assyst_common::BOT_ID;
+use assyst_database::model::blacklist::Blacklist;
+use assyst_database::model::prefix::Prefix;
 use tracing::debug;
 use twilight_model::channel::Message;
 
@@ -69,9 +72,7 @@ pub async fn preprocess(assyst: ThreadSafeAssyst, message: Message) -> Result<Pr
                 default_prefix
                     .set(&mut assyst.lock().await.database_handler, guild_id)
                     .await
-                    .map_err(|e| {
-                        PreParseError::Failure(format!("failed to set default prefix: {}", e.to_string()))
-                    })?;
+                    .map_err(|e| PreParseError::Failure(format!("failed to set default prefix: {}", e.to_string())))?;
 
                 CONFIG.prefix.default.clone()
             },
@@ -107,7 +108,5 @@ pub async fn preprocess(assyst: ThreadSafeAssyst, message: Message) -> Result<Pr
         _ => (),
     }
 
-    Ok(PreprocessResult {
-        prefix: parsed_prefix
-    })
+    Ok(PreprocessResult { prefix: parsed_prefix })
 }
