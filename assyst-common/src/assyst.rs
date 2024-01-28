@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use assyst_common::config::CONFIG;
+use crate::config::CONFIG;
 use assyst_database::DatabaseHandler;
 use tokio::sync::Mutex;
 

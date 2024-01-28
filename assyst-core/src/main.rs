@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use assyst::{Assyst, ThreadSafeAssyst};
+use assyst_common::assyst::{Assyst, ThreadSafeAssyst};
 use assyst_common::ok_or_break;
 use assyst_common::pipe::{Pipe, GATEWAY_PIPE_PATH};
 use gateway_handler::handle_raw_event;
@@ -9,7 +9,6 @@ use tokio::sync::Mutex;
 use tracing::{info, trace};
 use twilight_gateway::EventTypeFlags;
 
-mod assyst;
 mod gateway_handler;
 
 // Jemallocator is probably unnecessary for the average instance,

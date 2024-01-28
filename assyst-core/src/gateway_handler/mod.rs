@@ -1,4 +1,4 @@
-use crate::assyst::ThreadSafeAssyst;
+use assyst_common::assyst::ThreadSafeAssyst;
 
 use self::incoming_event::IncomingEvent;
 

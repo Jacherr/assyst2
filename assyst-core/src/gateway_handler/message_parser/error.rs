@@ -9,6 +9,8 @@ pub trait GetErrorSeverity {
 pub enum PreParseError {
     /// Invocating user is globally blacklisted from using the bot.
     UserGloballyBlacklisted,
+    /// Invocating user is a bot or webhook.
+    UserIsBotOrWebhook,
     /// Other unknown failure. Unexpected error with high severity.
     Failure(String)
 }
@@ -18,6 +20,9 @@ impl Display for PreParseError {
             Self::UserGloballyBlacklisted => {
                 write!(f, "User is globally blacklisted")
             },
+            Self::UserIsBotOrWebhook => {
+                write!(f, "User is a bot or webhook")
+            }
             Self::Failure(message) => {
                 write!(f, "Preprocessor failure: {}", message)
             },

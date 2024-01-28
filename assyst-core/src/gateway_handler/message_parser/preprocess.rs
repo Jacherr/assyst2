@@ -1,9 +1,9 @@
-use assyst_common::{config::CONFIG, BOT_ID};
+use assyst_common::{assyst::ThreadSafeAssyst, config::CONFIG, BOT_ID};
 use assyst_database::model::{blacklist::Blacklist, prefix::Prefix};
 use tracing::debug;
 use twilight_model::channel::Message;
 
-use crate::{assyst::ThreadSafeAssyst, gateway_handler::message_parser::error::PreParseError};
+use crate::gateway_handler::message_parser::error::PreParseError;
 
 pub struct PreprocessResult {
     pub prefix: String,
@@ -33,7 +33,9 @@ fn message_mention_prefix(content: &str) -> Option<String> {
 /// - Checking that the message starts with the correct prefix for the context, and returning any
 ///   identified prefix.
 pub async fn preprocess(assyst: ThreadSafeAssyst, message: Message) -> Result<PreprocessResult, PreParseError> {
-    let is_in_dm = message.guild_id.is_none();
+    if message.author.bot || message.webhook_id.is_some() {
+        return Err(PreParseError::UserIsBotOrWebhook);
+    }
 
     // determine which prefixes apply to this message
     // if in dm: no prefix, mention, or prefix override
@@ -44,6 +46,8 @@ pub async fn preprocess(assyst: ThreadSafeAssyst, message: Message) -> Result<Pr
     // 1. prefix override (disabling other prefixes)
     // 2. mention prefix
     // 3. no prefix/guild prefix (depending on context)
+    let is_in_dm = message.guild_id.is_none();
+
     let parsed_prefix = if let Some(ref r#override) = CONFIG.dev.prefix_override {
         r#override.clone()
     } else if let Some(mention_prefix) = message_mention_prefix(&message.content) {
