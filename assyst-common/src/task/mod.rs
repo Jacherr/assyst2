@@ -4,7 +4,6 @@ use std::time::Duration;
 use tokio::spawn;
 use tokio::task::JoinHandle;
 use tokio::time::sleep;
-use tracing::debug;
 
 use crate::assyst::ThreadSafeAssyst;
 
