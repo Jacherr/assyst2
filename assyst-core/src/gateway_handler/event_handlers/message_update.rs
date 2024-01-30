@@ -14,19 +14,6 @@ use crate::ThreadSafeAssyst;
 ///    the response message,
 /// 3. A command message was edited to a non-command, in which case delete the old command response.
 pub async fn handle(assyst: ThreadSafeAssyst, event: MessageUpdate) {
-    // ignore all bot and webhook messages
-    if event.author.clone().map(|a| a.bot).unwrap_or(false) || event.edited_timestamp.is_none() {
-        debug!(
-            "MESSAGE_UPDATE: message not of interest: {}",
-            if event.edited_timestamp.is_none() {
-                "message not edited"
-            } else {
-                "bot author"
-            }
-        );
-        return;
-    }
-
     match convert_message_update_to_message(event) {
         Some(message) => {
             // call command parser here

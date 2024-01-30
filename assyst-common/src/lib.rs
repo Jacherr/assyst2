@@ -56,7 +56,7 @@ mod tests {
         assert_eq!(tracker.get_rate(), None);
     }
 
-    async fn task_fn(assyst: Arc<Mutex<Assyst>>) {}
+    async fn task_fn(_assyst: Arc<Mutex<Assyst>>) {}
 
     #[tokio::test]
     async fn task_create() {

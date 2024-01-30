@@ -45,9 +45,8 @@ impl Database {
         port.replace_range(..3, "#");
 
         format!(
-            "postgres://{}:{}...@{}:{}/{}",
+            "postgres://{}{}:{}/{}",
             self.username,
-            &self.password[0..2],
             &host.join("."),
             port,
             self.database

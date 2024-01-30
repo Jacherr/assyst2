@@ -93,11 +93,7 @@ pub async fn preprocess(assyst: ThreadSafeAssyst, message: Message) -> Result<Pr
     let blacklisted = Blacklist::is_blacklisted(&assyst.lock().await.database_handler, message.author.id.get()).await;
     match blacklisted {
         Ok(false) => {
-            debug!(
-                "parser: ignoring message: user blacklisted ({})",
-                message.author.id.get()
-            );
-            return Err(PreParseError::UserGloballyBlacklisted);
+            return Err(PreParseError::UserGloballyBlacklisted(message.author.id.get()));
         },
         Err(error) => {
             return Err(PreParseError::Failure(format!(

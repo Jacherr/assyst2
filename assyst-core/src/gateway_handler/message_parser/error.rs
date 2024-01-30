@@ -8,7 +8,7 @@ pub trait GetErrorSeverity {
 /// An error when pre-processing the message.
 pub enum PreParseError {
     /// Invocating user is globally blacklisted from using the bot.
-    UserGloballyBlacklisted,
+    UserGloballyBlacklisted(u64),
     /// Invocating user is a bot or webhook.
     UserIsBotOrWebhook,
     /// Other unknown failure. Unexpected error with high severity.
@@ -17,8 +17,8 @@ pub enum PreParseError {
 impl Display for PreParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::UserGloballyBlacklisted => {
-                write!(f, "User is globally blacklisted")
+            Self::UserGloballyBlacklisted(id) => {
+                write!(f, "User {} is globally blacklisted", id)
             },
             Self::UserIsBotOrWebhook => {
                 write!(f, "User is a bot or webhook")

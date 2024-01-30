@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use assyst_common::assyst::{Assyst, ThreadSafeAssyst};
-use assyst_common::ok_or_break;
 use assyst_common::pipe::{Pipe, GATEWAY_PIPE_PATH};
+use assyst_common::{ok_or_break, tracing_init};
 use gateway_handler::handle_raw_event;
 use gateway_handler::incoming_event::IncomingEvent;
 use tokio::sync::Mutex;
@@ -23,7 +23,7 @@ async fn main() {
         panic!("Assyst is supported on Linux only.")
     }
 
-    tracing_subscriber::fmt::init();
+    tracing_init!();
 
     info!("Initialising");
     let assyst: ThreadSafeAssyst = Arc::new(Mutex::new(Assyst::new().await.unwrap()));

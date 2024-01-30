@@ -1,9 +1,7 @@
-#![feature(fs_try_exists)]
-
 use assyst_common::config::CONFIG;
-use assyst_common::ok_or_break;
 use assyst_common::pipe::pipe_server::PipeServer;
 use assyst_common::pipe::GATEWAY_PIPE_PATH;
+use assyst_common::{ok_or_break, tracing_init};
 use futures_util::StreamExt;
 use std::path::Path;
 use std::sync::Arc;
@@ -50,7 +48,7 @@ async fn main() {
         panic!("Assyst is supported on Linux only.")
     }
 
-    tracing_subscriber::fmt::init();
+    tracing_init!();
 
     info!("Initialising");
     if Path::new(GATEWAY_PIPE_PATH).exists() {

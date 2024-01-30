@@ -15,4 +15,5 @@ twilight-model = { git = "https://github.com/Jacherr/twilight.git", branch = "ma
 twilight-http = { git = "https://github.com/Jacherr/twilight.git", branch = "main" }
 anyhow = "1.0.75"
 jemallocator = "0.5.4"
-tracing-subscriber = "0.3.16"
+tracing-subscriber = { version = "0.3.16", features = ["time", "env-filter"] }
+time = { version = "0.3.31", features = ["macros"] }
