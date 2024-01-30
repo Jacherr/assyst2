@@ -1,0 +1,36 @@
+[urls]
+
+[authentication]
+# Token to authenticate with Discord.
+discord_token = "" # dev bot
+
+# Assyst database information.
+[database]
+host = ""
+username = ""
+password = ""
+database = ""
+port = 3000
+
+[prefix]
+# When the bot joins a new guild, this will be the default prefix.
+default = "-"
+
+[logging_webhooks]
+
+[dev]
+# These Discord user IDs have full control of the bot, including developer-only commands.
+# Also grants max-tier premium access.
+admin_users = []
+
+# When working with a dev instance, set this to the prefix "override" value for that instance
+# to prevent triggering the production instance and the development instance at the same time.
+prefix_override = "¬"
+
+# Use this for development instances to prevent the bot from attempting to process messages
+# in bad-translator channels. Prevents conflicts with production instance.
+disable_bad_translator_channels = false
+
+# Use this to disable the bot from checking reminders. Again useful when working with a
+# development instance to prevent conflicts.
+disable_reminder_check = false

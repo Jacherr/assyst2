@@ -13,7 +13,7 @@ pub struct PreprocessResult {
 }
 
 /// Returns `Some(prefix)` if the prefix is the mention of the bot, otherwise `None`
-fn message_mention_prefix(content: &str) -> Option<String> {
+pub fn message_mention_prefix(content: &str) -> Option<String> {
     let mention_no_nickname = format!("<@{}>", BOT_ID);
     let mention_nickname = format!("<@!{}>", BOT_ID);
 

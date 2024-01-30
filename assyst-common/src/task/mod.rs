@@ -41,7 +41,12 @@ impl Task {
         Task { thread }
     }
 
-    pub fn terminate(&mut self) {
+    pub fn is_running(&self) -> bool {
+        !self.thread.is_finished()
+    }
+
+    pub async fn terminate(self) -> bool {
         self.thread.abort();
+        self.thread.await.unwrap_err().is_cancelled()
     }
 }

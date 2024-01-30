@@ -9,7 +9,7 @@ use tracing::debug;
 /// or the rate of events being received.
 pub struct RateTracker {
     tracking_length: Duration,
-    samples: Vec<(usize, Instant)>,
+    samples: Vec<(isize, Instant)>,
 }
 impl RateTracker {
     pub fn new(tracking_length: Duration) -> RateTracker {
@@ -19,13 +19,7 @@ impl RateTracker {
         }
     }
 
-    /// Add a sample to the tracker.
-    ///
-    /// The sample can take a value. When a sample is added, the entire sample list is re-ordered
-    /// from largest to smallest value.
-    pub fn add_sample(&mut self, value: usize) {
-        // add new sample
-        self.samples.push((value, Instant::now()));
+    pub fn remove_expired_samples(&mut self) {
         let mut to_remove = vec![];
         for (pos, entry) in self.samples.iter().enumerate() {
             // determine which entries are out of range
@@ -40,12 +34,20 @@ impl RateTracker {
         for i in to_remove {
             self.samples.remove(i);
         }
-        // sort samples oldest to most recent
-        self.samples.sort_by(|a, b| a.0.cmp(&b.0));
+    }
+
+    /// Add a sample to the tracker.
+    ///
+    /// The sample can take a value.
+    pub fn add_sample(&mut self, value: isize) {
+        // add new sample
+        self.samples.push((value, Instant::now()));
+        self.remove_expired_samples();
     }
 
     /// Fetches the difference between the largest and smallest sample in the tracker.
-    pub fn get_rate(&self) -> Option<usize> {
+    pub fn get_rate(&mut self) -> Option<isize> {
+        self.remove_expired_samples();
         Some(self.samples.last()?.0 - self.samples.first()?.0)
     }
 }
