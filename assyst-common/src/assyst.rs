@@ -15,7 +15,9 @@ pub struct Assyst {
 impl Assyst {
     pub async fn new() -> Option<Assyst> {
         Some(Assyst {
-            database_handler: DatabaseHandler::new(CONFIG.database.to_url()).await.ok()?,
+            database_handler: DatabaseHandler::new(CONFIG.database.to_url(), CONFIG.database.to_url_safe())
+                .await
+                .ok()?,
         })
     }
 }

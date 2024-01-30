@@ -14,10 +14,10 @@ pub struct DatabaseHandler {
     cache: DatabaseCache,
 }
 impl DatabaseHandler {
-    pub async fn new(url: String) -> anyhow::Result<Self> {
+    pub async fn new(url: String, safe_url: String) -> anyhow::Result<Self> {
         info!(
             "Connecting to database on {} with {} max connections",
-            url, MAX_CONNECTIONS
+            safe_url, MAX_CONNECTIONS
         );
 
         let pool = PgPoolOptions::new()
@@ -25,7 +25,7 @@ impl DatabaseHandler {
             .connect(&url)
             .await?;
 
-        info!("Connected to database on {}", url);
+        info!("Connected to database on {}", safe_url);
         let cache = DatabaseCache::new();
         Ok(Self { pool, cache })
     }

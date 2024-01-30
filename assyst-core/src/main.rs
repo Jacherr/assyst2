@@ -23,9 +23,9 @@ async fn main() {
         panic!("Assyst is supported on Linux only.")
     }
 
-    info!("Initialising");
-
     tracing_subscriber::fmt::init();
+
+    info!("Initialising");
     let assyst: ThreadSafeAssyst = Arc::new(Mutex::new(Assyst::new().await.unwrap()));
 
     loop {

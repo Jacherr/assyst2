@@ -35,6 +35,24 @@ impl Database {
             self.username, self.password, self.host, self.port, self.database
         )
     }
+
+    pub fn to_url_safe(&self) -> String {
+        let mut host = self.host.split(".").take(2).collect::<Vec<_>>();
+        host.push("###");
+        host.push("###");
+
+        let mut port = self.port.to_string();
+        port.replace_range(..3, "#");
+
+        format!(
+            "postgres://{}:{}...@{}:{}/{}",
+            self.username,
+            &self.password[0..2],
+            &host.join("."),
+            port,
+            self.database
+        )
+    }
 }
 
 #[derive(Deserialize)]

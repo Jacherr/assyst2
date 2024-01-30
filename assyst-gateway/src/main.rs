@@ -50,10 +50,9 @@ async fn main() {
         panic!("Assyst is supported on Linux only.")
     }
 
-    info!("Initialising");
-
     tracing_subscriber::fmt::init();
 
+    info!("Initialising");
     if Path::new(GATEWAY_PIPE_PATH).exists() {
         info!("Deleting old pipe file {}", GATEWAY_PIPE_PATH);
         std::fs::remove_file(GATEWAY_PIPE_PATH).unwrap();
