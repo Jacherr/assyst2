@@ -14,3 +14,5 @@ toml = "0.8.8"
 lazy_static = "1.4.0"
 tracing = "0.1.37"
 assyst-database = { path = "../assyst-database" }
+twilight-http = { git = "https://github.com/Jacherr/twilight.git", branch = "main" }
+twilight-model = { git = "https://github.com/Jacherr/twilight.git", branch = "main" }

@@ -1,3 +1,4 @@
+pub mod discord;
 pub mod rate_tracker;
 
 /// Attempts to extract memory usage

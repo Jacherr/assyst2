@@ -1,6 +1,8 @@
 use assyst_common::assyst::ThreadSafeAssyst;
 use assyst_common::config::CONFIG;
+use assyst_common::util::discord::get_guild_owner;
 use assyst_common::BOT_ID;
+use assyst_database::model::command_restriction::{CommandRestriction, RestrictedFeature};
 use assyst_database::model::global_blacklist::GlobalBlacklist;
 use assyst_database::model::prefix::Prefix;
 use twilight_model::channel::Message;
@@ -9,6 +11,9 @@ use crate::gateway_handler::message_parser::error::PreParseError;
 
 pub struct PreprocessResult {
     pub prefix: String,
+    pub guild_command_restrictions: Option<Vec<CommandRestriction>>,
+    pub guild_owner: Option<u64>,
+    pub is_in_dm: bool,
 }
 
 /// Returns `Some(prefix)` if the prefix is the mention of the bot, otherwise `None`
@@ -34,6 +39,7 @@ pub fn message_mention_prefix(content: &str) -> Option<String> {
 /// - Checking that the message is not sent by a bot or a webhook,
 /// - Checking that the message starts with the correct prefix for the context, and returning any
 ///   identified prefix.
+/// - Fetching all command restrictions for handling later once the command has been determined.
 pub async fn preprocess(assyst: ThreadSafeAssyst, message: Message) -> Result<PreprocessResult, PreParseError> {
     if message.author.bot || message.webhook_id.is_some() {
         return Err(PreParseError::UserIsBotOrWebhook(Some(message.author.id.get())));
@@ -106,5 +112,37 @@ pub async fn preprocess(assyst: ThreadSafeAssyst, message: Message) -> Result<Pr
         _ => (),
     }
 
-    Ok(PreprocessResult { prefix: parsed_prefix })
+    // fetch guild command restrictions and check the ones we can (any that have "all" feature
+    // restriction) - server owner bypasses all restrictions so we check if user owns the server here
+    let guild_owner = if !is_in_dm {
+        Some(
+            get_guild_owner(&assyst.lock().await.http_client, message.guild_id.unwrap().get())
+                .await
+                .map_err(|x| PreParseError::Failure(format!("failed to get guild owner: {}", x.to_string())))?,
+        )
+    } else {
+        None
+    };
+
+    let guild_command_restrictions = if !is_in_dm {
+        Some(
+            CommandRestriction::get_guild_command_restrictions(
+                &assyst.lock().await.database_handler,
+                message.guild_id.unwrap().get(),
+            )
+            .await
+            .map_err(|e| {
+                PreParseError::Failure(format!("failed to get guild command restrictions: {}", e.to_string()))
+            })?,
+        )
+    } else {
+        None
+    };
+
+    Ok(PreprocessResult {
+        prefix: parsed_prefix,
+        guild_command_restrictions,
+        guild_owner,
+        is_in_dm,
+    })
 }

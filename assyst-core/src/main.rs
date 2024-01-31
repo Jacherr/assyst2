@@ -1,3 +1,5 @@
+#![feature(let_chains)]
+
 use std::sync::Arc;
 
 use assyst_common::assyst::{Assyst, ThreadSafeAssyst};
