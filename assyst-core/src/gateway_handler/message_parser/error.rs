@@ -7,21 +7,26 @@ pub trait GetErrorSeverity {
 #[derive(Debug)]
 /// An error when pre-processing the message.
 pub enum PreParseError {
+    /// Message does not start with the correct prefix.
+    MessageNotPrefixed(String),
     /// Invocating user is globally blacklisted from using the bot.
     UserGloballyBlacklisted(u64),
     /// Invocating user is a bot or webhook.
-    UserIsBotOrWebhook,
+    UserIsBotOrWebhook(Option<u64>),
     /// Other unknown failure. Unexpected error with high severity.
     Failure(String),
 }
 impl Display for PreParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::MessageNotPrefixed(prefix) => {
+                write!(f, "Message does not start with correct prefix ({})", prefix)
+            },
             Self::UserGloballyBlacklisted(id) => {
                 write!(f, "User {} is globally blacklisted", id)
             },
-            Self::UserIsBotOrWebhook => {
-                write!(f, "User is a bot or webhook")
+            Self::UserIsBotOrWebhook(id) => {
+                write!(f, "User is a bot or webhook ({})", id.unwrap_or(0))
             },
             Self::Failure(message) => {
                 write!(f, "Preprocessor failure: {}", message)

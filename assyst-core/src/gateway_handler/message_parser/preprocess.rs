@@ -1,9 +1,8 @@
 use assyst_common::assyst::ThreadSafeAssyst;
 use assyst_common::config::CONFIG;
 use assyst_common::BOT_ID;
-use assyst_database::model::blacklist::Blacklist;
+use assyst_database::model::global_blacklist::GlobalBlacklist;
 use assyst_database::model::prefix::Prefix;
-use tracing::debug;
 use twilight_model::channel::Message;
 
 use crate::gateway_handler::message_parser::error::PreParseError;
@@ -37,7 +36,7 @@ pub fn message_mention_prefix(content: &str) -> Option<String> {
 ///   identified prefix.
 pub async fn preprocess(assyst: ThreadSafeAssyst, message: Message) -> Result<PreprocessResult, PreParseError> {
     if message.author.bot || message.webhook_id.is_some() {
-        return Err(PreParseError::UserIsBotOrWebhook);
+        return Err(PreParseError::UserIsBotOrWebhook(Some(message.author.id.get())));
     }
 
     // determine which prefixes apply to this message
@@ -86,11 +85,14 @@ pub async fn preprocess(assyst: ThreadSafeAssyst, message: Message) -> Result<Pr
         }
     };
 
-    debug!("parser: parsed prefix: {:?}", parsed_prefix);
+    if !message.content.starts_with(&parsed_prefix) {
+        return Err(PreParseError::MessageNotPrefixed(parsed_prefix));
+    }
 
     // check blacklist second to prevent large database spam
     // from all incoming messages
-    let blacklisted = Blacklist::is_blacklisted(&assyst.lock().await.database_handler, message.author.id.get()).await;
+    let blacklisted =
+        GlobalBlacklist::is_blacklisted(&assyst.lock().await.database_handler, message.author.id.get()).await;
     match blacklisted {
         Ok(false) => {
             return Err(PreParseError::UserGloballyBlacklisted(message.author.id.get()));
