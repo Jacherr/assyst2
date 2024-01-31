@@ -1,5 +1,6 @@
 use crate::DatabaseHandler;
 
+#[derive(PartialEq, Eq, Clone)]
 pub enum RestrictedFeature {
     All,
     Command(String),
@@ -21,6 +22,7 @@ impl Into<String> for RestrictedFeature {
     }
 }
 
+#[derive(PartialEq, Eq, Clone)]
 pub enum RestrictionType {
     Allow,
     Block,
@@ -45,6 +47,7 @@ impl Into<String> for RestrictionType {
     }
 }
 
+#[derive(PartialEq, Eq, Clone)]
 pub enum RestrictionScope {
     Channel,
     User,
@@ -85,6 +88,7 @@ pub struct CommandRestrictionRow {
     pub id: i64,
 }
 
+#[derive(Clone)]
 pub struct CommandRestriction {
     pub guild_id: u64,
     pub restricted_feature: RestrictedFeature,
@@ -93,7 +97,7 @@ pub struct CommandRestriction {
     pub id: u64,
 }
 impl CommandRestriction {
-    pub async fn get_guild_restrictions(handler: &DatabaseHandler, guild_id: u64) -> anyhow::Result<Vec<Self>> {
+    pub async fn get_guild_command_restrictions(handler: &DatabaseHandler, guild_id: u64) -> anyhow::Result<Vec<Self>> {
         let query = "SELECT * FROM command_restrictions WHERE guild_id = $1";
 
         Ok(sqlx::query_as::<_, CommandRestrictionRow>(query)
@@ -105,8 +109,40 @@ impl CommandRestriction {
             .collect::<Vec<_>>())
     }
 
-    pub async fn set_guild_restriction(&self) -> anyhow::Result<()> {
-        todo!()
+    pub async fn set_guild_command_restriction(&self, handler: &DatabaseHandler) -> anyhow::Result<()> {
+        let query = r#"INSERT INTO command_restrictions(guild_id, command_name, type, scope, id) VALUES($1, $2, $3, $4, $5) ON CONFLICT (guild_id, command_name, type, scope, id) DO UPDATE SET command_restrictions = EXCLUDED.command_restrictions"#;
+
+        sqlx::query(query)
+            .bind(self.guild_id as i64)
+            .bind::<String>(self.restricted_feature.clone().into())
+            .bind::<String>(self.restriction_type.clone().into())
+            .bind::<String>(self.scope.clone().into())
+            .bind(self.id as i64)
+            .execute(&handler.pool)
+            .await?;
+
+        /*
+        let guild_restrictions = CommandRestriction::get_guild_restrictions(handler, self.guild_id).await?;
+        for restriction in guild_restrictions {
+            // check if this is an update to an existing restriction (same command and relevant object id)
+            // scope cannot chance because id tied to scope, only other param that can change is type
+            // (allow/block)
+            if restriction.id == self.id && restriction.restricted_feature == self.restricted_feature {
+                let new_type: String = restriction.restriction_type.into();
+                let query = "UPDATE command_restrictions(guild_id, command_name, type, scope, id) SET type = $1 WHERE guild_id = $2 AND command_name = $3 AND id = $4";
+                sqlx::query(query)
+                    .bind(new_type)
+                    .bind(self.guild_id as i64)
+                    .bind::<String>((&self.restricted_feature).into())
+                    .bind(self.id as i64)
+                    .execute(&handler.pool)
+                    .await?;
+
+                return Ok(());
+            }
+        }*/
+
+        Ok(())
     }
 }
 impl From<&CommandRestrictionRow> for CommandRestriction {
