@@ -11,7 +11,7 @@ static MAX_CONNECTIONS: u32 = 1;
 /// fetching, deleting and modifying Assyst database data.
 pub struct DatabaseHandler {
     pool: PgPool,
-    cache: DatabaseCache,
+    pub cache: DatabaseCache,
 }
 impl DatabaseHandler {
     pub async fn new(url: String, safe_url: String) -> anyhow::Result<Self> {

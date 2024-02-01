@@ -4,6 +4,7 @@ pub mod command;
 pub mod config;
 pub mod macros;
 pub mod pipe;
+pub mod prometheus;
 pub mod task;
 pub mod util;
 
@@ -15,9 +16,7 @@ mod tests {
     use std::thread::sleep;
     use std::time::Duration;
 
-    use tokio::sync::Mutex;
-
-    use self::assyst::Assyst;
+    use self::assyst::{Assyst, ThreadSafeAssyst};
     use self::task::Task;
     use self::util::rate_tracker::RateTracker;
 
@@ -56,11 +55,11 @@ mod tests {
         assert_eq!(tracker.get_rate(), None);
     }
 
-    async fn task_fn(_assyst: Arc<Mutex<Assyst>>) {}
+    async fn task_fn(_assyst: ThreadSafeAssyst) {}
 
     #[tokio::test]
     async fn task_create() {
-        let assyst = Arc::new(Mutex::new(Assyst::new().await.unwrap()));
+        let assyst = Arc::new(Assyst::new().await.unwrap());
         let task = Task::new(
             assyst.clone(),
             Duration::from_secs(10),
@@ -71,7 +70,7 @@ mod tests {
 
     #[tokio::test]
     async fn task_terminate() {
-        let assyst = Arc::new(Mutex::new(Assyst::new().await.unwrap()));
+        let assyst = Arc::new(Assyst::new().await.unwrap());
         let task = Task::new(
             assyst.clone(),
             Duration::from_secs_f32(0.3),

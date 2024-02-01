@@ -7,11 +7,11 @@ use assyst_common::pipe::{Pipe, GATEWAY_PIPE_PATH};
 use assyst_common::{ok_or_break, tracing_init};
 use gateway_handler::handle_raw_event;
 use gateway_handler::incoming_event::IncomingEvent;
-use tokio::sync::Mutex;
 use tracing::{info, trace};
 use twilight_gateway::EventTypeFlags;
 
 mod gateway_handler;
+mod tasks;
 
 // Jemallocator is probably unnecessary for the average instance,
 // but when handling hundreds of events per second the performance improvement
@@ -28,7 +28,16 @@ async fn main() {
     tracing_init!();
 
     info!("Initialising");
-    let assyst: ThreadSafeAssyst = Arc::new(Mutex::new(Assyst::new().await.unwrap()));
+    let assyst: ThreadSafeAssyst = Arc::new(Assyst::new().await.unwrap());
+
+    /*
+    assyst
+        .register_task(Task::new(
+            assyst.clone(),
+            Duration::from_secs(30),
+            Box::new(move |assyst: ThreadSafeAssyst| Box::pin(collect_prometheus_metrics(assyst.clone()))),
+        ))
+        .await;*/
 
     loop {
         info!("Connecting to assyst-gateway pipe at {}", GATEWAY_PIPE_PATH);

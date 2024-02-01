@@ -16,3 +16,4 @@ tracing = "0.1.37"
 assyst-database = { path = "../assyst-database" }
 twilight-http = { git = "https://github.com/Jacherr/twilight.git", branch = "main" }
 twilight-model = { git = "https://github.com/Jacherr/twilight.git", branch = "main" }
+prometheus = "0.13.3"

@@ -2,7 +2,7 @@ use assyst_common::assyst::ThreadSafeAssyst;
 use assyst_common::config::CONFIG;
 use assyst_common::util::discord::get_guild_owner;
 use assyst_common::BOT_ID;
-use assyst_database::model::command_restriction::{CommandRestriction, RestrictedFeature};
+use assyst_database::model::command_restriction::CommandRestriction;
 use assyst_database::model::global_blacklist::GlobalBlacklist;
 use assyst_database::model::prefix::Prefix;
 use twilight_model::channel::Message;
@@ -56,7 +56,9 @@ pub async fn preprocess(assyst: ThreadSafeAssyst, message: Message) -> Result<Pr
     // 3. no prefix/guild prefix (depending on context)
     let is_in_dm = message.guild_id.is_none();
 
-    let parsed_prefix = if let Some(ref r#override) = CONFIG.dev.prefix_override {
+    let parsed_prefix = if let Some(ref r#override) = CONFIG.dev.prefix_override
+        && !r#override.is_empty()
+    {
         r#override.clone()
     } else if let Some(mention_prefix) = message_mention_prefix(&message.content) {
         mention_prefix
@@ -64,7 +66,7 @@ pub async fn preprocess(assyst: ThreadSafeAssyst, message: Message) -> Result<Pr
         "".to_owned()
     } else {
         let guild_id = message.guild_id.unwrap().get();
-        let guild_prefix = Prefix::get(&mut assyst.lock().await.database_handler, guild_id).await;
+        let guild_prefix = Prefix::get(&mut *assyst.database_handler.write().await, guild_id).await;
         match guild_prefix {
             // found prefix in db/cache
             Ok(Some(p)) => p.prefix.clone(),
@@ -75,7 +77,7 @@ pub async fn preprocess(assyst: ThreadSafeAssyst, message: Message) -> Result<Pr
                 };
 
                 default_prefix
-                    .set(&mut assyst.lock().await.database_handler, guild_id)
+                    .set(&mut *assyst.database_handler.write().await, guild_id)
                     .await
                     .map_err(|e| PreParseError::Failure(format!("failed to set default prefix: {}", e.to_string())))?;
 
@@ -98,7 +100,7 @@ pub async fn preprocess(assyst: ThreadSafeAssyst, message: Message) -> Result<Pr
     // check blacklist second to prevent large database spam
     // from all incoming messages
     let blacklisted =
-        GlobalBlacklist::is_blacklisted(&assyst.lock().await.database_handler, message.author.id.get()).await;
+        GlobalBlacklist::is_blacklisted(&*assyst.database_handler.read().await, message.author.id.get()).await;
     match blacklisted {
         Ok(false) => {
             return Err(PreParseError::UserGloballyBlacklisted(message.author.id.get()));
@@ -116,7 +118,7 @@ pub async fn preprocess(assyst: ThreadSafeAssyst, message: Message) -> Result<Pr
     // restriction) - server owner bypasses all restrictions so we check if user owns the server here
     let guild_owner = if !is_in_dm {
         Some(
-            get_guild_owner(&assyst.lock().await.http_client, message.guild_id.unwrap().get())
+            get_guild_owner(&assyst.http_client, message.guild_id.unwrap().get())
                 .await
                 .map_err(|x| PreParseError::Failure(format!("failed to get guild owner: {}", x.to_string())))?,
         )
@@ -127,7 +129,7 @@ pub async fn preprocess(assyst: ThreadSafeAssyst, message: Message) -> Result<Pr
     let guild_command_restrictions = if !is_in_dm {
         Some(
             CommandRestriction::get_guild_command_restrictions(
-                &assyst.lock().await.database_handler,
+                &*assyst.database_handler.read().await,
                 message.guild_id.unwrap().get(),
             )
             .await
