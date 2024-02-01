@@ -7,7 +7,7 @@ use std::path::Path;
 use std::sync::Arc;
 use tokio::sync::mpsc::unbounded_channel;
 use tokio::sync::Mutex;
-use tracing::{debug, info, trace};
+use tracing::{debug, info, trace, warn};
 use twilight_gateway::stream::{create_recommended, ShardMessageStream};
 use twilight_gateway::{Config as GatewayConfig, Intents, Message};
 use twilight_http::Client as HttpClient;
@@ -89,6 +89,7 @@ async fn main() {
                     let data = ok_or_break!(rx.recv().await.ok_or(()));
                     ok_or_break!(stream.write_string(data).await);
                 }
+                warn!("Connection to assyst-core lost, awaiting reconnection");
             }
         }
     });
