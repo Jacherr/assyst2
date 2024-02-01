@@ -7,7 +7,7 @@ use assyst_common::pipe::{Pipe, GATEWAY_PIPE_PATH};
 use assyst_common::{ok_or_break, tracing_init};
 use gateway_handler::handle_raw_event;
 use gateway_handler::incoming_event::IncomingEvent;
-use tracing::{info, trace};
+use tracing::{info, trace, warn};
 use twilight_gateway::EventTypeFlags;
 
 mod gateway_handler;
@@ -69,6 +69,8 @@ async fn main() {
                 }
             }
         }
+
+        warn!("Connection to assyst-gateway lost, attempting reconnection");
     }
 }
 
