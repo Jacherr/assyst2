@@ -40,8 +40,8 @@ async fn main() {
         ))
         .await;*/
 
+    info!("Connecting to assyst-gateway pipe at {}", GATEWAY_PIPE_PATH);
     loop {
-        info!("Connecting to assyst-gateway pipe at {}", GATEWAY_PIPE_PATH);
         let mut gateway_pipe = Pipe::poll_connect(GATEWAY_PIPE_PATH, None).await.unwrap();
         info!("Connected to assyst-gateway pipe at {}", GATEWAY_PIPE_PATH);
 

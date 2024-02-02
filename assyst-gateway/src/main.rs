@@ -81,8 +81,8 @@ async fn main() {
 
     // pipe thread
     tokio::spawn(async move {
+        info!("Awaiting connection from assyst-core");
         loop {
-            info!("Awaiting connection from assyst-core");
             if let Ok(mut stream) = core_pipe_server.accept_connection().await {
                 info!("Connection received from assyst-core");
                 loop {
