@@ -37,7 +37,11 @@ use crate::ThreadSafeAssyst;
 ///
 /// Once all steps are complete, a Command is returned, ready for execution.
 pub async fn parse_message_into_command(assyst: ThreadSafeAssyst, message: Message) -> Result<(), ParseError> {
-    let preprocess = preprocess(assyst.clone(), message).await?;
+    let preprocess = preprocess(assyst.clone(), &message).await?;
+    // commands can theoretically have spaces in their name so we need to try and identify the
+    // set of 'words' in source text to associate with a command name (essentially finding the divide
+    // between command name and command arguments)
+    let command_text = &message.content[preprocess.prefix.len()..];
 
     Ok(())
 }

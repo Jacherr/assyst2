@@ -10,6 +10,7 @@ use gateway_handler::incoming_event::IncomingEvent;
 use tracing::{info, trace, warn};
 use twilight_gateway::EventTypeFlags;
 
+mod cache_handler;
 mod gateway_handler;
 mod tasks;
 

@@ -10,10 +10,15 @@ use twilight_model::channel::Message;
 
 use crate::gateway_handler::message_parser::error::PreParseError;
 
+/// The resultant values from the preprocessing operation. Used later in parsing and execution.
 pub struct PreprocessResult {
+    /// The command prefix used in this message.
     pub prefix: String,
+    /// All command restrictions for the guild the command was ran in, if any.
     pub guild_command_restrictions: Option<Vec<CommandRestriction>>,
+    /// The owner of the guild, if the command was ran in a guild.
     pub guild_owner: Option<u64>,
+    /// If the command was ran in the bot's DMs.
     pub is_in_dm: bool,
 }
 
@@ -115,7 +120,7 @@ pub async fn user_globally_blacklisted(assyst: ThreadSafeAssyst, id: u64) -> Res
 /// - Checking that the message starts with the correct prefix for the context, and returning any
 ///   identified prefix.
 /// - Fetching all command restrictions for handling later once the command has been determined.
-pub async fn preprocess(assyst: ThreadSafeAssyst, message: Message) -> Result<PreprocessResult, PreParseError> {
+pub async fn preprocess(assyst: ThreadSafeAssyst, message: &Message) -> Result<PreprocessResult, PreParseError> {
     // check author is not bot or webhook
     if message.author.bot || message.webhook_id.is_some() {
         return Err(PreParseError::UserIsBotOrWebhook(Some(message.author.id.get())));
@@ -127,7 +132,7 @@ pub async fn preprocess(assyst: ThreadSafeAssyst, message: Message) -> Result<Pr
     }
 
     let is_in_dm = message.guild_id.is_none();
-    let parsed_prefix = parse_prefix(assyst.clone(), &message, is_in_dm).await?;
+    let parsed_prefix = parse_prefix(assyst.clone(), message, is_in_dm).await?;
 
     // check blacklist second to prevent large database spam
     // from all incoming messages

@@ -1,6 +1,6 @@
 pub mod ansi;
 pub mod assyst;
-pub mod command;
+pub mod cache;
 pub mod config;
 pub mod macros;
 pub mod pipe;
