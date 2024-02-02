@@ -60,7 +60,9 @@ pub struct Prefixes {
 }
 
 #[derive(Deserialize)]
-pub struct LoggingWebhooks {}
+pub struct LoggingWebhooks {
+    pub panic: Option<String>,
+}
 
 #[derive(Deserialize)]
 pub struct DevAttributes {

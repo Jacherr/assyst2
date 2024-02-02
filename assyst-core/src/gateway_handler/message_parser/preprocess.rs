@@ -5,6 +5,7 @@ use assyst_common::BOT_ID;
 use assyst_database::model::command_restriction::CommandRestriction;
 use assyst_database::model::global_blacklist::GlobalBlacklist;
 use assyst_database::model::prefix::Prefix;
+use twilight_model::channel::message::MessageType;
 use twilight_model::channel::Message;
 
 use crate::gateway_handler::message_parser::error::PreParseError;
@@ -30,32 +31,23 @@ pub fn message_mention_prefix(content: &str) -> Option<String> {
     }
 }
 
-/// Initial Discord message processing.
-/// Checks the validity of the message before performing any kind of parsing.
+/// Determine which prefixes apply to this message.
 ///
-/// This includes:
-/// - Checking if the author is globally blacklisted from running commands,
-/// - Checking if the author is blacklisted in the guild from running commands,
-/// - Checking that the message is not sent by a bot or a webhook,
-/// - Checking that the message starts with the correct prefix for the context, and returning any
-///   identified prefix.
-/// - Fetching all command restrictions for handling later once the command has been determined.
-pub async fn preprocess(assyst: ThreadSafeAssyst, message: Message) -> Result<PreprocessResult, PreParseError> {
-    if message.author.bot || message.webhook_id.is_some() {
-        return Err(PreParseError::UserIsBotOrWebhook(Some(message.author.id.get())));
-    }
-
-    // determine which prefixes apply to this message
-    // if in dm: no prefix, mention, or prefix override
-    // if in guild: guild prefix, mention, or prefix override
-    // if prefix override: "normal" prefix ignored
-    //
-    // prefix precendence:
-    // 1. prefix override (disabling other prefixes)
-    // 2. mention prefix
-    // 3. no prefix/guild prefix (depending on context)
-    let is_in_dm = message.guild_id.is_none();
-
+/// If in DM: no prefix, mention, or prefix override
+///
+/// If in guild: guild prefix, mention, or prefix override
+///
+/// If prefix override: "normal" prefix ignored
+///
+/// Prefix precendence:
+/// 1. prefix override (disabling other prefixes)
+/// 2. mention prefix
+/// 3. no prefix/guild prefix (depending on context)
+pub async fn parse_prefix(
+    assyst: ThreadSafeAssyst,
+    message: &Message,
+    is_in_dm: bool,
+) -> Result<String, PreParseError> {
     let parsed_prefix = if let Some(ref r#override) = CONFIG.dev.prefix_override
         && !r#override.is_empty()
     {
@@ -95,23 +87,52 @@ pub async fn preprocess(assyst: ThreadSafeAssyst, message: Message) -> Result<Pr
 
     if !message.content.starts_with(&parsed_prefix) {
         return Err(PreParseError::MessageNotPrefixed(parsed_prefix));
+    };
+
+    Ok(parsed_prefix)
+}
+
+/// Checks if a user is globally blacklisted from the bot.
+pub async fn user_globally_blacklisted(assyst: ThreadSafeAssyst, id: u64) -> Result<bool, PreParseError> {
+    let blacklisted = GlobalBlacklist::is_blacklisted(&*assyst.database_handler.read().await, id).await;
+    match blacklisted {
+        Ok(x) => Ok(x),
+        Err(error) => Err(PreParseError::Failure(format!(
+            "failed to fetch global blacklist: {}",
+            error.to_string()
+        ))),
     }
+}
+
+/// Initial Discord message processing.
+/// Checks the validity of the message before performing any kind of parsing.
+///
+/// This includes:
+/// - Checking if the author is globally blacklisted from running commands,
+/// - Checking if the message type is relavant,
+/// - Checking if the author is blacklisted in the guild from running commands,
+/// - Checking that the message is not sent by a bot or a webhook,
+/// - Checking that the message starts with the correct prefix for the context, and returning any
+///   identified prefix.
+/// - Fetching all command restrictions for handling later once the command has been determined.
+pub async fn preprocess(assyst: ThreadSafeAssyst, message: Message) -> Result<PreprocessResult, PreParseError> {
+    // check author is not bot or webhook
+    if message.author.bot || message.webhook_id.is_some() {
+        return Err(PreParseError::UserIsBotOrWebhook(Some(message.author.id.get())));
+    }
+
+    let relevant_message_kinds = &[MessageType::Regular, MessageType::Reply];
+    if !relevant_message_kinds.contains(&message.kind) {
+        return Err(PreParseError::UnsupportedMessageKind(message.kind));
+    }
+
+    let is_in_dm = message.guild_id.is_none();
+    let parsed_prefix = parse_prefix(assyst.clone(), &message, is_in_dm).await?;
 
     // check blacklist second to prevent large database spam
     // from all incoming messages
-    let blacklisted =
-        GlobalBlacklist::is_blacklisted(&*assyst.database_handler.read().await, message.author.id.get()).await;
-    match blacklisted {
-        Ok(false) => {
-            return Err(PreParseError::UserGloballyBlacklisted(message.author.id.get()));
-        },
-        Err(error) => {
-            return Err(PreParseError::Failure(format!(
-                "failed to fetch global blacklist: {}",
-                error.to_string()
-            )));
-        },
-        _ => (),
+    if user_globally_blacklisted(assyst.clone(), message.author.id.get()).await? {
+        return Err(PreParseError::UserGloballyBlacklisted(message.author.id.get()));
     }
 
     // fetch guild command restrictions and check the ones we can (any that have "all" feature

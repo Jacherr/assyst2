@@ -1,5 +1,7 @@
 use std::fmt::Display;
 
+use twilight_model::channel::message::MessageType;
+
 pub trait GetErrorSeverity {
     fn get_severity(&self) -> ErrorSeverity;
 }
@@ -13,6 +15,8 @@ pub enum PreParseError {
     UserGloballyBlacklisted(u64),
     /// Invocating user is a bot or webhook.
     UserIsBotOrWebhook(Option<u64>),
+    /// The kind of message is not supported, e.g., a user join system message.
+    UnsupportedMessageKind(MessageType),
     /// Other unknown failure. Unexpected error with high severity.
     Failure(String),
 }
@@ -27,6 +31,9 @@ impl Display for PreParseError {
             },
             Self::UserIsBotOrWebhook(id) => {
                 write!(f, "User is a bot or webhook ({})", id.unwrap_or(0))
+            },
+            Self::UnsupportedMessageKind(kind) => {
+                write!(f, "Unsupported message kind ({:?})", kind)
             },
             Self::Failure(message) => {
                 write!(f, "Preprocessor failure: {}", message)
