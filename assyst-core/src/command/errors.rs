@@ -7,6 +7,30 @@ use twilight_model::channel::message::sticker::StickerFormatType;
 use crate::downloader::DownloadError;
 use crate::gateway_handler::message_parser::error::{ErrorSeverity, GetErrorSeverity};
 
+#[derive(Debug)]
+pub enum ExecutionError {
+    Parse(TagParseError),
+    Command(anyhow::Error),
+}
+
+impl GetErrorSeverity for ExecutionError {
+    fn get_severity(&self) -> ErrorSeverity {
+        // Even though tag parse errors can define themselves if they're high or low severity,
+        // at the end of execution (here) we always want to report errors back if they got here,
+        // so treat them as high severity
+        ErrorSeverity::High
+    }
+}
+impl Display for ExecutionError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ExecutionError::Parse(p) => p.fmt(f),
+            ExecutionError::Command(c) => c.fmt(f),
+        }
+    }
+}
+impl std::error::Error for ExecutionError {}
+
 /// No arguments left
 pub struct ArgsExhausted;
 

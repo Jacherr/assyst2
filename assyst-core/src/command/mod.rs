@@ -1,4 +1,31 @@
-use std::fmt::Display;
+//! The command system.
+//!
+//! The key things that make up the command system are:
+//!
+//! - The [`Command`] trait: Defines the `execute` method which executes the actual command.
+//!
+//!   This is relatively low-level and only gives you a `CommandCtxt`,
+//!   from which you manually have to extract args and attachments.
+//!
+//!   Normally, you don't want or need to implement this trait manually.
+//!   Just write the function and annotate it with `#[command]`, which generates a type
+//!   that implements this trait (and delegates to the annotated function).
+//!   See its documentation for how that works.
+//!
+//!   This is used as a trait object (`&dyn Command`), because it is stored along with all other
+//!   commands in a map, in registry.rs.
+//!
+//! - The [`arguments::ParseArgument`] trait: Implemented for types that can be parsed from
+//!   arguments.
+//!
+//!   These types also compose well: for example, `Option<T>` implements `ParseArgument` if
+//!   `T: ParseArgument`, which allows recovering from low-severity errors in `T`'s parser (e.g. if
+//!   the argument is not present, it will be set to `None`).
+//!
+//! - The registry: registry.rs is responsible for storing a map of `&str -> &dyn Command`. The
+//!   entry point (and the only relevant for the outside) is [`registry::find_command_by_name`],
+//!   which does the mapping mentioned above.
+
 use std::future::Future;
 use std::str::SplitAsciiWhitespace;
 use std::time::Duration;
@@ -9,9 +36,7 @@ use twilight_model::channel::message::sticker::MessageSticker;
 use twilight_model::channel::message::Embed;
 use twilight_model::channel::{Attachment, Message};
 
-use crate::gateway_handler::message_parser::error::{ErrorSeverity, GetErrorSeverity};
-
-use self::errors::{ArgsExhausted, TagParseError};
+use self::errors::{ArgsExhausted, ExecutionError};
 
 pub mod arguments;
 pub mod errors;
@@ -29,36 +54,12 @@ pub enum Availability {
 }
 
 pub struct CommandMetadata {
-    name: &'static str,
-    aliases: &'static [&'static str],
-    description: &'static str,
-    cooldown: Duration,
-    access: Availability,
+    pub name: &'static str,
+    pub aliases: &'static [&'static str],
+    pub description: &'static str,
+    pub cooldown: Duration,
+    pub access: Availability,
 }
-
-#[derive(Debug)]
-pub enum ExecutionError {
-    Parse(TagParseError),
-    Command(anyhow::Error),
-}
-
-impl GetErrorSeverity for ExecutionError {
-    fn get_severity(&self) -> ErrorSeverity {
-        // Even though tag parse errors can define themselves if they're high or low severity,
-        // at the end of execution (here) we always want to report errors back if they got here,
-        // so treat them as high severity
-        ErrorSeverity::High
-    }
-}
-impl Display for ExecutionError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ExecutionError::Parse(p) => p.fmt(f),
-            ExecutionError::Command(c) => c.fmt(f),
-        }
-    }
-}
-impl std::error::Error for ExecutionError {}
 
 /// A command that can be executed.
 ///

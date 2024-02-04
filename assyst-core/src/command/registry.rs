@@ -1,6 +1,10 @@
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
+use tracing::info;
+
+use crate::command::CommandMetadata;
+
 use super::{misc, TCommand};
 
 macro_rules! declare_commands {
@@ -20,9 +24,10 @@ fn get_or_init_commands() -> &'static HashMap<&'static str, TCommand> {
         let mut map = HashMap::new();
 
         for &command in RAW_COMMANDS {
-            let meta = command.metadata();
-            map.insert(meta.name, command);
-            for alias in meta.aliases {
+            let &CommandMetadata { name, aliases, .. } = command.metadata();
+            info!("Registering command {} (aliases={:?})", name, aliases);
+            map.insert(name, command);
+            for alias in aliases {
                 map.insert(alias, command);
             }
         }

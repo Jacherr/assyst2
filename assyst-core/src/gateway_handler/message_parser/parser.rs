@@ -48,9 +48,11 @@ pub async fn parse_message_into_command(
     // between command name and command arguments)
     let command_text = &message.content[preprocess.prefix.len()..];
 
-    let Some((command, args)) = command_text.split_once(' ') else {
+    let mut args = command_text.split_ascii_whitespace();
+    let Some(command) = args.next() else {
         return Ok(None);
     };
+    let args = args.remainder().unwrap_or("");
     let Some(command) = find_command_by_name(command) else {
         return Ok(None);
     };

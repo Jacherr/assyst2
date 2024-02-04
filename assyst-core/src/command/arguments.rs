@@ -60,7 +60,6 @@ impl ParseArgument for Word {
 }
 
 /// The rest of a message as an argument. This should be the last argument if used.
-// TODO(y21): assert this in the proc macro
 #[derive(Debug)]
 pub struct Rest(pub String);
 
