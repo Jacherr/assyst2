@@ -1,9 +1,9 @@
 use assyst_common::config::CONFIG;
+use assyst_common::ok_or_break;
 use assyst_common::pipe::pipe_server::PipeServer;
 use assyst_common::pipe::GATEWAY_PIPE_PATH;
-use assyst_common::{ok_or_break, tracing_init};
+use assyst_common::util::tracing_init;
 use futures_util::StreamExt;
-use std::path::Path;
 use std::sync::Arc;
 use tokio::sync::mpsc::unbounded_channel;
 use tokio::sync::Mutex;
@@ -48,13 +48,7 @@ async fn main() {
         panic!("Assyst is supported on Linux only.")
     }
 
-    tracing_init!();
-
-    info!("Initialising");
-    if Path::new(GATEWAY_PIPE_PATH).exists() {
-        info!("Deleting old pipe file {}", GATEWAY_PIPE_PATH);
-        std::fs::remove_file(GATEWAY_PIPE_PATH).unwrap();
-    }
+    tracing_init();
 
     let http_client = HttpClient::new(CONFIG.authentication.discord_token.clone());
 

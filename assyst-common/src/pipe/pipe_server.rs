@@ -1,4 +1,7 @@
+use std::path::Path;
+
 use tokio::net::UnixListener;
+use tracing::info;
 
 use super::Pipe;
 
@@ -10,6 +13,11 @@ pub struct PipeServer {
 impl PipeServer {
     /// Listen on a specific file descriptor.
     pub fn listen(pipe_location: &str) -> anyhow::Result<PipeServer> {
+        if Path::new(pipe_location).exists() {
+            info!("Deleting old pipe file {}", pipe_location);
+            std::fs::remove_file(pipe_location).unwrap();
+        }
+
         let listener = UnixListener::bind(pipe_location)?;
         Ok(PipeServer { listener })
     }
