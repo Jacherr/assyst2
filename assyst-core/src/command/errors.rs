@@ -29,6 +29,7 @@ pub enum TagParseError {
     NoSticker,
     NoImageInHistory,
     NoImageFound,
+    MediaDownloadFail,
 }
 
 impl GetErrorSeverity for TagParseError {
@@ -74,6 +75,7 @@ impl Display for TagParseError {
             TagParseError::NoImageFound => {
                 f.write_str("an image was expected as an argument, but no image could be found")
             },
+            TagParseError::MediaDownloadFail => f.write_str("failed to download media content"),
         }
     }
 }

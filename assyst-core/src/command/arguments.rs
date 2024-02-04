@@ -14,13 +14,23 @@ use super::CommandCtxt;
 
 pub trait ParseArgument: Sized {
     /// Parses `Self`, given a command.
-    async fn parse(ctxt: &mut super::CommandCtxt<'_>) -> Result<Self, TagParseError>;
+    async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError>;
 }
 
 impl ParseArgument for u64 {
-    async fn parse(ctxt: &mut super::CommandCtxt<'_>) -> Result<Self, TagParseError> {
+    async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
         let word = ctxt.next_word()?;
         Ok(word.parse()?)
+    }
+}
+
+impl<T: ParseArgument> ParseArgument for Option<T> {
+    async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
+        match T::parse(ctxt).await {
+            Ok(v) => Ok(Some(v)),
+            Err(err) if err.get_severity() == ErrorSeverity::High => Err(err),
+            _ => Ok(None),
+        }
     }
 }
 
@@ -31,7 +41,7 @@ pub struct Time {
 }
 
 impl ParseArgument for Time {
-    async fn parse(ctxt: &mut super::CommandCtxt<'_>) -> Result<Self, TagParseError> {
+    async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
         let word = ctxt.next_word()?;
         let millis = parse_to_millis(word)?;
 
@@ -44,7 +54,7 @@ impl ParseArgument for Time {
 pub struct Word(pub String);
 
 impl ParseArgument for Word {
-    async fn parse(ctxt: &mut super::CommandCtxt<'_>) -> Result<Self, TagParseError> {
+    async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
         Ok(Self(ctxt.next_word()?.to_owned()))
     }
 }
@@ -55,7 +65,7 @@ impl ParseArgument for Word {
 pub struct Rest(pub String);
 
 impl ParseArgument for Rest {
-    async fn parse(ctxt: &mut super::CommandCtxt<'_>) -> Result<Self, TagParseError> {
+    async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
         Ok(Self(ctxt.rest()?.to_owned()))
     }
 }
@@ -229,7 +239,7 @@ impl ImageUrl {
 }
 
 impl ParseArgument for ImageUrl {
-    async fn parse(ctxt: &mut super::CommandCtxt<'_>) -> Result<Self, TagParseError> {
+    async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
         async fn combined_parsers(ctxt: &mut CommandCtxt<'_>) -> Result<ImageUrl, TagParseError> {
             macro_rules! handle {
                 ($v:expr) => {
@@ -258,7 +268,7 @@ impl ParseArgument for ImageUrl {
         if url.starts_with("https://tenor.com/view") {
             let page = ctxt.assyst().reqwest_client.get(&url).send().await?.text().await?;
 
-            let gif_url = regexes::TENOR_GIF.find(&page).ok_or(TagParseError::ArgsExhausted)?; // TODO: MediaDownloadFail
+            let gif_url = regexes::TENOR_GIF.find(&page).ok_or(TagParseError::MediaDownloadFail)?;
             url = gif_url.as_str().to_owned();
         }
 
@@ -269,7 +279,7 @@ impl ParseArgument for ImageUrl {
 pub struct Image(pub Vec<u8>);
 
 impl ParseArgument for Image {
-    async fn parse(ctxt: &mut super::CommandCtxt<'_>) -> Result<Self, TagParseError> {
+    async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
         let ImageUrl(url) = ImageUrl::parse(ctxt).await?;
 
         let data = downloader::download_content(ctxt.assyst(), &url, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES).await?;

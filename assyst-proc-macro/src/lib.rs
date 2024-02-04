@@ -1,11 +1,13 @@
+#![feature(let_chains)]
+
 use std::collections::HashMap;
 
 use proc_macro::TokenStream;
 use proc_macro2::Span;
-use quote::{quote, ToTokens};
+use quote::{quote, quote_spanned, ToTokens};
 use syn::punctuated::Punctuated;
 use syn::token::Bracket;
-use syn::{parse_macro_input, Expr, ExprArray, ExprLit, FnArg, Ident, Item, Lit, LitStr, Meta, Pat, PatType, Token};
+use syn::{parse_macro_input, Expr, ExprArray, ExprLit, FnArg, Ident, Item, Lit, LitStr, Meta, Pat, PatType, Token, Type};
 
 struct CommandAttributes(syn::punctuated::Punctuated<syn::Meta, Token![,]>);
 
@@ -75,10 +77,21 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
     // but this gives us a more useful error
     verify_input_is_ctxt(&item.sig.inputs);
 
+    // used for sanity checking that `Rest` only ever appears as the last type
+    let mut has_rest_ty = None;
+
     for (index, input) in item.sig.inputs.iter().skip(1).enumerate() {
+        if let Some(span) = has_rest_ty {
+            return quote_spanned!(span => compile_error!("`Rest` must be the last argument");).into();
+        }
+
         match input {
             FnArg::Receiver(_) => panic!("#[command] cannot have `self` arguments"),
             FnArg::Typed(PatType { ty, .. }) => {
+                if let Some(span) = is_rest_type(ty) {
+                    has_rest_ty = Some(span);
+                }
+
                 parse_idents.push(Ident::new(&format!("p{index}"), Span::call_site()));
                 parse_exprs.push(quote!(<#ty>::parse(&mut ctxt).await));
             },
@@ -125,13 +138,23 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
     output.into()
 }
 
+fn is_rest_type(ty: &Type) -> Option<Span> {
+    if let Type::Path(p) = ty
+        && let Some(ident) = p.path.get_ident()
+        && ident.to_string() == "Rest"
+    {
+        Some(ident.span())
+    } else {
+        None
+    }
+}
+
 fn verify_input_is_ctxt(inputs: &Punctuated<FnArg, Token![,]>) {
-    if let Some(FnArg::Typed(PatType { pat, .. })) = inputs.first() {
-        if let Pat::Ident(ident) = &**pat {
-            if ident.ident == "ctxt" {
-                return;
-            }
-        }
+    if let Some(FnArg::Typed(PatType { pat, .. })) = inputs.first()
+        && let Pat::Ident(ident) = &**pat
+        && ident.ident == "ctxt"
+    {
+        return;
     }
 
     panic!("first parameter of a #[command] annotated function should be the command context, with the name `ctxt`");
