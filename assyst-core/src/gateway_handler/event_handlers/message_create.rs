@@ -25,8 +25,8 @@ pub async fn handle(assyst: ThreadSafeAssyst, MessageCreate(message): MessageCre
 
             if let Err(err) = cmd.execute(ctxt).await {
                 match err.get_severity() {
-                    ErrorSeverity::Low => error!("{err:?}"),
-                    ErrorSeverity::High => debug!("{err:?}"),
+                    ErrorSeverity::Low => debug!("{err:?}"),
+                    ErrorSeverity::High => error!("{err:?}"),
                 }
             }
         },
