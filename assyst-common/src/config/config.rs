@@ -44,10 +44,10 @@ impl Database {
         host.push("###");
 
         let mut port = self.port.to_string();
-        port.replace_range(..3, "#");
+        port.replace_range(..3, "...");
 
         format!(
-            "postgres://{}{}:{}/{}",
+            "postgres://{}@{}:{}/{}",
             self.username,
             &host.join("."),
             port,

@@ -2,7 +2,7 @@ use prometheus::{register_int_gauge_vec, IntGaugeVec};
 use tracing::info;
 
 use crate::assyst::ThreadSafeAssyst;
-use crate::util::{get_memory_usage_for, get_own_memory_usage, pid_of};
+use crate::util::process::{get_memory_usage_for, get_own_memory_usage, pid_of};
 
 /// Gauges for all metrics tracked by Prometheus.
 pub struct Prometheus {
