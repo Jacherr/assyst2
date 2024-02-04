@@ -1,4 +1,4 @@
-#![feature(let_chains)]
+#![feature(let_chains, str_split_whitespace_remainder)]
 
 use std::sync::Arc;
 
@@ -11,6 +11,8 @@ use tracing::{info, trace, warn};
 use twilight_gateway::EventTypeFlags;
 
 mod cache_handler;
+mod command;
+mod downloader;
 mod gateway_handler;
 mod tasks;
 

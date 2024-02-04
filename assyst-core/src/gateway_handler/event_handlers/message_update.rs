@@ -1,4 +1,3 @@
-use tracing::debug;
 use twilight_model::channel::message::MessageType;
 use twilight_model::channel::Message;
 use twilight_model::gateway::payload::incoming::MessageUpdate;
@@ -34,7 +33,7 @@ fn convert_message_update_to_message(event: MessageUpdate) -> Option<Message> {
     let pinned = event.pinned.unwrap_or_default();
     let timestamp = event
         .timestamp
-        .unwrap_or(Timestamp::parse("1970-01-01T01:01:01+00:00").unwrap());
+        .unwrap_or_else(|| Timestamp::parse("1970-01-01T01:01:01+00:00").unwrap());
     Some(Message {
         application_id: None,
         interaction: None,

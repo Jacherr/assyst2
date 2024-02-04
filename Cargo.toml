@@ -11,5 +11,6 @@ members = [
     "assyst-tag",
     "assyst-webserver",
     "assyst-database",
+    "assyst-proc-macro",
 ]
 resolver = "2"

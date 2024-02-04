@@ -1,6 +1,6 @@
 [urls]
-# Proxy URL for untrusted requests. Leave blank for no proxying.
-proxy = ""
+# Proxy URLs for untrusted requests. Leave blank for no proxying.
+proxy = []
 
 [authentication]
 # Token to authenticate with Discord.

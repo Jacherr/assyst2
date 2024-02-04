@@ -3,7 +3,7 @@ use crate::DatabaseHandler;
 pub struct GlobalBlacklist {}
 impl GlobalBlacklist {
     pub async fn is_blacklisted(handler: &DatabaseHandler, user_id: u64) -> anyhow::Result<bool> {
-        let query = r#"SELECT user_id FROM blacklist"#;
+        let query = r#"SELECT user_id FROM blacklist WHERE user_id = $1"#;
 
         match sqlx::query_as::<_, (i64,)>(query)
             .bind(user_id as i64)

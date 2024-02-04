@@ -18,6 +18,9 @@ Assyst2 is split into a number of separate crates, as described below.
 - assyst-database: Interfaces with PostgreSQL, for database purposes.
 - assyst-webserver: Web server designed to handle webhooking, such as vote processing for Discord bot list websites.
 - assyst-logger: Logger crate with functions designed to provide a standardised logging format.
+- assyst-proc-macro: General purpose [procedural macros] <sub>(currently just a macro for command setup)</sub>
+
+[Procedural macros]: https://doc.rust-lang.org/reference/procedural-macros.html
 
 For more information on each crate, refer to the README.md file for the crate.
 
