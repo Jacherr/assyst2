@@ -1,0 +1,153 @@
+use std::collections::HashMap;
+
+use proc_macro::TokenStream;
+use proc_macro2::Span;
+use quote::{quote, ToTokens};
+use syn::punctuated::Punctuated;
+use syn::token::Bracket;
+use syn::{parse_macro_input, Expr, ExprArray, ExprLit, FnArg, Ident, Item, Lit, LitStr, Meta, Pat, PatType, Token};
+
+struct CommandAttributes(syn::punctuated::Punctuated<syn::Meta, Token![,]>);
+
+impl syn::parse::Parse for CommandAttributes {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        Ok(Self(input.parse_terminated(syn::Meta::parse, Token![,])?))
+    }
+}
+
+/// A proc macro applied to functions that will create a type that implements the `Command` trait.
+/// In its `execute` method, it will call `parse` on all the parameter's types and finally forward
+/// them to the annotated function:
+///
+/// ```ignore
+/// #[command]
+/// fn remind(ctxt: &mut CommandCtxt<'_>, time: Time, rest: Rest) {}
+/// ```
+///
+/// becomes roughly...
+///
+/// ```ignore
+/// struct remind_command;
+///
+/// impl Command for remind_command {
+///     fn execute(&mut self, ctxt: &mut CommandCtxt<'_>) {
+///         let p1 = Time::parse(ctxt)?;
+///         let p2 = Rest::parse(ctxt)?;
+///         remind(p1, p2)
+///     }
+/// }
+///
+/// fn remind(ctxt: &mut CommandCtxt<'_>, time: Time, rest: Rest) {}
+/// ```
+#[proc_macro_attribute]
+pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
+    let CommandAttributes(attrs) = syn::parse_macro_input!(attrs as CommandAttributes);
+
+    let Item::Fn(item) = parse_macro_input!(func as syn::Item) else {
+        panic!("#[command] applied to non-function")
+    };
+
+    let fn_name = &item.sig.ident;
+    let struct_name = Ident::new(&format!("{}_command", item.sig.ident), Span::call_site());
+
+    let mut fields = HashMap::new();
+
+    for attr in attrs {
+        match attr {
+            Meta::NameValue(meta) => {
+                let ident = meta
+                    .path
+                    .get_ident()
+                    .expect("#[command] attribute key should be an identifier");
+
+                fields.insert(ident.to_string(), meta.value);
+            },
+            _ => {},
+        }
+    }
+
+    let mut parse_idents = Vec::new();
+    let mut parse_exprs = Vec::new();
+
+    // sanity check that the first parameter is the `ctxt`, and exclude it from the list of arguments
+    // it wouldn't compile anyway since `CommandCtxt` can't be parsed as an argument (doesn't implement
+    // the trait)
+    // but this gives us a more useful error
+    verify_input_is_ctxt(&item.sig.inputs);
+
+    for (index, input) in item.sig.inputs.iter().skip(1).enumerate() {
+        match input {
+            FnArg::Receiver(_) => panic!("#[command] cannot have `self` arguments"),
+            FnArg::Typed(PatType { ty, .. }) => {
+                parse_idents.push(Ident::new(&format!("p{index}"), Span::call_site()));
+                parse_exprs.push(quote!(<#ty>::parse(&mut ctxt).await));
+            },
+        }
+    }
+
+    let name = fields.remove("name").unwrap_or_else(|| str_expr(&fn_name.to_string()));
+    let aliases = fields.remove("aliases").unwrap_or_else(empty_array_expr);
+    let description = fields.remove("description").expect("missing description");
+    let cooldown = fields.remove("cooldown").expect("missing cooldown");
+    let access = fields.remove("access").expect("missing access");
+
+    let following = quote::quote! {
+        pub struct #struct_name;
+
+        #[::async_trait::async_trait]
+        impl crate::command::Command for #struct_name {
+            fn metadata(&self) -> &'static crate::command::CommandMetadata {
+                static META: crate::command::CommandMetadata = crate::command::CommandMetadata {
+                    description: #description,
+                    cooldown: #cooldown,
+                    access: #access,
+                    name: #name,
+                    aliases: &#aliases
+                };
+                &META
+            }
+
+            async fn execute(&self, mut ctxt: crate::command::CommandCtxt<'_>) -> Result<(), crate::command::ExecutionError> {
+                use crate::command::arguments::ParseArgument;
+
+                #(
+                    let #parse_idents = #parse_exprs.map_err(crate::command::ExecutionError::Parse)?;
+                )*
+
+                #fn_name(ctxt, #(#parse_idents),*).map_err(crate::command::ExecutionError::Command)
+            }
+        }
+    };
+
+    let mut output = item.into_token_stream();
+    output.extend(following);
+
+    output.into()
+}
+
+fn verify_input_is_ctxt(inputs: &Punctuated<FnArg, Token![,]>) {
+    if let Some(FnArg::Typed(PatType { pat, .. })) = inputs.first() {
+        if let Pat::Ident(ident) = &**pat {
+            if ident.ident == "ctxt" {
+                return;
+            }
+        }
+    }
+
+    panic!("first parameter of a #[command] annotated function should be the command context, with the name `ctxt`");
+}
+
+fn str_expr(s: &str) -> Expr {
+    Expr::Lit(ExprLit {
+        attrs: Vec::new(),
+        lit: Lit::Str(LitStr::new(s, Span::call_site()))
+    })
+}
+
+fn empty_array_expr() -> Expr {
+    Expr::Array(ExprArray {
+        attrs: Default::default(),
+        bracket_token: Bracket::default(),
+        elems: Default::default()
+    })
+}

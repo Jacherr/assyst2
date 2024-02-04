@@ -13,7 +13,9 @@ pub struct AssystConfig {
 }
 
 #[derive(Deserialize)]
-pub struct Urls {}
+pub struct Urls {
+    pub proxy: Vec<String>,
+}
 
 #[derive(Deserialize)]
 pub struct Authentication {

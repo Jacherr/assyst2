@@ -26,6 +26,8 @@ pub struct Assyst {
     pub tasks: Mutex<Vec<Task>>,
     /// Prometheus handler for graph metrics.
     pub prometheus: Mutex<Prometheus>,
+    /// The reqwest client, used to issue general HTTP requests
+    pub reqwest_client: reqwest::Client,
 }
 impl Assyst {
     pub async fn new() -> anyhow::Result<Assyst> {
@@ -37,6 +39,7 @@ impl Assyst {
             http_client: HttpClient::new(CONFIG.authentication.discord_token.clone()),
             tasks: Mutex::new(vec![]),
             prometheus: Mutex::new(Prometheus::new()?),
+            reqwest_client: reqwest::Client::new(),
         })
     }
 
