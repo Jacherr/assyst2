@@ -1,19 +1,21 @@
-use prometheus::{register_int_gauge_vec, IntGaugeVec};
+use prometheus::{register_int_gauge, register_int_gauge_vec, IntGauge, IntGaugeVec};
 use tracing::info;
 
 use crate::assyst::ThreadSafeAssyst;
-use crate::util::process::{get_memory_usage_for, get_own_memory_usage, pid_of};
+use assyst_common::util::process::{get_memory_usage_for, get_own_memory_usage, pid_of};
 
 /// Gauges for all metrics tracked by Prometheus.
 pub struct Prometheus {
     pub cache_sizes: IntGaugeVec,
     pub memory_usage: IntGaugeVec,
+    pub guilds: IntGauge,
 }
 impl Prometheus {
     pub fn new() -> anyhow::Result<Prometheus> {
         Ok(Prometheus {
             cache_sizes: register_int_gauge_vec!("cache_sizes", "Cache sizes", &["cache"])?,
             memory_usage: register_int_gauge_vec!("memory_usage", "Memory usage in MB", &["process"])?,
+            guilds: register_int_gauge!("guilds", "Total guilds")?,
         })
     }
 
@@ -38,5 +40,9 @@ impl Prometheus {
         self.memory_usage
             .with_label_values(&["assyst-gateway"])
             .set(gateway_memory_usage as i64);
+    }
+
+    pub fn add_guilds(&mut self, guilds: u64) {
+        self.guilds.add(guilds as i64);
     }
 }

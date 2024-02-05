@@ -2,7 +2,7 @@ use core::fmt;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 
-use assyst_common::assyst::Assyst;
+use crate::assyst::Assyst;
 use assyst_common::config::CONFIG;
 use bytes::Bytes;
 use futures_util::{Stream, StreamExt};

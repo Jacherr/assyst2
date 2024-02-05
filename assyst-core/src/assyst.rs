@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
-use crate::cache::CacheHandler;
-use crate::config::CONFIG;
-use crate::pipe::CACHE_PIPE_PATH;
+use crate::cache_handler::CacheHandler;
 use crate::prometheus::Prometheus;
 use crate::task::Task;
+use assyst_common::config::CONFIG;
+use assyst_common::pipe::CACHE_PIPE_PATH;
 use assyst_database::DatabaseHandler;
 use tokio::sync::{Mutex, RwLock};
 use twilight_http::Client as HttpClient;

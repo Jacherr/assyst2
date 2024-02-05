@@ -1,64 +1,48 @@
-use std::sync::Arc;
-
-use crate::ok_or_break;
-use crate::pipe::Pipe;
 use serde::{Deserialize, Serialize};
-use tokio::spawn;
-use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
-use tokio::sync::Mutex;
-use tracing::{info, warn};
+use tokio::sync::oneshot::Sender;
 use twilight_model::gateway::payload::incoming::{GuildCreate, GuildDelete, Ready};
+use twilight_model::guild::UnavailableGuild;
 
-pub type CacheJobSend = (UnboundedSender<()>, CacheJob);
+/// A cache job, along with a transmitter to send the response back to the calling thread.
+pub type CacheJobSend = (Sender<CacheResponseSend>, CacheJob);
 
-#[derive(Serialize, Deserialize)]
+/// The different jobs that the cache needs to handle.
+#[derive(Serialize, Deserialize, Debug)]
 pub enum CacheJob {
-    HandleGuildCreate(GuildCreate),
-    HandleGuildDelete(GuildDelete),
-    HandleReady(Ready),
+    /// Storing data from a GUILD_CREATE event.
+    //HandleGuildCreate(GuildCreate),
+    /// Storing data from a GUILD_DELETE event.
+    //HandleGuildDelete(GuildDelete),
+    /// Storing data from a READY event.
+    HandleReady(ReadyData),
 }
 
-pub struct CacheHandler {
-    pub cache_tx: UnboundedSender<CacheJobSend>,
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ReadyData {
+    pub guilds: Vec<u64>,
 }
-impl CacheHandler {
-    pub fn new(path: &str) -> CacheHandler {
-        let (tx, rx) = unbounded_channel::<CacheJobSend>();
-        CacheHandler::init_pipe(rx, path);
-        CacheHandler { cache_tx: tx }
+impl From<Ready> for ReadyData {
+    fn from(value: Ready) -> Self {
+        ReadyData {
+            guilds: value.guilds.iter().map(|x| x.id.get()).collect::<Vec<_>>(),
+        }
     }
+}
 
-    fn init_pipe(mut rx: UnboundedReceiver<CacheJobSend>, path: &str) {
-        let path = path.to_owned();
-        // main handler thread
-        spawn(async move {
-            info!("Connecting to assyst-cache pipe on {path}");
-            loop {
-                loop {
-                    let mut pipe = Pipe::poll_connect(&path, None).await.unwrap();
-                    info!("Connected to assyst-cache pipe on {path}");
+pub type CacheResponseSend = anyhow::Result<CacheResponse>;
 
-                    // ok to unwrap because tx is permanently stored in handler
-                    let (tx, data) = rx.recv().await.unwrap();
-
-                    if let Err(e) = pipe.write_object(data).await {
-                        // safe to unwrap because no situation in which the channel should be dropped
-                        tx.send(()).unwrap();
-                        break;
-                    };
-
-                    let result = match pipe.read_object::<()>().await {
-                        Ok(x) => x,
-                        Err(e) => {
-                            tx.send(()).unwrap();
-                            break;
-                        },
-                    };
-
-                    tx.send(result).unwrap();
-                }
-                warn!("Communication to assyst-cache lost, attempting reconnection");
-            }
-        });
-    }
+/// All the responses the cache can send back. Usually it is a 1-1 relation between a CacheJob
+/// variant and CacheResponse variant.
+#[derive(Serialize, Deserialize, Debug)]
+pub enum CacheResponse {
+    /// Whether Assyst should handle a GUILD_CREATE event. False if this guild is coming back from
+    /// unavailable, or if this guild has already been cached.
+    ShouldHandleGuildCreate(bool),
+    /// Whether Assyst should handle a GUILD_DELETE event. False if this guild went unavailable, or
+    /// if it was not in the cache.
+    ShouldHandleGuildDelete(bool),
+    /// The amount of new guilds Assyst receives when a shard enters a READY state. Some guilds may
+    /// be duplicated, which is why this number may differ from the length of the guilds array in
+    /// this event.
+    NewGuildsFromReady(u64),
 }

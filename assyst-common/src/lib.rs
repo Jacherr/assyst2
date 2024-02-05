@@ -1,23 +1,17 @@
 pub mod ansi;
-pub mod assyst;
 pub mod cache;
 pub mod config;
 pub mod macros;
 pub mod pipe;
-pub mod prometheus;
-pub mod task;
 pub mod util;
 
 pub static BOT_ID: u64 = 571661221854707713;
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
     use std::thread::sleep;
     use std::time::Duration;
 
-    use self::assyst::{Assyst, ThreadSafeAssyst};
-    use self::task::Task;
     use self::util::rate_tracker::RateTracker;
 
     use super::*;
@@ -53,29 +47,5 @@ mod tests {
     fn rate_tracker_none() {
         let mut tracker = RateTracker::new(Duration::from_secs_f32(0.3));
         assert_eq!(tracker.get_rate(), None);
-    }
-
-    async fn task_fn(_assyst: ThreadSafeAssyst) {}
-
-    #[tokio::test]
-    async fn task_create() {
-        let assyst = Arc::new(Assyst::new().await.unwrap());
-        let task = Task::new(
-            assyst.clone(),
-            Duration::from_secs(10),
-            Box::new(move |assyst| Box::pin(task_fn(assyst))),
-        );
-        assert_eq!(task.is_running(), true);
-    }
-
-    #[tokio::test]
-    async fn task_terminate() {
-        let assyst = Arc::new(Assyst::new().await.unwrap());
-        let task = Task::new(
-            assyst.clone(),
-            Duration::from_secs_f32(0.3),
-            Box::new(move |assyst| Box::pin(task_fn(assyst))),
-        );
-        assert_eq!(task.terminate().await, true);
     }
 }

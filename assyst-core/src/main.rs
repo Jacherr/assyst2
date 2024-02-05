@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use assyst_common::assyst::{Assyst, ThreadSafeAssyst};
+use crate::assyst::{Assyst, ThreadSafeAssyst};
 use assyst_common::ok_or_break;
 use assyst_common::pipe::{Pipe, GATEWAY_PIPE_PATH};
 use assyst_common::util::tracing_init;
@@ -11,11 +11,13 @@ use gateway_handler::incoming_event::IncomingEvent;
 use tracing::{info, trace, warn};
 use twilight_gateway::EventTypeFlags;
 
+mod assyst;
 mod cache_handler;
 mod command;
 mod downloader;
 mod gateway_handler;
-mod tasks;
+mod prometheus;
+mod task;
 
 // Jemallocator is probably unnecessary for the average instance,
 // but when handling hundreds of events per second the performance improvement

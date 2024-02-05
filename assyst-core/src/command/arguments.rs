@@ -1,5 +1,5 @@
 use assyst_common::util::discord::get_avatar_url;
-use assyst_common::util::{parse_to_millis, regexes};
+use assyst_common::util::{parse_to_millis, regex};
 use serde::Deserialize;
 use twilight_model::channel::message::sticker::{MessageSticker, StickerFormatType};
 use twilight_model::channel::message::Embed;
@@ -75,7 +75,7 @@ impl ImageUrl {
     async fn from_mention(mut ctxt: CommandCtxt<'_>) -> Result<(Self, CommandCtxt<'_>), TagParseError> {
         let word = ctxt.next_word()?;
 
-        let user_id = regexes::USER_MENTION
+        let user_id = regex::USER_MENTION
             .captures(word)
             .and_then(|user_id_capture| user_id_capture.get(1))
             .and_then(|id| Some(id.as_str()))
@@ -94,7 +94,7 @@ impl ImageUrl {
     async fn from_url_argument(mut ctxt: CommandCtxt<'_>) -> Result<(Self, CommandCtxt<'_>), TagParseError> {
         let word = ctxt.next_word()?;
 
-        if regexes::URL.is_match(word) {
+        if regex::URL.is_match(word) {
             Ok((Self(word.to_owned()), ctxt))
         } else {
             Err(TagParseError::NoUrl)
@@ -267,7 +267,7 @@ impl ParseArgument for ImageUrl {
         if url.starts_with("https://tenor.com/view") {
             let page = ctxt.assyst().reqwest_client.get(&url).send().await?.text().await?;
 
-            let gif_url = regexes::TENOR_GIF.find(&page).ok_or(TagParseError::MediaDownloadFail)?;
+            let gif_url = regex::TENOR_GIF.find(&page).ok_or(TagParseError::MediaDownloadFail)?;
             url = gif_url.as_str().to_owned();
         }
 

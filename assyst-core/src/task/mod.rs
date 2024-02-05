@@ -10,6 +10,8 @@ use crate::assyst::ThreadSafeAssyst;
 pub type TaskResult = Pin<Box<dyn Future<Output = ()> + Send>>;
 pub type TaskRun = Box<dyn Fn(ThreadSafeAssyst) -> TaskResult + Send + Sync>;
 
+pub mod tasks;
+
 /// A Task is a function which is called repeatedly on a set interval.
 ///
 /// A Task can be created to run on its own thread, and once per interval the provided function will

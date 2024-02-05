@@ -1,4 +1,4 @@
-use assyst_common::assyst::ThreadSafeAssyst;
+use crate::assyst::ThreadSafeAssyst;
 use assyst_common::config::CONFIG;
 use assyst_common::util::discord::get_guild_owner;
 use assyst_common::BOT_ID;

@@ -30,7 +30,7 @@ use std::future::Future;
 use std::str::SplitAsciiWhitespace;
 use std::time::Duration;
 
-use assyst_common::assyst::ThreadSafeAssyst;
+use crate::assyst::ThreadSafeAssyst;
 use async_trait::async_trait;
 use twilight_model::channel::message::sticker::MessageSticker;
 use twilight_model::channel::message::Embed;

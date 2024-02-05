@@ -17,3 +17,13 @@ macro_rules! ok_or_continue {
         }
     };
 }
+
+#[macro_export]
+macro_rules! unwrap_enum_variant {
+    ($expression:expr, $variant:path) => {
+        match $expression {
+            $variant(v) => v,
+            _ => unreachable!(),
+        }
+    };
+}

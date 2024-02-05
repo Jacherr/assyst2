@@ -1,4 +1,4 @@
-use assyst_common::assyst::ThreadSafeAssyst;
+use crate::assyst::ThreadSafeAssyst;
 
 use self::incoming_event::IncomingEvent;
 
@@ -11,7 +11,7 @@ pub mod message_parser;
 pub async fn handle_raw_event(context: ThreadSafeAssyst, event: IncomingEvent) {
     match event {
         IncomingEvent::ShardReady(event) => {
-            event_handlers::ready::handle(event);
+            event_handlers::ready::handle(context, event).await;
         },
         IncomingEvent::MessageCreate(event) => {
             event_handlers::message_create::handle(context, event).await;
