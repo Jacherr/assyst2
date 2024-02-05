@@ -9,6 +9,7 @@ pub struct AssystConfig {
     pub database: Database,
     pub prefix: Prefixes,
     pub logging_webhooks: LoggingWebhooks,
+    pub patreon: Patreon,
     pub dev: DevAttributes,
 }
 
@@ -20,6 +21,7 @@ pub struct Urls {
 #[derive(Deserialize)]
 pub struct Authentication {
     pub discord_token: String,
+    pub patreon_token: String,
 }
 
 #[derive(Deserialize)]
@@ -72,4 +74,10 @@ pub struct DevAttributes {
     pub prefix_override: Option<String>,
     pub disable_bad_translator_channels: bool,
     pub disable_reminder_check: bool,
+}
+
+#[derive(Deserialize)]
+pub struct Patreon {
+    pub patron_guild_id: u64,
+    pub patron_role_id: u64,
 }

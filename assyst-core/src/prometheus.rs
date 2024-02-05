@@ -23,7 +23,7 @@ impl Prometheus {
         self.cache_sizes.with_label_values(&[cache]).set(size as i64);
     }
 
-    /// Updates some metrics that are not updates as data comes in.
+    /// Updates some metrics that are not updated as data comes in.
     pub async fn update(&mut self, assyst: ThreadSafeAssyst) {
         info!("Collecting prometheus metrics");
 
@@ -44,5 +44,13 @@ impl Prometheus {
 
     pub fn add_guilds(&mut self, guilds: u64) {
         self.guilds.add(guilds as i64);
+    }
+
+    pub fn inc_guilds(&mut self) {
+        self.guilds.inc();
+    }
+
+    pub fn dec_guilds(&mut self) {
+        self.guilds.dec();
     }
 }

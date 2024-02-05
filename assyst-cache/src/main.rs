@@ -21,20 +21,22 @@ async fn main() {
         let mut stream = pipe_server.accept_connection().await.unwrap();
         info!("Connection received from assyst-core");
         loop {
-            let job = match stream.read_object::<CacheJob>().await {
-                Ok(j) => j,
-                Err(e) => {
-                    println!("{:?}", e.to_string());
-                    loop {}
-                },
-            };
-            //info!("Handling job {:?}", job);
+            let job = ok_or_break!(stream.read_object::<CacheJob>().await);
+
+            info!("Handling job: {}", job);
+
             let result = match job {
                 CacheJob::HandleReady(event) => {
                     CacheResponse::NewGuildsFromReady(guild_cache.handle_ready_event(event))
                 },
-                _ => todo!(),
+                CacheJob::HandleGuildCreate(event) => {
+                    CacheResponse::ShouldHandleGuildCreate(guild_cache.handle_guild_create_event(event))
+                },
+                CacheJob::HandleGuildDelete(event) => {
+                    CacheResponse::ShouldHandleGuildDelete(guild_cache.handle_guild_delete_event(event))
+                },
             };
+
             ok_or_break!(stream.write_object(result).await);
         }
         warn!("Connection to assyst-core lost, awaiting reconnection");

@@ -1,6 +1,18 @@
+use tracing::info;
 use twilight_model::gateway::payload::incoming::GuildCreate;
 
-pub async fn handle(event: GuildCreate) {
-    // check if we should handle this guild create based on what the cache returns
-    // check assyst 1 source
+use crate::assyst::ThreadSafeAssyst;
+
+pub async fn handle(assyst: ThreadSafeAssyst, event: GuildCreate) {
+    let cache_response = assyst.cache_handler.handle_guild_create_event(event.clone()).await;
+    let should_handle = cache_response.unwrap_or(false);
+    if should_handle {
+        info!(
+            "Joined guild {}: {} ({} members)",
+            event.id.get(),
+            event.name,
+            event.member_count.unwrap_or(0)
+        );
+        assyst.prometheus.lock().await.inc_guilds();
+    }
 }

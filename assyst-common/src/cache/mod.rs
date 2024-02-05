@@ -1,7 +1,8 @@
+use std::fmt::Display;
+
 use serde::{Deserialize, Serialize};
 use tokio::sync::oneshot::Sender;
 use twilight_model::gateway::payload::incoming::{GuildCreate, GuildDelete, Ready};
-use twilight_model::guild::UnavailableGuild;
 
 /// A cache job, along with a transmitter to send the response back to the calling thread.
 pub type CacheJobSend = (Sender<CacheResponseSend>, CacheJob);
@@ -10,11 +11,20 @@ pub type CacheJobSend = (Sender<CacheResponseSend>, CacheJob);
 #[derive(Serialize, Deserialize, Debug)]
 pub enum CacheJob {
     /// Storing data from a GUILD_CREATE event.
-    //HandleGuildCreate(GuildCreate),
+    HandleGuildCreate(GuildCreateData),
     /// Storing data from a GUILD_DELETE event.
-    //HandleGuildDelete(GuildDelete),
+    HandleGuildDelete(GuildDeleteData),
     /// Storing data from a READY event.
     HandleReady(ReadyData),
+}
+impl Display for CacheJob {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::HandleReady(x) => write!(f, "HandleReady ({} guilds)", x.guilds.len()),
+            Self::HandleGuildCreate(x) => write!(f, "HandleGuildCreate (ID: {})", x.id),
+            Self::HandleGuildDelete(x) => write!(f, "HandleGuildDelete (ID: {})", x.id),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -25,6 +35,36 @@ impl From<Ready> for ReadyData {
     fn from(value: Ready) -> Self {
         ReadyData {
             guilds: value.guilds.iter().map(|x| x.id.get()).collect::<Vec<_>>(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct GuildCreateData {
+    pub id: u64,
+    pub name: String,
+    pub members: Option<u64>,
+}
+impl From<GuildCreate> for GuildCreateData {
+    fn from(value: GuildCreate) -> Self {
+        GuildCreateData {
+            id: value.id.get(),
+            name: value.name.clone(),
+            members: value.member_count,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct GuildDeleteData {
+    pub id: u64,
+    pub unavailable: bool,
+}
+impl From<GuildDelete> for GuildDeleteData {
+    fn from(value: GuildDelete) -> Self {
+        GuildDeleteData {
+            id: value.id.get(),
+            unavailable: value.unavailable,
         }
     }
 }

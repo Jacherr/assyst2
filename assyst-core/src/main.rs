@@ -1,8 +1,11 @@
 #![feature(let_chains, str_split_whitespace_remainder)]
 
 use std::sync::Arc;
+use std::time::Duration;
 
 use crate::assyst::{Assyst, ThreadSafeAssyst};
+use crate::task::tasks::get_patrons::get_patrons;
+use crate::task::Task;
 use assyst_common::ok_or_break;
 use assyst_common::pipe::{Pipe, GATEWAY_PIPE_PATH};
 use assyst_common::util::tracing_init;
@@ -17,6 +20,7 @@ mod command;
 mod downloader;
 mod gateway_handler;
 mod prometheus;
+mod rest;
 mod task;
 
 // Jemallocator is probably unnecessary for the average instance,
@@ -35,14 +39,14 @@ async fn main() {
 
     let assyst: ThreadSafeAssyst = Arc::new(Assyst::new().await.unwrap());
 
-    /*
     assyst
         .register_task(Task::new(
             assyst.clone(),
-            Duration::from_secs(30),
-            Box::new(move |assyst: ThreadSafeAssyst| Box::pin(collect_prometheus_metrics(assyst.clone()))),
+            // 1 hour
+            Duration::from_secs(60 * 60),
+            Box::new(move |assyst: ThreadSafeAssyst| Box::pin(get_patrons(assyst.clone()))),
         ))
-        .await;*/
+        .await;
 
     info!("Connecting to assyst-gateway pipe at {}", GATEWAY_PIPE_PATH);
     loop {
