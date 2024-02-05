@@ -17,7 +17,7 @@ pub mod tasks;
 /// A Task can be created to run on its own thread, and once per interval the provided function will
 /// be executed.
 pub struct Task {
-    thread: JoinHandle<()>,
+    _thread: JoinHandle<()>,
 }
 impl Task {
     pub fn new(assyst: ThreadSafeAssyst, interval: Duration, callback: TaskRun) -> Task {
@@ -28,7 +28,7 @@ impl Task {
             }
         });
 
-        Task { thread }
+        Task { _thread: thread }
     }
 
     pub fn new_delayed(assyst: ThreadSafeAssyst, interval: Duration, delay: Duration, callback: TaskRun) -> Task {
@@ -40,6 +40,6 @@ impl Task {
             }
         });
 
-        Task { thread }
+        Task { _thread: thread }
     }
 }
