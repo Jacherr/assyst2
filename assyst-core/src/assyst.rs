@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use crate::cache_handler::CacheHandler;
 use crate::prometheus::Prometheus;
 use crate::rest::patreon::Patron;
@@ -7,6 +5,7 @@ use crate::task::Task;
 use assyst_common::config::CONFIG;
 use assyst_common::pipe::CACHE_PIPE_PATH;
 use assyst_database::DatabaseHandler;
+use std::sync::Arc;
 use tokio::sync::{Mutex, RwLock};
 use twilight_http::Client as HttpClient;
 
@@ -19,10 +18,10 @@ pub struct Assyst {
     /// Handler for the persistent assyst-cache.
     pub cache_handler: CacheHandler,
     /// Handler for the Assyst database. RwLocked to allow concurrent reads.
-    pub database_handler: RwLock<DatabaseHandler>,
+    pub database_handler: Arc<RwLock<DatabaseHandler>>,
     /// HTTP client for Discord. Handles all HTTP requests to Discord, storing stateful information
     /// about current ratelimits.
-    pub http_client: HttpClient,
+    pub http_client: Arc<HttpClient>,
     /// List of the current patrons to Assyst.
     pub patrons: Mutex<Vec<Patron>>,
     /// Prometheus handler for graph metrics.
@@ -49,10 +48,10 @@ impl Assyst {
 
         Ok(Assyst {
             cache_handler: CacheHandler::new(CACHE_PIPE_PATH),
-            database_handler: RwLock::new(
+            database_handler: Arc::new(RwLock::new(
                 DatabaseHandler::new(CONFIG.database.to_url(), CONFIG.database.to_url_safe()).await?,
-            ),
-            http_client,
+            )),
+            http_client: Arc::new(http_client),
             patrons: Mutex::new(vec![]),
             prometheus: Mutex::new(Prometheus::new()?),
             reqwest_client: reqwest::Client::new(),

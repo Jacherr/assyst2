@@ -95,6 +95,9 @@ async fn main() {
         info!("Bot list POSTing disabled in config: not registering task");
     }
 
+    info!("Starting assyst-webserver");
+    assyst_webserver::run(assyst.database_handler.clone(), assyst.http_client.clone()).await;
+
     info!("Connecting to assyst-gateway pipe at {}", GATEWAY_PIPE_PATH);
     loop {
         let mut gateway_pipe = Pipe::poll_connect(GATEWAY_PIPE_PATH, None).await.unwrap();

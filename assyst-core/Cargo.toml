@@ -10,6 +10,7 @@ tokio = { version = "1.34.0", features = ["full"] }
 tracing = "0.1.37"
 assyst-common = { path = "../assyst-common" }
 assyst-database = { path = "../assyst-database" }
+assyst-webserver = { path = "../assyst-webserver" }
 twilight-gateway = { git = "https://github.com/Jacherr/twilight.git", branch = "main" }
 twilight-model = { git = "https://github.com/Jacherr/twilight.git", branch = "main" }
 twilight-http = { git = "https://github.com/Jacherr/twilight.git", branch = "main" }

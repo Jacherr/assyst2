@@ -9,6 +9,10 @@ discord_token = ""
 patreon_token = ""
 # Token to POST the stats for the bot to Top.gg
 top_gg_token = ""
+# Token that Top.gg uses to send webhooked votes to Assyst.
+top_gg_webhook_token = ""
+# Port in which the top.gg webhook runs on.
+top_gg_webhook_port = 3000
 
 # Assyst database information.
 [database]
@@ -25,12 +29,6 @@ default = "-"
 [logging_webhooks]
 panic = ""
 error = ""
-
-[patreon]
-# guild id of where the patron role is located
-patron_guild_id = 0
-# role id of the patron role
-patron_role_id = 0
 
 [dev]
 # These Discord user IDs have full control of the bot, including developer-only commands.

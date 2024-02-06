@@ -9,7 +9,6 @@ pub struct AssystConfig {
     pub database: Database,
     pub prefix: Prefixes,
     pub logging_webhooks: LoggingWebhooks,
-    pub patreon: Patreon,
     pub dev: DevAttributes,
 }
 
@@ -23,6 +22,8 @@ pub struct Authentication {
     pub discord_token: String,
     pub patreon_token: String,
     pub top_gg_token: String,
+    pub top_gg_webhook_token: String,
+    pub top_gg_webhook_port: u16,
 }
 
 #[derive(Deserialize)]
@@ -77,10 +78,4 @@ pub struct DevAttributes {
     pub disable_bad_translator_channels: bool,
     pub disable_reminder_check: bool,
     pub disable_bot_list_posting: bool,
-}
-
-#[derive(Deserialize)]
-pub struct Patreon {
-    pub patron_guild_id: u64,
-    pub patron_role_id: u64,
 }
