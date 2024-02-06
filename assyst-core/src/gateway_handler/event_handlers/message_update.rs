@@ -1,8 +1,12 @@
+use tracing::{debug, error};
 use twilight_model::channel::message::MessageType;
 use twilight_model::channel::Message;
 use twilight_model::gateway::payload::incoming::MessageUpdate;
 use twilight_model::util::Timestamp;
 
+use crate::command::{CommandCtxt, CommandData};
+use crate::gateway_handler::message_parser::error::{ErrorSeverity, GetErrorSeverity};
+use crate::gateway_handler::message_parser::parser::parse_message_into_command;
 use crate::ThreadSafeAssyst;
 
 /// Handle a [MessageUpdate] event sent from the Discord gateway.
@@ -15,7 +19,34 @@ use crate::ThreadSafeAssyst;
 pub async fn handle(assyst: ThreadSafeAssyst, event: MessageUpdate) {
     match convert_message_update_to_message(event) {
         Some(message) => {
-            // call command parser here
+            match parse_message_into_command(assyst.clone(), &message).await {
+                Ok(Some((cmd, args))) => {
+                    let data = CommandData {
+                        assyst: &assyst,
+                        attachment: message.attachments.first(),
+                        referenced_message: message.referenced_message.as_deref(),
+                        sticker: message.sticker_items.first(),
+                        channel_id: message.channel_id.get(),
+                        embed: message.embeds.first(),
+                    };
+                    let ctxt = CommandCtxt::new(args, &data);
+
+                    if let Err(err) = cmd.execute(ctxt).await {
+                        match err.get_severity() {
+                            ErrorSeverity::Low => debug!("{err:?}"),
+                            ErrorSeverity::High => error!("{err:?}"),
+                        }
+                    }
+                },
+                Ok(None) => { /* command not found */ },
+                Err(error) => {
+                    if error.get_severity() == ErrorSeverity::High {
+                        error!("{error}");
+                    } else {
+                        debug!("{error}");
+                    }
+                },
+            };
         },
         None => {},
     }

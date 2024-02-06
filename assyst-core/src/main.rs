@@ -42,8 +42,8 @@ async fn main() {
     assyst
         .register_task(Task::new(
             assyst.clone(),
-            // 1 hour
-            Duration::from_secs(60 * 60),
+            // 10 mins
+            Duration::from_secs(60 * 10),
             Box::new(move |assyst: ThreadSafeAssyst| Box::pin(get_patrons(assyst.clone()))),
         ))
         .await;
