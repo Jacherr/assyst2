@@ -1,11 +1,18 @@
+use assyst_common::err;
 use tracing::info;
 use twilight_model::gateway::payload::incoming::GuildCreate;
 
 use crate::assyst::ThreadSafeAssyst;
 
 pub async fn handle(assyst: ThreadSafeAssyst, event: GuildCreate) {
-    let cache_response = assyst.cache_handler.handle_guild_create_event(event.clone()).await;
-    let should_handle = cache_response.unwrap_or(false);
+    let should_handle = match assyst.cache_handler.handle_guild_create_event(event.clone()).await {
+        Ok(s) => s,
+        Err(e) => {
+            err!("assyst-cache failed to handle GUILD_CREATE event: {}", e.to_string());
+            return;
+        },
+    };
+
     if should_handle {
         info!(
             "Joined guild {}: {} ({} members)",

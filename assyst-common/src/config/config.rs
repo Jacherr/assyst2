@@ -22,6 +22,7 @@ pub struct Urls {
 pub struct Authentication {
     pub discord_token: String,
     pub patreon_token: String,
+    pub top_gg_token: String,
 }
 
 #[derive(Deserialize)]
@@ -65,7 +66,8 @@ pub struct Prefixes {
 
 #[derive(Deserialize)]
 pub struct LoggingWebhooks {
-    pub panic: Option<String>,
+    pub panic: String,
+    pub error: String,
 }
 
 #[derive(Deserialize)]
@@ -74,6 +76,7 @@ pub struct DevAttributes {
     pub prefix_override: Option<String>,
     pub disable_bad_translator_channels: bool,
     pub disable_reminder_check: bool,
+    pub disable_bot_list_posting: bool,
 }
 
 #[derive(Deserialize)]

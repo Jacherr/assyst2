@@ -5,6 +5,10 @@ proxy = []
 [authentication]
 # Token to authenticate with Discord.
 discord_token = ""
+# Token to get paying users from Patreon.
+patreon_token = ""
+# Token to POST the stats for the bot to Top.gg
+top_gg_token = ""
 
 # Assyst database information.
 [database]
@@ -20,6 +24,7 @@ default = "-"
 
 [logging_webhooks]
 panic = ""
+error = ""
 
 [patreon]
 # guild id of where the patron role is located
@@ -43,3 +48,7 @@ disable_bad_translator_channels = false
 # Use this to disable the bot from checking reminders. Again useful when working with a
 # development instance to prevent conflicts.
 disable_reminder_check = false
+
+# Use this to top the bot from POSTing its guild and shard counts to Top.gg. 
+# Useful for development instances.
+disable_bot_list_posting = false

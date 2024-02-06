@@ -5,14 +5,18 @@ use std::time::Duration;
 
 use crate::assyst::{Assyst, ThreadSafeAssyst};
 use crate::task::tasks::get_patrons::get_patrons;
+use crate::task::tasks::top_gg_stats::post_top_gg_stats;
 use crate::task::Task;
-use assyst_common::ok_or_break;
+use assyst_common::config::CONFIG;
 use assyst_common::pipe::{Pipe, GATEWAY_PIPE_PATH};
 use assyst_common::util::tracing_init;
+use assyst_common::{err, ok_or_break};
 use gateway_handler::handle_raw_event;
 use gateway_handler::incoming_event::IncomingEvent;
-use tracing::{info, trace, warn};
+use tracing::{info, trace};
 use twilight_gateway::EventTypeFlags;
+use twilight_model::id::marker::WebhookMarker;
+use twilight_model::id::Id;
 
 mod assyst;
 mod cache_handler;
@@ -39,14 +43,57 @@ async fn main() {
 
     let assyst: ThreadSafeAssyst = Arc::new(Assyst::new().await.unwrap());
 
+    // Custom panic hook that will send errors to a discord channel
+    {
+        let handle = tokio::runtime::Handle::current();
+        let assyst = Arc::clone(&assyst);
+
+        std::panic::set_hook(Box::new(move |info| {
+            println!("{}", info);
+
+            let assyst = assyst.clone();
+            let msg = format!("A thread has panicked: ```{}```", info);
+
+            let parts = CONFIG.logging_webhooks.panic.split("/").collect::<Vec<_>>();
+            let (token, id) = (
+                *parts.iter().last().unwrap(),
+                *parts.iter().nth(parts.len() - 2).unwrap(),
+            );
+
+            handle.spawn(async move {
+                let _ = assyst
+                    .http_client
+                    .execute_webhook(Id::<WebhookMarker>::new(id.parse::<u64>().unwrap()), token)
+                    .content(&msg)
+                    .unwrap()
+                    .await;
+            });
+        }));
+    }
+
     assyst
         .register_task(Task::new(
             assyst.clone(),
             // 10 mins
             Duration::from_secs(60 * 10),
-            Box::new(move |assyst: ThreadSafeAssyst| Box::pin(get_patrons(assyst.clone()))),
+            function_task_callback!(get_patrons),
         ))
         .await;
+    info!("Registered patreon synchronisation task");
+
+    if !CONFIG.dev.disable_bot_list_posting {
+        assyst
+            .register_task(Task::new(
+                assyst.clone(),
+                // 10 mins
+                Duration::from_secs(60 * 10),
+                function_task_callback!(post_top_gg_stats),
+            ))
+            .await;
+        info!("Registered top.gg stats POSTing task");
+    } else {
+        info!("Bot list POSTing disabled in config: not registering task");
+    }
 
     info!("Connecting to assyst-gateway pipe at {}", GATEWAY_PIPE_PATH);
     loop {
@@ -79,7 +126,7 @@ async fn main() {
             }
         }
 
-        warn!("Connection to assyst-gateway lost, attempting reconnection");
+        err!("Connection to assyst-gateway lost, attempting reconnection");
     }
 }
 

@@ -31,19 +31,33 @@ pub struct Assyst {
     pub reqwest_client: reqwest::Client,
     /// Tasks are functions which are called on an interval.
     pub tasks: Mutex<Vec<Task>>,
+    /// The recommended number of shards for this instance.
+    pub shard_count: u64,
 }
 impl Assyst {
     pub async fn new() -> anyhow::Result<Assyst> {
+        let http_client = HttpClient::new(CONFIG.authentication.discord_token.clone());
+        let shard_count = http_client
+            .gateway()
+            .authed()
+            .await
+            .unwrap()
+            .model()
+            .await
+            .unwrap()
+            .shards;
+
         Ok(Assyst {
             cache_handler: CacheHandler::new(CACHE_PIPE_PATH),
             database_handler: RwLock::new(
                 DatabaseHandler::new(CONFIG.database.to_url(), CONFIG.database.to_url_safe()).await?,
             ),
-            http_client: HttpClient::new(CONFIG.authentication.discord_token.clone()),
+            http_client,
             patrons: Mutex::new(vec![]),
             prometheus: Mutex::new(Prometheus::new()?),
             reqwest_client: reqwest::Client::new(),
             tasks: Mutex::new(vec![]),
+            shard_count,
         })
     }
 

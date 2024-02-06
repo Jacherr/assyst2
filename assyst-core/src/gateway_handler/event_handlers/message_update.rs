@@ -1,4 +1,5 @@
-use tracing::{debug, error};
+use assyst_common::err;
+use tracing::debug;
 use twilight_model::channel::message::MessageType;
 use twilight_model::channel::Message;
 use twilight_model::gateway::payload::incoming::MessageUpdate;
@@ -34,14 +35,14 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: MessageUpdate) {
                     if let Err(err) = cmd.execute(ctxt).await {
                         match err.get_severity() {
                             ErrorSeverity::Low => debug!("{err:?}"),
-                            ErrorSeverity::High => error!("{err:?}"),
+                            ErrorSeverity::High => err!("{err:?}"),
                         }
                     }
                 },
                 Ok(None) => { /* command not found */ },
                 Err(error) => {
                     if error.get_severity() == ErrorSeverity::High {
-                        error!("{error}");
+                        err!("{error}");
                     } else {
                         debug!("{error}");
                     }

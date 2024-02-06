@@ -12,6 +12,13 @@ pub type TaskRun = Box<dyn Fn(ThreadSafeAssyst) -> TaskResult + Send + Sync>;
 
 pub mod tasks;
 
+#[macro_export]
+macro_rules! function_task_callback {
+    ($expression:expr) => {
+        Box::new(move |assyst: ThreadSafeAssyst| Box::pin($expression(assyst.clone())))
+    };
+}
+
 /// A Task is a function which is called repeatedly on a set interval.
 ///
 /// A Task can be created to run on its own thread, and once per interval the provided function will

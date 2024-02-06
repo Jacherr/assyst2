@@ -1,5 +1,6 @@
 use crate::assyst::ThreadSafeAssyst;
-use tracing::{error, info};
+use assyst_common::err;
+use tracing::info;
 
 /// Synchronises Assyst with an updated list of patrons.
 pub async fn get_patrons(assyst: ThreadSafeAssyst) {
@@ -9,7 +10,7 @@ pub async fn get_patrons(assyst: ThreadSafeAssyst) {
     let patrons = match crate::rest::patreon::get_patrons(assyst.clone()).await {
         Ok(p) => p,
         Err(e) => {
-            error!("Failed to get patron list for synchronisation: {}", e.to_string());
+            err!("Failed to get patron list for synchronisation: {}", e.to_string());
             return;
         },
     };

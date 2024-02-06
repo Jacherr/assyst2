@@ -1,5 +1,6 @@
 use assyst_common::ansi::Ansi;
-use tracing::{error, info};
+use assyst_common::err;
+use tracing::info;
 use twilight_model::gateway::payload::incoming::Ready;
 
 use crate::assyst::ThreadSafeAssyst;
@@ -26,7 +27,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: Ready) {
             assyst.prometheus.lock().await.add_guilds(num);
         },
         Err(e) => {
-            error!("assyst-cache failed to handle READY event: {}", e.to_string());
+            err!("assyst-cache failed to handle READY event: {}", e.to_string());
         },
     }
 }
