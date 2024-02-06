@@ -1,5 +1,8 @@
 use crate::DatabaseHandler;
 
+/// The global blacklist is a list of users who are completely blacklisted from using any of the
+/// bot's functionality. It is a simple list table with one column of user IDs which are
+/// blacklisted.
 pub struct GlobalBlacklist {}
 impl GlobalBlacklist {
     pub async fn is_blacklisted(handler: &DatabaseHandler, user_id: u64) -> anyhow::Result<bool> {

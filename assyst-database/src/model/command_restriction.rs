@@ -88,6 +88,11 @@ pub struct CommandRestrictionRow {
     pub id: i64,
 }
 
+/// Command restrictions are applied to commands that restrict (or allow) certain channels, roles,
+/// or users to invoke commands. This allows for granular control of commands and where they can be
+/// executed, and by who. The logic for this table is quite complex because commands can have
+/// multiple (additive) restrictions applied at once - for example, a command may only be used by a
+/// certain role in a certain channel.
 #[derive(Clone)]
 pub struct CommandRestriction {
     pub guild_id: u64,

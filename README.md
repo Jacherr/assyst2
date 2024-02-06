@@ -7,17 +7,16 @@ Assyst is a multi-purpose Discord bot with a focus on image processing and manip
 Assyst2 is split into a number of separate crates, as described below.
 
 ## Binaries
-- assyst-core: Main command-handling process. Abstracted from the details of gateway and slash command implementations.
-- assyst-gateway: Connects to the Discord WebSocket gateway to receive and send events. 
+- assyst-core: Main command-handling process. Also contains logic for the parsing of message-based commands.
+- assyst-gateway: Connects to the Discord WebSocket gateway to receive messages, which are then forwarded to assyst-core for processing.
 - assyst-slash-client: HTTP client designed to handle slash commands.
 - assyst-cache: Independent cache process designed to hold some caching information.
 
 ## Libraries
-- assyst-common: Utilities, structures, and function shared throughout the entire Assyst ecosystem.
+- assyst-common: Utilities, structures, and functions shared throughout the entire Assyst ecosystem.
 - assyst-tag: Tag parser and handler.
 - assyst-database: Interfaces with PostgreSQL, for database purposes.
-- assyst-webserver: Web server designed to handle webhooking, such as vote processing for Discord bot list websites.
-- assyst-logger: Logger crate with functions designed to provide a standardised logging format.
+- assyst-webserver: Web server designed to handle webhooking, such as vote processing for Discord bot list websites, as well as Prometheus metrics.
 - assyst-proc-macro: General purpose [procedural macros] <sub>(currently just a macro for command setup)</sub>
 
 [Procedural macros]: https://doc.rust-lang.org/reference/procedural-macros.html

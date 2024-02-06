@@ -1,6 +1,9 @@
 use crate::DatabaseHandler;
 
 #[derive(Clone)]
+/// A Prefix is a unique identifier for invocating message-based commands in a guild. This table is
+/// relatively simple, holding only a guild ID and its associated prefix, since each guild can only
+/// have one prefix at a time.
 pub struct Prefix {
     pub prefix: String,
 }

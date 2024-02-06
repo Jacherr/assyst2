@@ -3,6 +3,12 @@ use std::hash::BuildHasherDefault;
 use assyst_common::cache::{GuildCreateData, GuildDeleteData, ReadyData};
 use dashmap::DashSet;
 
+/// The cache of all guilds Assyst is part of. When a shard readies up, it receives a list of all
+/// guild IDs that shard is responsible for, which are all cached here. In addition, when a shard is
+/// ready, it will receive GUILD_CREATE events for every guild that shard is responsible for. This
+/// cache allows to differentiate between GUILD_CREATE events sent as part of this procedure (since
+/// they were also part of the READY event) and legitimate GUILD_CREATEs fired as a result of Assyst
+/// joining a new guild post-ready.
 pub struct GuildCache {
     ids: DashSet<u64, BuildHasherDefault<rustc_hash::FxHasher>>,
 }
