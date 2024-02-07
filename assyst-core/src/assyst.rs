@@ -1,9 +1,9 @@
 use crate::cache_handler::CacheHandler;
-use crate::prometheus::Prometheus;
 use crate::rest::patreon::Patron;
 use crate::task::Task;
 use assyst_common::config::CONFIG;
 use assyst_common::pipe::CACHE_PIPE_PATH;
+use assyst_common::prometheus::Prometheus;
 use assyst_database::DatabaseHandler;
 use std::sync::Arc;
 use tokio::sync::{Mutex, RwLock};
@@ -25,7 +25,7 @@ pub struct Assyst {
     /// List of the current patrons to Assyst.
     pub patrons: Mutex<Vec<Patron>>,
     /// Prometheus handler for graph metrics.
-    pub prometheus: Mutex<Prometheus>,
+    pub prometheus: Arc<Mutex<Prometheus>>,
     /// The reqwest client, used to issue general HTTP requests
     pub reqwest_client: reqwest::Client,
     /// Tasks are functions which are called on an interval.
@@ -45,15 +45,16 @@ impl Assyst {
             .await
             .unwrap()
             .shards;
+        let database_handler = Arc::new(RwLock::new(
+            DatabaseHandler::new(CONFIG.database.to_url(), CONFIG.database.to_url_safe()).await?,
+        ));
 
         Ok(Assyst {
             cache_handler: CacheHandler::new(CACHE_PIPE_PATH),
-            database_handler: Arc::new(RwLock::new(
-                DatabaseHandler::new(CONFIG.database.to_url(), CONFIG.database.to_url_safe()).await?,
-            )),
+            database_handler: database_handler.clone(),
             http_client: Arc::new(http_client),
             patrons: Mutex::new(vec![]),
-            prometheus: Mutex::new(Prometheus::new()?),
+            prometheus: Arc::new(Mutex::new(Prometheus::new(database_handler)?)),
             reqwest_client: reqwest::Client::new(),
             tasks: Mutex::new(vec![]),
             shard_count,

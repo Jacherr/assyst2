@@ -1,3 +1,4 @@
+use crate::config::config::LoggingWebhook;
 use crate::config::CONFIG;
 use twilight_http::Client as HttpClient;
 use twilight_model::id::marker::WebhookMarker;
@@ -46,15 +47,11 @@ macro_rules! err {
 
 pub fn handle_log(message: String) {
     tokio::spawn(async move {
-        let parts = CONFIG.logging_webhooks.error.split("/").collect::<Vec<_>>();
-        let (token, id) = (
-            *parts.iter().last().unwrap(),
-            *parts.iter().nth(parts.len() - 2).unwrap(),
-        );
+        let LoggingWebhook { id, token } = CONFIG.logging_webhooks.error.clone();
 
         let client = HttpClient::new(CONFIG.authentication.discord_token.clone());
         let _ = client
-            .execute_webhook(Id::<WebhookMarker>::new(id.parse::<u64>().unwrap()), token)
+            .execute_webhook(Id::<WebhookMarker>::new(id), &token)
             .content(&message)
             .unwrap()
             .await;

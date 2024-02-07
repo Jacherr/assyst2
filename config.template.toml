@@ -27,8 +27,15 @@ port = 3000
 default = "-"
 
 [logging_webhooks]
-panic = ""
-error = ""
+[panic]
+token = ""
+id = 0
+[error]
+token = ""
+id = 0
+[vote]
+token = ""
+id = 0
 
 [dev]
 # These Discord user IDs have full control of the bot, including developer-only commands.

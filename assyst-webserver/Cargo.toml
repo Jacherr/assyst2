@@ -14,3 +14,6 @@ twilight-model = { git = "https://github.com/Jacherr/twilight.git", branch = "ma
 twilight-http = { git = "https://github.com/Jacherr/twilight.git", branch = "main" }
 tracing = "0.1.37"
 prometheus = "0.13.3"
+serde = "1.0.196"
+lazy_static = "1.4.0"
+anyhow = "1.0.75"

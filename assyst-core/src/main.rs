@@ -7,6 +7,7 @@ use crate::assyst::{Assyst, ThreadSafeAssyst};
 use crate::task::tasks::get_patrons::get_patrons;
 use crate::task::tasks::top_gg_stats::post_top_gg_stats;
 use crate::task::Task;
+use assyst_common::config::config::LoggingWebhook;
 use assyst_common::config::CONFIG;
 use assyst_common::pipe::{Pipe, GATEWAY_PIPE_PATH};
 use assyst_common::util::tracing_init;
@@ -23,7 +24,6 @@ mod cache_handler;
 mod command;
 mod downloader;
 mod gateway_handler;
-mod prometheus;
 mod rest;
 mod task;
 
@@ -54,16 +54,12 @@ async fn main() {
             let assyst = assyst.clone();
             let msg = format!("A thread has panicked: ```{}```", info);
 
-            let parts = CONFIG.logging_webhooks.panic.split("/").collect::<Vec<_>>();
-            let (token, id) = (
-                *parts.iter().last().unwrap(),
-                *parts.iter().nth(parts.len() - 2).unwrap(),
-            );
+            let LoggingWebhook { id, token } = CONFIG.logging_webhooks.panic.clone();
 
             handle.spawn(async move {
                 let _ = assyst
                     .http_client
-                    .execute_webhook(Id::<WebhookMarker>::new(id.parse::<u64>().unwrap()), token)
+                    .execute_webhook(Id::<WebhookMarker>::new(id), &token)
                     .content(&msg)
                     .unwrap()
                     .await;
@@ -96,7 +92,12 @@ async fn main() {
     }
 
     info!("Starting assyst-webserver");
-    assyst_webserver::run(assyst.database_handler.clone(), assyst.http_client.clone()).await;
+    assyst_webserver::run(
+        assyst.database_handler.clone(),
+        assyst.http_client.clone(),
+        assyst.prometheus.clone(),
+    )
+    .await;
 
     info!("Connecting to assyst-gateway pipe at {}", GATEWAY_PIPE_PATH);
     loop {

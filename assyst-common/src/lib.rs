@@ -3,6 +3,7 @@ pub mod cache;
 pub mod config;
 pub mod macros;
 pub mod pipe;
+pub mod prometheus;
 pub mod util;
 
 pub static BOT_ID: u64 = 571661221854707713;

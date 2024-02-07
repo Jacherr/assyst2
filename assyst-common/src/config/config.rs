@@ -67,8 +67,15 @@ pub struct Prefixes {
 
 #[derive(Deserialize)]
 pub struct LoggingWebhooks {
-    pub panic: String,
-    pub error: String,
+    pub panic: LoggingWebhook,
+    pub error: LoggingWebhook,
+    pub vote: LoggingWebhook,
+}
+
+#[derive(Deserialize, Clone)]
+pub struct LoggingWebhook {
+    pub token: String,
+    pub id: u64,
 }
 
 #[derive(Deserialize)]
