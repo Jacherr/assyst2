@@ -7,7 +7,8 @@ use assyst_database::model::free_tier_1_requests::FreeTier1Requests;
 use assyst_database::model::user_votes::UserVotes;
 use assyst_database::DatabaseHandler;
 use axum::extract::State;
-use axum::response::Redirect;
+use axum::http::StatusCode;
+use axum::response::{IntoResponse, Redirect, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
 use lazy_static::lazy_static;
@@ -24,6 +25,30 @@ use twilight_model::id::Id;
 const FREE_TIER_1_REQUESTS_ON_VOTE: u64 = 15;
 lazy_static! {
     static ref TOP_GG_VOTE_URL: String = format!("https://top.gg/bot/{}/vote", BOT_ID);
+}
+
+struct AppError(anyhow::Error);
+
+// Tell axum how to convert `AppError` into a response.
+impl IntoResponse for AppError {
+    fn into_response(self) -> Response {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Something went wrong: {}", self.0),
+        )
+            .into_response()
+    }
+}
+
+// This enables using `?` on functions that return `Result<_, anyhow::Error>` to turn them into
+// `Result<_, AppError>`. That way you don't need to do that manually.
+impl<E> From<E> for AppError
+where
+    E: Into<anyhow::Error>,
+{
+    fn from(err: E) -> Self {
+        Self(err.into())
+    }
 }
 
 #[derive(Deserialize)]
@@ -52,78 +77,87 @@ async fn prometheus_metrics(State(route_state): State<RouteState>) -> String {
     response
 }
 
-async fn top_gg_webhook(State(route_state): State<RouteState>, Json(body): Json<TopGgWebhookBody>) {
-    let user_id = match body.user.clone().parse::<u64>() {
-        Ok(i) => i,
-        Err(e) => {
-            err!("Failed to parse user ID {} on vote: {}", body.user, e.to_string());
-            return;
-        },
-    };
+async fn top_gg_webhook(
+    State(route_state): State<RouteState>,
+    Json(body): Json<TopGgWebhookBody>,
+) -> Result<(), AppError> {
+    let user_id = body
+        .user
+        .clone()
+        .parse::<u64>()
+        .inspect_err(|e| err!("Failed to parse user id {}: {}", body.user, e.to_string()))?;
 
-    if let Err(e) = FreeTier1Requests::change_free_tier_1_requests(
+    FreeTier1Requests::change_free_tier_1_requests(
         &*route_state.database.read().await,
         user_id,
         FREE_TIER_1_REQUESTS_ON_VOTE,
     )
     .await
-    {
-        err!("Failed to add free tier 1 requests on vote: {}", e.to_string());
-    } else {
-        let user = match route_state
-            .http_client
-            .user(Id::<UserMarker>::new(user_id))
-            .await
-            .map(|u| u.model())
-        {
-            // better hope it can deserialize
-            Ok(u) => u.await.unwrap(),
-            Err(e) => {
-                err!("Failed to get user object from user ID {}: {}", user_id, e.to_string());
-                return;
-            },
-        };
-
-        if let Err(_) = UserVotes::increment_user_votes(
-            &*route_state.database.read().await,
+    .inspect_err(|e| {
+        err!(
+            "Failed to add free tier 1 requests for user {}: {}",
             user_id,
-            &user.name,
-            &user.discriminator.to_string(),
+            e.to_string()
         )
+    })?;
+
+    let user = route_state
+        .http_client
+        .user(Id::<UserMarker>::new(user_id))
         .await
-        .map_err(|e| err!("Failed to increment user {} votes on vote: {}", user_id, e.to_string()))
-        {
-            return;
-        };
+        .map(|u| u.model())
+        .inspect_err(|e| err!("Failed to get user object from user ID {}: {}", user_id, e.to_string()))?
+        .await
+        .inspect_err(|e| {
+            err!(
+                "Failed to deserialize user object for user ID {}: {}",
+                user_id,
+                e.to_string()
+            )
+        })?;
 
-        let voter = match UserVotes::get_user_votes(&*route_state.database.read().await, user_id).await {
-            Ok(v) => v,
-            Err(e) => {
-                err!(
-                    "Failed to get voter after incrementing user votes for ID {}: {}",
-                    user_id,
-                    e.to_string()
-                );
-                return;
-            },
-        };
+    UserVotes::increment_user_votes(
+        &*route_state.database.read().await,
+        user_id,
+        &user.name,
+        &user.discriminator.to_string(),
+    )
+    .await
+    .inspect_err(|e| {
+        err!(
+            "Failed to increment user ID {} votes on vote: {}",
+            user_id,
+            e.to_string()
+        )
+    })?;
 
-        if let Some(v) = voter {
-            let message = format!(
-                "{0}#{1} voted for Assyst on top.gg and got {2} free tier 1 requests!\n{0}#{1} has voted {3} total times.",
-                user.name, user.discriminator, FREE_TIER_1_REQUESTS_ON_VOTE, v.count
-            );
+    let voter = UserVotes::get_user_votes(&*route_state.database.read().await, user_id)
+        .await
+        .inspect_err(|e| {
+            err!(
+                "Failed to get voter after incrementing user votes for ID {}: {}",
+                user_id,
+                e.to_string()
+            )
+        })?;
 
-            let LoggingWebhook { id, token } = CONFIG.logging_webhooks.vote.clone();
+    if let Some(v) = voter {
+        let message = format!(
+            "{0}#{1} voted for Assyst on top.gg and got {2} free tier 1 requests!\n{0}#{1} has voted {3} total times.",
+            user.name, user.discriminator, FREE_TIER_1_REQUESTS_ON_VOTE, v.count
+        );
 
-            let _ = route_state
-                .http_client
-                .execute_webhook(Id::<WebhookMarker>::new(id), &token)
-                .content(&message)
-                .unwrap()
-                .await;
-        }
-    }
+        let LoggingWebhook { id, token } = CONFIG.logging_webhooks.vote.clone();
+
+        let _ = route_state
+            .http_client
+            .execute_webhook(Id::<WebhookMarker>::new(id), &token)
+            .content(&message)
+            .unwrap()
+            .await;
+    };
+
+    Ok(())
 }
 
 /// Starts the webserver, providing bot list webhooking and prometheus services.

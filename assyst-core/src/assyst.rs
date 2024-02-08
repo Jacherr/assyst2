@@ -36,15 +36,7 @@ pub struct Assyst {
 impl Assyst {
     pub async fn new() -> anyhow::Result<Assyst> {
         let http_client = HttpClient::new(CONFIG.authentication.discord_token.clone());
-        let shard_count = http_client
-            .gateway()
-            .authed()
-            .await
-            .unwrap()
-            .model()
-            .await
-            .unwrap()
-            .shards;
+        let shard_count = http_client.gateway().authed().await?.model().await?.shards;
         let database_handler = Arc::new(RwLock::new(
             DatabaseHandler::new(CONFIG.database.to_url(), CONFIG.database.to_url_safe()).await?,
         ));

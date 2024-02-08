@@ -15,7 +15,7 @@ impl PipeServer {
     pub fn listen(pipe_location: &str) -> anyhow::Result<PipeServer> {
         if Path::new(pipe_location).exists() {
             info!("Deleting old pipe file {}", pipe_location);
-            std::fs::remove_file(pipe_location).unwrap();
+            std::fs::remove_file(pipe_location)?;
         }
 
         let listener = UnixListener::bind(pipe_location)?;
