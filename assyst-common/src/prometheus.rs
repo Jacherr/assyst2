@@ -1,4 +1,4 @@
-use crate::util::process::{get_memory_usage_for, get_own_memory_usage, pid_of};
+use crate::util::process::get_processes_mem_usage;
 use assyst_database::DatabaseHandler;
 use prometheus::{register_int_gauge, register_int_gauge_vec, IntGauge, IntGaugeVec};
 use std::sync::Arc;
@@ -34,23 +34,13 @@ impl Prometheus {
         let prefixes_cache_size = database_cache_reader.cache.get_prefixes_cache_size();
         self.update_cache_size("prefixes", prefixes_cache_size);
 
-        let core_memory_usage = get_own_memory_usage().unwrap_or(0) / 1024 / 1024;
+        let memory_usages = get_processes_mem_usage();
 
-        let gateway_pid = pid_of("assyst-gateway").unwrap_or(0).to_string();
-        let gateway_memory_usage = get_memory_usage_for(&gateway_pid).unwrap_or(0) / 1024 / 1024;
-
-        let cache_pid = pid_of("assyst-cache").unwrap_or(0).to_string();
-        let cache_memory_usage = get_memory_usage_for(&cache_pid).unwrap_or(0) / 1024 / 1024;
-
-        self.memory_usage
-            .with_label_values(&["assyst-core"])
-            .set(core_memory_usage as i64);
-        self.memory_usage
-            .with_label_values(&["assyst-gateway"])
-            .set(gateway_memory_usage as i64);
-        self.memory_usage
-            .with_label_values(&["assyst-cache"])
-            .set(cache_memory_usage as i64);
+        for usage in memory_usages {
+            self.memory_usage
+                .with_label_values(&[usage.0])
+                .set((usage.1 / 1024 / 1024) as i64);
+        }
     }
 
     pub fn add_guilds(&mut self, guilds: u64) {

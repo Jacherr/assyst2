@@ -1,4 +1,5 @@
-use anyhow::bail;
+#![feature(result_option_inspect)]
+
 use assyst_common::config::config::LoggingWebhook;
 use assyst_common::config::CONFIG;
 use assyst_common::prometheus::Prometheus;

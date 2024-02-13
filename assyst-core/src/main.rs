@@ -10,6 +10,7 @@ use crate::task::Task;
 use assyst_common::config::config::LoggingWebhook;
 use assyst_common::config::CONFIG;
 use assyst_common::pipe::{Pipe, GATEWAY_PIPE_PATH};
+use assyst_common::util::process::get_processes_mem_usage;
 use assyst_common::util::tracing_init;
 use assyst_common::{err, ok_or_break};
 use gateway_handler::handle_raw_event;

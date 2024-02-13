@@ -17,13 +17,5 @@ pub async fn get_patrons(assyst: ThreadSafeAssyst) {
 
     assyst.update_patron_list(patrons.clone()).await;
 
-    info!(
-        "Synchronised patrons: {} (total {})",
-        patrons
-            .iter()
-            .map(|x| x.user_id.to_string())
-            .collect::<Vec<_>>()
-            .join(", "),
-        patrons.len()
-    );
+    info!("Synchronised patrons: total {}", patrons.len());
 }
