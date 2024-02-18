@@ -1,13 +1,18 @@
+use std::time::Instant;
+
 use assyst_common::err;
 use tracing::debug;
 use twilight_model::channel::message::MessageType;
 use twilight_model::channel::Message;
 use twilight_model::gateway::payload::incoming::MessageUpdate;
+use twilight_model::id::Id;
 use twilight_model::util::Timestamp;
 
+use crate::command::source::Source;
 use crate::command::{CommandCtxt, CommandData};
-use crate::gateway_handler::message_parser::error::{ErrorSeverity, GetErrorSeverity};
+use crate::gateway_handler::message_parser::error::{ErrorSeverity, GetErrorSeverity, ParseError, PreParseError};
 use crate::gateway_handler::message_parser::parser::parse_message_into_command;
+use crate::replies::ReplyState;
 use crate::ThreadSafeAssyst;
 
 /// Handle a [MessageUpdate] event sent from the Discord gateway.
@@ -23,12 +28,15 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: MessageUpdate) {
             match parse_message_into_command(assyst.clone(), &message).await {
                 Ok(Some((cmd, args))) => {
                     let data = CommandData {
+                        message_id: message.id.get(),
+                        source: Source::Gateway,
                         assyst: &assyst,
                         attachment: message.attachments.first(),
                         referenced_message: message.referenced_message.as_deref(),
                         sticker: message.sticker_items.first(),
                         channel_id: message.channel_id.get(),
                         embed: message.embeds.first(),
+                        processing_time_start: Instant::now(),
                     };
                     let ctxt = CommandCtxt::new(args, &data);
 
@@ -39,7 +47,18 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: MessageUpdate) {
                         }
                     }
                 },
-                Ok(None) => { /* command not found */ },
+                Ok(None) | Err(ParseError::PreParseFail(PreParseError::MessageNotPrefixed(_))) => {
+                    if let Some(reply) = assyst.replies.remove(message.id.get())
+                        && let ReplyState::InUse(reply) = reply.state
+                    {
+                        // A previous command invocation was edited to non-command, delete response
+                        _ = assyst
+                            .http_client
+                            .delete_message(message.channel_id, Id::new(reply.message_id))
+                            .await
+                            .inspect_err(|err| err!("{err}"));
+                    }
+                },
                 Err(error) => {
                     if error.get_severity() == ErrorSeverity::High {
                         err!("{error}");

@@ -1,4 +1,5 @@
 use crate::cache_handler::CacheHandler;
+use crate::replies::Replies;
 use crate::rest::patreon::Patron;
 use crate::task::Task;
 use assyst_common::config::CONFIG;
@@ -32,6 +33,8 @@ pub struct Assyst {
     pub tasks: Mutex<Vec<Task>>,
     /// The recommended number of shards for this instance.
     pub shard_count: u64,
+    /// Cached command replies
+    pub replies: Replies,
 }
 impl Assyst {
     pub async fn new() -> anyhow::Result<Assyst> {
@@ -50,6 +53,7 @@ impl Assyst {
             reqwest_client: reqwest::Client::new(),
             tasks: Mutex::new(vec![]),
             shard_count,
+            replies: Replies::new(),
         })
     }
 

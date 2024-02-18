@@ -1,7 +1,10 @@
+use std::time::Instant;
+
 use assyst_common::err;
 use tracing::debug;
 use twilight_model::gateway::payload::incoming::MessageCreate;
 
+use crate::command::source::Source;
 use crate::command::{CommandCtxt, CommandData};
 use crate::gateway_handler::message_parser::error::{ErrorSeverity, GetErrorSeverity};
 use crate::gateway_handler::message_parser::parser::parse_message_into_command;
@@ -15,12 +18,15 @@ pub async fn handle(assyst: ThreadSafeAssyst, MessageCreate(message): MessageCre
     match parse_message_into_command(assyst.clone(), &message).await {
         Ok(Some((cmd, args))) => {
             let data = CommandData {
+                message_id: message.id.get(),
+                source: Source::Gateway,
                 assyst: &assyst,
                 attachment: message.attachments.first(),
                 referenced_message: message.referenced_message.as_deref(),
                 sticker: message.sticker_items.first(),
                 channel_id: message.channel_id.get(),
                 embed: message.embeds.first(),
+                processing_time_start: Instant::now(),
             };
             let ctxt = CommandCtxt::new(args, &data);
 

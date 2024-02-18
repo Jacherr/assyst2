@@ -127,7 +127,7 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
                     let #parse_idents = #parse_exprs.map_err(crate::command::ExecutionError::Parse)?;
                 )*
 
-                #fn_name(ctxt, #(#parse_idents),*).map_err(crate::command::ExecutionError::Command)
+                #fn_name(ctxt, #(#parse_idents),*).await.map_err(crate::command::ExecutionError::Command)
             }
         }
     };
@@ -150,14 +150,15 @@ fn is_rest_type(ty: &Type) -> Option<Span> {
 }
 
 fn verify_input_is_ctxt(inputs: &Punctuated<FnArg, Token![,]>) {
-    if let Some(FnArg::Typed(PatType { pat, .. })) = inputs.first()
-        && let Pat::Ident(ident) = &**pat
-        && ident.ident == "ctxt"
+    if let Some(FnArg::Typed(PatType { ty, .. })) = inputs.first()
+        && let Type::Path(path) = &**ty
+        && let Some(seg) = path.path.segments.last()
+        && seg.ident == "CommandCtxt"
     {
         return;
     }
 
-    panic!("first parameter of a #[command] annotated function should be the command context, with the name `ctxt`");
+    panic!("first parameter of a #[command] annotated function should be the `CommandCtxt`");
 }
 
 fn str_expr(s: &str) -> Expr {
