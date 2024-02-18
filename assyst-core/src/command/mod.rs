@@ -28,8 +28,9 @@
 
 use std::future::Future;
 use std::str::SplitAsciiWhitespace;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
+use super::gateway_handler::reply as gateway_reply;
 use crate::assyst::ThreadSafeAssyst;
 use async_trait::async_trait;
 use twilight_model::channel::message::sticker::MessageSticker;
@@ -37,11 +38,15 @@ use twilight_model::channel::message::Embed;
 use twilight_model::channel::{Attachment, Message};
 
 use self::errors::{ArgsExhausted, ExecutionError};
+use self::messagebuilder::MessageBuilder;
+use self::source::Source;
 
 pub mod arguments;
 pub mod errors;
+pub mod messagebuilder;
 pub mod misc;
 pub mod registry;
+pub mod source;
 
 /// Defines who can use a command in a server.
 pub enum Availability {
@@ -84,6 +89,9 @@ pub type TCommand = &'static (dyn Command + Send + Sync);
 /// Other static data that can be shared and does not need to be cloned between
 /// subcontexts
 pub struct CommandData<'a> {
+    /// The source of this command invocation
+    pub source: Source,
+    pub message_id: u64,
     pub channel_id: u64,
     /// `None` in a slash command
     pub attachment: Option<&'a Attachment>,
@@ -93,6 +101,7 @@ pub struct CommandData<'a> {
     pub assyst: &'a ThreadSafeAssyst,
     /// `None` in a slash command, otherwise set if the message is a reply
     pub referenced_message: Option<&'a Message>,
+    pub processing_time_start: Instant,
 }
 
 pub struct CommandCtxt<'a> {
@@ -105,6 +114,13 @@ impl<'a> CommandCtxt<'a> {
         Self {
             args: args.split_ascii_whitespace(),
             data,
+        }
+    }
+
+    pub async fn reply(&self, builder: impl Into<MessageBuilder>) -> anyhow::Result<()> {
+        let builder = builder.into();
+        match self.data.source {
+            Source::Gateway => gateway_reply::reply(self, builder).await,
         }
     }
 

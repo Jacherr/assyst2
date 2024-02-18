@@ -4,6 +4,7 @@ use tracing_subscriber::fmt::time::UtcTime;
 use tracing_subscriber::EnvFilter;
 
 pub mod discord;
+pub mod filetype;
 pub mod process;
 pub mod rate_tracker;
 pub mod regex;

@@ -1,10 +1,9 @@
-#![feature(let_chains, str_split_whitespace_remainder)]
+#![feature(let_chains, str_split_whitespace_remainder, round_char_boundary)]
 
 use std::sync::Arc;
 use std::time::Duration;
 
 use crate::assyst::{Assyst, ThreadSafeAssyst};
-use crate::task::tasks::get_patrons::get_patrons;
 use crate::task::tasks::top_gg_stats::post_top_gg_stats;
 use crate::task::Task;
 use assyst_common::config::config::LoggingWebhook;
@@ -16,7 +15,6 @@ use gateway_handler::handle_raw_event;
 use gateway_handler::incoming_event::IncomingEvent;
 use tracing::{info, trace};
 use twilight_gateway::EventTypeFlags;
-use twilight_model::id::marker::WebhookMarker;
 use twilight_model::id::Id;
 
 mod assyst;
@@ -24,6 +22,7 @@ mod cache_handler;
 mod command;
 mod downloader;
 mod gateway_handler;
+mod replies;
 mod rest;
 mod task;
 
@@ -51,15 +50,17 @@ async fn main() {
         std::panic::set_hook(Box::new(move |info| {
             println!("{}", info);
 
-            let assyst = assyst.clone();
             let msg = format!("A thread has panicked: ```{}```", info);
+            let assyst = assyst.clone();
 
             let LoggingWebhook { id, token } = CONFIG.logging_webhooks.panic.clone();
-
+            let Some(id) = Id::new_checked(id) else {
+                return;
+            };
             handle.spawn(async move {
                 let _ = assyst
                     .http_client
-                    .execute_webhook(Id::<WebhookMarker>::new(id), &token)
+                    .execute_webhook(id, &token)
                     .content(&msg)
                     .unwrap()
                     .await;
