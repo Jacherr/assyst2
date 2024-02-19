@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 pub trait Ansi {
     fn bold(&self) -> String;
     fn italic(&self) -> String;
@@ -37,7 +39,10 @@ pub trait Ansi {
     fn bg_bright_white(&self) -> String;
 }
 
-impl Ansi for str {
+impl<T> Ansi for T
+where
+    T: Display,
+{
     fn bold(&self) -> String {
         format!("\x1b[1m{}\x1b[22m", self)
     }

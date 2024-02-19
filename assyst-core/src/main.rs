@@ -4,6 +4,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use crate::assyst::{Assyst, ThreadSafeAssyst};
+use crate::task::tasks::get_patrons::get_patrons;
 use crate::task::tasks::top_gg_stats::post_top_gg_stats;
 use crate::task::Task;
 use assyst_common::config::config::LoggingWebhook;

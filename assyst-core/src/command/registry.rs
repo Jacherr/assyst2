@@ -15,11 +15,17 @@ macro_rules! declare_commands {
     }
 }
 
-declare_commands!(misc::remind_command, misc::e_command, misc::ping_command);
+declare_commands!(
+    misc::remind_command,
+    misc::e_command,
+    misc::ping_command,
+    misc::url_command,
+    misc::help_command
+);
 
 static COMMANDS: OnceLock<HashMap<&'static str, TCommand>> = OnceLock::new();
 
-fn get_or_init_commands() -> &'static HashMap<&'static str, TCommand> {
+pub fn get_or_init_commands() -> &'static HashMap<&'static str, TCommand> {
     COMMANDS.get_or_init(|| {
         let mut map = HashMap::new();
 
