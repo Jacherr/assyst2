@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use assyst_common::util::discord::get_avatar_url;
 use assyst_common::util::{parse_to_millis, regex};
 use serde::Deserialize;
@@ -234,6 +236,12 @@ impl ImageUrl {
         }
 
         Err(TagParseError::NoImageInHistory)
+    }
+}
+
+impl Display for ImageUrl {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 

@@ -26,6 +26,7 @@
 //!   entry point (and the only relevant for the outside) is [`registry::find_command_by_name`],
 //!   which does the mapping mentioned above.
 
+use std::fmt::Display;
 use std::future::Future;
 use std::str::SplitAsciiWhitespace;
 use std::time::{Duration, Instant};
@@ -49,6 +50,7 @@ pub mod registry;
 pub mod source;
 
 /// Defines who can use a command in a server.
+#[derive(Clone, Copy, Debug)]
 pub enum Availability {
     /// Anyone can use this command, subject to blacklisting and whitelisting configuration.
     Public,
@@ -58,12 +60,65 @@ pub enum Availability {
     Dev,
 }
 
+impl Display for Availability {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::Public => "Public",
+                Self::ServerManagers => "Server Managers",
+                Self::Dev => "Private",
+            }
+        )
+    }
+}
+
 pub struct CommandMetadata {
     pub name: &'static str,
     pub aliases: &'static [&'static str],
     pub description: &'static str,
     pub cooldown: Duration,
     pub access: Availability,
+    pub category: Category,
+    pub examples: &'static [&'static str],
+}
+
+#[derive(Clone, PartialEq, Eq, Hash)]
+pub enum Category {
+    Fun,
+    Makesweet,
+    Wsi,
+    Misc,
+    None(String),
+}
+
+impl Display for Category {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::Fun => "fun",
+                Self::Makesweet => "makesweet",
+                Self::Wsi => "wsi",
+                Self::Misc => "misc",
+                Self::None(t) => &**t,
+            }
+        )
+    }
+}
+
+impl From<String> for Category {
+    fn from(v: String) -> Category {
+        match &*v {
+            "fun" => Category::Fun,
+            "misc" => Category::Misc,
+            "wsi" => Category::Wsi,
+            "makesweet" => Category::Makesweet,
+            t => Category::None(t.to_string()),
+        }
+    }
 }
 
 /// A command that can be executed.

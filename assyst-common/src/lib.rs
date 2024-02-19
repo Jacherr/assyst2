@@ -2,6 +2,7 @@ pub mod ansi;
 pub mod cache;
 pub mod config;
 pub mod macros;
+pub mod markdown;
 pub mod pipe;
 pub mod prometheus;
 pub mod util;
