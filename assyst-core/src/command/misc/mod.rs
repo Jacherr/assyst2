@@ -3,12 +3,14 @@ use std::time::{Duration, Instant};
 
 use crate::command::Availability;
 
-use super::arguments::{self, Image, ImageUrl, Rest, Time, Word};
+use super::arguments::{Image, ImageUrl, Rest, Time, Word};
 use super::registry::get_or_init_commands;
 use super::{Category, Command, CommandCtxt};
 
 use assyst_common::ansi::Ansi;
 use assyst_common::markdown::Markdown;
+use assyst_common::util::process::{get_processes_cpu_usage, get_processes_mem_usage};
+use assyst_common::util::table::key_value;
 use assyst_proc_macro::command;
 
 #[command(
@@ -24,19 +26,36 @@ pub async fn remind(_ctxt: CommandCtxt<'_>, _when: Time, _text: Rest) -> anyhow:
     Ok(())
 }
 
-#[command(description = "enlarges an image", cooldown = Duration::ZERO, access = Availability::Public, category = Category::Misc)]
-pub async fn e(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
+#[command(
+    description = "enlarges an image", 
+    aliases = ["e"], 
+    cooldown = Duration::from_secs(2), 
+    access = Availability::Public, 
+    category = Category::Misc,
+    usage = "test"
+)]
+pub async fn enlarge(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
     ctxt.reply(source).await?;
     Ok(())
 }
 
-#[command(description = "returns the URL of any captured media", cooldown = Duration::ZERO, access = Availability::Public, category = Category::Misc)]
+#[command(
+    description = "returns the URL of any captured media",
+    cooldown = Duration::from_secs(1),
+    access = Availability::Public,
+    category = Category::Misc
+)]
 pub async fn url(ctxt: CommandCtxt<'_>, source: ImageUrl) -> anyhow::Result<()> {
     ctxt.reply(format!("\u{200b}{source}")).await?;
     Ok(())
 }
 
-#[command(description = "ping the discord api", cooldown = Duration::ZERO, access = Availability::Public, category = Category::Misc)]
+#[command(
+    description = "ping the discord api",
+    cooldown = Duration::from_secs(1),
+    access = Availability::Public, 
+    category = Category::Misc
+)]
 pub async fn ping(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
     let processing_time = ctxt.data.processing_time_start.elapsed();
     let ping_start = Instant::now();
@@ -50,7 +69,12 @@ pub async fn ping(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
     Ok(())
 }
 
-#[command(description = "get command help", cooldown = Duration::ZERO, access = Availability::Public, category = Category::Misc)]
+#[command(
+    description = "get command help",
+    cooldown = Duration::from_secs(1),
+    access = Availability::Public,
+    category = Category::Misc
+)]
 pub async fn help(ctxt: CommandCtxt<'_>, label: Option<Word>) -> anyhow::Result<()> {
     let cmds = get_or_init_commands();
 
@@ -78,24 +102,18 @@ pub async fn help(ctxt: CommandCtxt<'_>, label: Option<Word>) -> anyhow::Result<
         // if said argument is a command
         if let Some(cmd) = cmds.get(&*tx) {
             let meta = &cmd.metadata();
+            let name_fmt = (meta.name.to_owned() + ":").fg_green();
+            let description = meta.description;
+            let aliases = "Aliases: ".fg_yellow() + &(if !meta.aliases.is_empty() {
+                meta.aliases.join(",")
+            } else {
+                "[none]".to_owned()
+            });
+            let cooldown = format!("{} {} seconds", "Cooldown:".fg_yellow(), meta.cooldown.as_secs());
+            let access = "Access: ".fg_yellow() + &meta.access.to_string();
+
             ctxt.reply(
-                format!(
-                    "{}{}{}\n{}\n\n{}\n{} {} {}\n{} {}\n",
-                    Ansi::underline(&meta.name.fg_yellow()),
-                    ":".fg_yellow(),
-                    "\x1b[0m", // dude fuck discord
-                    meta.description,
-                    if !meta.aliases.is_empty() {
-                        format!("{} {}", " Aliases:".fg_yellow(), meta.aliases.join(", "))
-                    } else {
-                        "[none]".fg_black()
-                    },
-                    "Cooldown:".fg_yellow(),
-                    meta.cooldown.as_secs(),
-                    "seconds",
-                    "  Access:".fg_yellow(),
-                    meta.access
-                )
+                format!("{name_fmt} {description}\n\n{aliases}\n{cooldown}\n{access}")
                 .trim()
                 .codeblock("ansi"),
             )
@@ -115,13 +133,13 @@ pub async fn help(ctxt: CommandCtxt<'_>, label: Option<Word>) -> anyhow::Result<
             // irrelevant
             } else {
                 let mut txt = String::new();
-                txt += &Ansi::underline(&format!("{g}:").fg_yellow());
-                txt += "\x1b[0m"; // again
+                txt += &format!("{g}:").fg_green();
                 let l = groups.get(&g);
 
                 if let Some(list) = l {
                     for i in list {
-                        txt += &format!("\n\t{}: {}", i.metadata().name, i.metadata().description.fg_black())
+                        let name = (i.metadata().name.to_owned() + ":").fg_yellow();
+                        txt += &format!("\n\t{name} {}", i.metadata().description)
                     }
                 } else {
                     txt += &"\n\t[no commands]".fg_black()
@@ -161,5 +179,41 @@ pub async fn help(ctxt: CommandCtxt<'_>, label: Option<Word>) -> anyhow::Result<
         ctxt.reply(msg).await?;
     }
 
+    Ok(())
+}
+
+#[command(
+    description = "get bot stats",
+    cooldown = Duration::from_secs(5),
+    access = Availability::Public,
+    category = Category::Misc
+)]
+pub async fn stats(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
+    let mem_usages = get_processes_mem_usage();
+    let mem_usages_fmt = mem_usages.iter()
+        .map(|x| (x.0.fg_cyan(), (x.1 / 1024 / 1024).to_string() + "MB residential"))
+        .collect::<Vec<_>>();
+
+    let cpu_usages = get_processes_cpu_usage();
+    let cpu_usages_fmt = cpu_usages.iter()
+        .map(|x| (x.0.fg_cyan(), x.1.to_string() + "%"))
+        .collect::<Vec<_>>();
+
+    let mut combined_usages: Vec<(String, String)> = vec![];
+    for i in mem_usages_fmt {
+        if let Some(cpu) = cpu_usages_fmt.iter().find(|x| x.0 == i.0) {
+            combined_usages.push(
+                (
+                    cpu.0.clone(),
+                    format!("Memory: {}, CPU: {}", i.1, cpu.1)
+                )
+            );
+        }
+
+    }
+
+    let table = key_value(&combined_usages);
+
+    ctxt.reply(table.codeblock("ansi")).await?;
     Ok(())
 }

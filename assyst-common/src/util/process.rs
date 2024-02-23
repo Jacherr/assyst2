@@ -1,5 +1,7 @@
 use std::process::Command;
 
+static PROCESSES: &[&'static str] = &["assyst-core", "assyst-cache", "assyst-gateway"];
+
 /// Attempts to extract memory usage in bytes for a process by PID
 pub fn get_memory_usage_for(pid: &str) -> Option<usize> {
     let field = 1;
@@ -24,26 +26,34 @@ pub fn pid_of(name: &str) -> Option<usize> {
 /// Attempts to get CPU usage for a PID
 pub fn cpu_usage_percentage_of(pid: usize) -> Option<f64> {
     let output = exec_sync(&format!("top -b -n 2 -d 0.2 -p {pid} | tail -1 | awk '{{print $9}}'"));
-    output.ok().map(|x| x.stdout.parse::<f64>().ok()).flatten()
+    output.ok().map(|x| x.stdout.trim().parse::<f64>().ok()).flatten()
 }
 
 /// Gets the memory usage in bytes of all key Assyst processes.
 pub fn get_processes_mem_usage() -> Vec<(&'static str, usize)> {
-    let core_memory_usage = get_own_memory_usage().unwrap_or(0);
+    let mut memory_usages: Vec<(&str, usize)> = vec![];
 
-    let gateway_pid = pid_of("assyst-gateway").unwrap_or(0).to_string();
-    let gateway_memory_usage = get_memory_usage_for(&gateway_pid).unwrap_or(0);
-
-    let cache_pid = pid_of("assyst-cache").unwrap_or(0).to_string();
-    let cache_memory_usage = get_memory_usage_for(&cache_pid).unwrap_or(0);
-
-    let memory_usages = vec![
-        ("assyst-core", core_memory_usage),
-        ("assyst-gateway", gateway_memory_usage),
-        ("assyst-cache", cache_memory_usage),
-    ];
+    for process in PROCESSES {
+        let pid = pid_of(process).unwrap_or(0).to_string();
+        let mem_usage = get_memory_usage_for(&pid).unwrap_or(0);
+        memory_usages.push((process, mem_usage));
+    }
 
     memory_usages
+}
+
+pub fn get_processes_cpu_usage() -> Vec<(&'static str, f64)> {
+    let mut cpu_usages: Vec<(&str, f64)> = vec![];
+
+    for process in PROCESSES {
+        let pid = pid_of(process).unwrap_or(0);
+        println!("pid: {pid}");
+        let cpu_usage = cpu_usage_percentage_of(pid).unwrap_or(0.0);
+        println!("cpu: {cpu_usage}");
+        cpu_usages.push((process, cpu_usage));
+    }
+
+    cpu_usages
 }
 
 pub struct CommandOutput {

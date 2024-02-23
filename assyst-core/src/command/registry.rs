@@ -17,10 +17,11 @@ macro_rules! declare_commands {
 
 declare_commands!(
     misc::remind_command,
-    misc::e_command,
+    misc::enlarge_command,
     misc::ping_command,
     misc::url_command,
-    misc::help_command
+    misc::help_command,
+    misc::stats_command
 );
 
 static COMMANDS: OnceLock<HashMap<&'static str, TCommand>> = OnceLock::new();

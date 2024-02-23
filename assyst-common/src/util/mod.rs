@@ -8,6 +8,7 @@ pub mod filetype;
 pub mod process;
 pub mod rate_tracker;
 pub mod regex;
+pub mod table;
 
 /// Converts a unit string (s, m, h, d) to milliseconds
 fn unit_to_ms(u: &str) -> u64 {

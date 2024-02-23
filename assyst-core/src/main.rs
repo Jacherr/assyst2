@@ -10,13 +10,13 @@ use crate::task::Task;
 use assyst_common::config::config::LoggingWebhook;
 use assyst_common::config::CONFIG;
 use assyst_common::pipe::{Pipe, GATEWAY_PIPE_PATH};
-use assyst_common::util::process::get_processes_mem_usage;
 use assyst_common::util::tracing_init;
 use assyst_common::{err, ok_or_break};
 use gateway_handler::handle_raw_event;
 use gateway_handler::incoming_event::IncomingEvent;
 use tracing::{info, trace};
 use twilight_gateway::EventTypeFlags;
+use twilight_model::id::marker::WebhookMarker;
 use twilight_model::id::Id;
 
 mod assyst;
@@ -52,20 +52,28 @@ async fn main() {
         std::panic::set_hook(Box::new(move |info| {
             println!("{}", info);
 
-            let msg = format!("A thread has panicked: ```{}```", info);
             let assyst = assyst.clone();
+            let msg = format!("A thread has panicked: ```{}```", info);
 
             let LoggingWebhook { id, token } = CONFIG.logging_webhooks.panic.clone();
-            let Some(id) = Id::new_checked(id) else {
-                return;
-            };
+
             handle.spawn(async move {
-                let _ = assyst
-                    .http_client
-                    .execute_webhook(id, &token)
-                    .content(&msg)
-                    .unwrap()
-                    .await;
+                if id == 0 {
+                    err!("Failed to trigger panic webhook: Panic webhook ID is 0");
+                } else {
+                    let webhook = assyst
+                        .http_client
+                        .execute_webhook(Id::<WebhookMarker>::new(id), &token)
+                        .content(&msg);
+
+                    if let Ok(w) = webhook {
+                        let _ = w
+                            .await
+                            .inspect_err(|e| err!("Failed to trigger panic webhook: {}", e.to_string()));
+                    } else if let Err(e) = webhook {
+                        err!("Failed to trigger panic webhook: {}", e.to_string());
+                    }
+                }
             });
         }));
     }
