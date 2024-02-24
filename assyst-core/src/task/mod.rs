@@ -38,7 +38,7 @@ impl Task {
         Task { _thread: thread }
     }
 
-    pub fn new_delayed(assyst: ThreadSafeAssyst, interval: Duration, delay: Duration, callback: TaskRun) -> Task {
+    pub fn _new_delayed(assyst: ThreadSafeAssyst, interval: Duration, delay: Duration, callback: TaskRun) -> Task {
         let thread = spawn(async move {
             sleep(delay).await;
             loop {

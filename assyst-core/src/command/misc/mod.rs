@@ -210,7 +210,7 @@ pub async fn stats(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
     let cpu_usages_fmt = cpu_usages.iter()
         .map(|x| (x.0.fg_cyan(), format!("{:.2?}", x.1) + "%"))
         .collect::<Vec<_>>();
-
+    
     let uptimes = get_processes_uptimes();
     let uptimes_fmt = uptimes.iter()
             .map(|(x, y)| (x.fg_cyan(), y))

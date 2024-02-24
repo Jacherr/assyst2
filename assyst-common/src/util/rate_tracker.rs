@@ -1,7 +1,5 @@
 use std::time::Duration;
-
 use tokio::time::Instant;
-use tracing::debug;
 
 /// Struct to allow the tracking of how fast a value increases, or how fast a state changes.
 ///

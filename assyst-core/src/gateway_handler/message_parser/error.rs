@@ -69,7 +69,6 @@ impl GetErrorSeverity for ParseError {
     fn get_severity(&self) -> ErrorSeverity {
         match self {
             ParseError::PreParseFail(e) => e.get_severity(),
-            _ => ErrorSeverity::Low,
         }
     }
 }

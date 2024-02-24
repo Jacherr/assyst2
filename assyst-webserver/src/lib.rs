@@ -53,11 +53,11 @@ where
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TopGgWebhookBody {
-    bot: String,
+    _bot: String,
     user: String,
-    r#type: String,
-    is_weekend: bool,
-    query: Option<String>,
+    _type: String,
+    _is_weekend: bool,
+    _query: Option<String>,
 }
 
 #[derive(Clone)]

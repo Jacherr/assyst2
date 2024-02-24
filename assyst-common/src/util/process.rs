@@ -1,6 +1,10 @@
+use rayon::prelude::*;
 use std::process::Command;
 
-static PROCESSES: &[&'static str] = &["assyst-core", "assyst-cache", "assyst-gateway"];
+use crate::ansi::Ansi;
+
+static PROCESSES: &[&'static str] = &["assyst-core", "assyst-cache", "assyst-gateway", "filer"];
+static HOST_PROCESS: &'static str = "host machine";
 
 /// Attempts to extract memory usage in bytes for a process by PID
 pub fn get_memory_usage_for(pid: &str) -> Option<usize> {
@@ -12,12 +16,12 @@ pub fn get_memory_usage_for(pid: &str) -> Option<usize> {
     Some(npages * 4096)
 }
 
-/// Attempts to extract memory usage for the current process
-pub fn get_own_memory_usage() -> Option<usize> {
-    get_memory_usage_for("self")
+pub fn get_host_memory_usage() -> Option<usize> {
+    let output = exec_sync("free -b | head -2 | tail -1 | awk {{'print $3'}}");
+    output.ok().map(|x| x.stdout.trim().parse::<usize>().ok()).flatten()
 }
 
-/// Gets the memory usage in bytes of all key Assyst processes.
+/// Gets the memory usage in bytes of all 'relevant'' processes.
 pub fn get_processes_mem_usage() -> Vec<(&'static str, usize)> {
     let mut memory_usages: Vec<(&str, usize)> = vec![];
 
@@ -26,6 +30,8 @@ pub fn get_processes_mem_usage() -> Vec<(&'static str, usize)> {
         let mem_usage = get_memory_usage_for(&pid).unwrap_or(0);
         memory_usages.push((process, mem_usage));
     }
+
+    memory_usages.push((HOST_PROCESS, get_host_memory_usage().unwrap_or(0)));
 
     memory_usages
 }
@@ -40,32 +46,62 @@ pub fn cpu_usage_percentage_of(pid: usize) -> Option<f64> {
         .map(|x| x / num_cpus::get() as f64)
 }
 
-pub fn get_processes_cpu_usage() -> Vec<(&'static str, f64)> {
-    let mut cpu_usages: Vec<(&str, f64)> = vec![];
+/// Gets the CPU usage of the host machine
+pub fn get_host_cpu_usage() -> Option<f64> {
+    let output = exec_sync("top -bn2 -d 0.3 | grep '%Cpu' | tail -1");
 
-    for process in PROCESSES {
-        let pid = pid_of(process).unwrap_or(0);
-        let cpu_usage = cpu_usage_percentage_of(pid).unwrap_or(0.0);
-        cpu_usages.push((process, cpu_usage));
-    }
+    output
+        .ok()
+        .map(|x| x.stdout.trim().split(",").nth(3).map(|y| y.to_owned()))
+        .flatten()
+        .map(|x| x.trim().split(" ").nth(0).map(|y| y.trim().to_owned()))
+        .flatten()
+        .map(|x| x.trim().parse::<f64>().ok().map(|x| 100.0 - x))
+        .flatten()
+}
+
+/// Gets the CPU usage of all 'relevant' processes
+pub fn get_processes_cpu_usage() -> Vec<(&'static str, f64)> {
+    let mut cpu_usages: Vec<(&str, f64)> = PROCESSES.iter().map(|x| (*x, 0.0)).collect::<Vec<_>>();
+    cpu_usages.push((HOST_PROCESS, 0.0));
+
+    cpu_usages.par_iter_mut().for_each(|entry| {
+        if entry.0 == HOST_PROCESS {
+            entry.1 = get_host_cpu_usage().unwrap_or(0.0);
+        } else {
+            let pid = pid_of(entry.0).unwrap_or(0);
+            let cpu_usage = cpu_usage_percentage_of(pid).unwrap_or(0.0);
+            entry.1 = cpu_usage;
+        }
+    });
 
     cpu_usages
 }
 
+/// Gets the uptime of a process based on its PID
 pub fn get_uptime_of(pid: usize) -> Option<String> {
     exec_sync(&format!("ps -p {pid} -o etime="))
         .ok()
         .map(|x| x.stdout.trim().to_owned())
 }
 
+/// Gets the uptimes of all 'relevant' processes
 pub fn get_processes_uptimes() -> Vec<(&'static str, String)> {
     let mut uptimes: Vec<(&str, String)> = vec![];
 
     for process in PROCESSES {
         let pid = pid_of(process).unwrap_or(0);
-        let uptime = get_uptime_of(pid).unwrap_or("unknown".to_string());
+        let uptime = get_uptime_of(pid).unwrap_or("unknown".to_owned());
+        let uptime = if uptime.is_empty() {
+            "offline".fg_red().to_owned()
+        } else {
+            uptime
+        };
         uptimes.push((process, uptime));
     }
+
+    let host_uptime = get_uptime_of(1).unwrap_or("unknown".to_owned());
+    uptimes.push((HOST_PROCESS, host_uptime));
 
     uptimes
 }
@@ -76,6 +112,7 @@ pub fn pid_of(name: &str) -> Option<usize> {
     Some(result.trim().parse().ok()?)
 }
 
+#[derive(Clone, Debug)]
 pub struct CommandOutput {
     pub stdout: String,
     pub stderr: String,
