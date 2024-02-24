@@ -2,7 +2,7 @@ use crate::util::process::get_processes_mem_usage;
 use crate::util::rate_tracker::RateTracker;
 use assyst_database::DatabaseHandler;
 use prometheus::{register_int_counter, register_int_gauge, register_int_gauge_vec, IntCounter, IntGauge, IntGaugeVec};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::sync::RwLock;
 use tracing::info;
@@ -13,9 +13,9 @@ pub struct Prometheus {
     pub memory_usage: IntGaugeVec,
     pub guilds: IntGauge,
     pub events: IntCounter,
-    pub events_rate_tracker: RateTracker,
+    pub events_rate_tracker: Mutex<RateTracker>,
     pub commands: IntCounter,
-    pub commands_rate_tracker: RateTracker,
+    pub commands_rate_tracker: Mutex<RateTracker>,
     pub database_handler: Arc<RwLock<DatabaseHandler>>,
 }
 impl Prometheus {
@@ -25,9 +25,9 @@ impl Prometheus {
             memory_usage: register_int_gauge_vec!("memory_usage", "Memory usage in MB", &["process"])?,
             guilds: register_int_gauge!("guilds", "Total guilds")?,
             events: register_int_counter!("events", "Total number of events")?,
-            events_rate_tracker: RateTracker::new(Duration::from_secs(1)),
+            events_rate_tracker: Mutex::new(RateTracker::new(Duration::from_secs(1))),
             commands: register_int_counter!("commands", "Total number of commands executed")?,
-            commands_rate_tracker: RateTracker::new(Duration::from_secs(60)),
+            commands_rate_tracker: Mutex::new(RateTracker::new(Duration::from_secs(60))),
             database_handler,
         })
     }
@@ -37,7 +37,7 @@ impl Prometheus {
     }
 
     /// Updates some metrics that are not updated as data comes in.
-    pub async fn update(&mut self) {
+    pub async fn update(&self) {
         info!("Collecting prometheus metrics");
 
         let database_cache_reader = self.database_handler.read().await;
@@ -53,33 +53,39 @@ impl Prometheus {
         }
     }
 
-    pub fn add_guilds(&mut self, guilds: u64) {
+    pub fn add_guilds(&self, guilds: u64) {
         self.guilds.add(guilds as i64);
     }
 
-    pub fn inc_guilds(&mut self) {
+    pub fn inc_guilds(&self) {
         self.guilds.inc();
     }
 
-    pub fn dec_guilds(&mut self) {
+    pub fn dec_guilds(&self) {
         self.guilds.dec();
     }
 
-    pub fn add_event(&mut self) {
+    pub fn add_event(&self) {
         self.events.inc();
-        self.events_rate_tracker.add_sample(self.events.get() as _);
+        self.events_rate_tracker
+            .lock()
+            .unwrap()
+            .add_sample(self.events.get() as _);
     }
 
-    pub fn get_events_rate(&mut self) -> Option<isize> {
-        self.events_rate_tracker.get_rate()
+    pub fn get_events_rate(&self) -> Option<isize> {
+        self.events_rate_tracker.lock().unwrap().get_rate()
     }
 
-    pub fn add_command(&mut self) {
+    pub fn add_command(&self) {
         self.commands.inc();
-        self.commands_rate_tracker.add_sample(self.commands.get() as _);
+        self.commands_rate_tracker
+            .lock()
+            .unwrap()
+            .add_sample(self.commands.get() as _);
     }
 
-    pub fn get_commands_rate(&mut self) -> Option<isize> {
-        self.commands_rate_tracker.get_rate()
+    pub fn get_commands_rate(&self) -> Option<isize> {
+        self.commands_rate_tracker.lock().unwrap().get_rate()
     }
 }

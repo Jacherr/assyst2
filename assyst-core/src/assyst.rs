@@ -6,8 +6,8 @@ use assyst_common::config::CONFIG;
 use assyst_common::pipe::CACHE_PIPE_PATH;
 use assyst_common::prometheus::Prometheus;
 use assyst_database::DatabaseHandler;
-use std::sync::Arc;
-use tokio::sync::{Mutex, RwLock};
+use std::sync::{Arc, Mutex};
+use tokio::sync::RwLock;
 use twilight_http::Client as HttpClient;
 
 pub type ThreadSafeAssyst = Arc<Assyst>;
@@ -26,7 +26,7 @@ pub struct Assyst {
     /// List of the current patrons to Assyst.
     pub patrons: Mutex<Vec<Patron>>,
     /// Prometheus handler for graph metrics.
-    pub prometheus: Arc<Mutex<Prometheus>>,
+    pub prometheus: Arc<Prometheus>,
     /// The reqwest client, used to issue general HTTP requests
     pub reqwest_client: reqwest::Client,
     /// Tasks are functions which are called on an interval.
@@ -49,7 +49,7 @@ impl Assyst {
             database_handler: database_handler.clone(),
             http_client: Arc::new(http_client),
             patrons: Mutex::new(vec![]),
-            prometheus: Arc::new(Mutex::new(Prometheus::new(database_handler)?)),
+            prometheus: Arc::new(Prometheus::new(database_handler)?),
             reqwest_client: reqwest::Client::new(),
             tasks: Mutex::new(vec![]),
             shard_count,
@@ -59,10 +59,10 @@ impl Assyst {
 
     /// Register a new Task to Assyst.
     pub async fn register_task(&self, task: Task) {
-        self.tasks.lock().await.push(task);
+        self.tasks.lock().unwrap().push(task);
     }
 
     pub async fn update_patron_list(&self, patrons: Vec<Patron>) {
-        *self.patrons.lock().await = patrons;
+        *self.patrons.lock().unwrap() = patrons;
     }
 }

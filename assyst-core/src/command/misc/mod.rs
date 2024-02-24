@@ -191,11 +191,11 @@ pub async fn help(ctxt: CommandCtxt<'_>, label: Option<Word>) -> anyhow::Result<
 pub async fn stats(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
     ctxt.reply("Collecting...").await?;
 
-    let events_rate = ctxt.assyst().prometheus.lock().await.get_events_rate().map(|x| x.to_string()).unwrap_or("0".to_owned());
-    let commands_rate = ctxt.assyst().prometheus.lock().await.get_commands_rate().map(|x| x.to_string()).unwrap_or("0".to_owned());
+    let events_rate = ctxt.assyst().prometheus.get_events_rate().map(|x| x.to_string()).unwrap_or("0".to_owned());
+    let commands_rate = ctxt.assyst().prometheus.get_commands_rate().map(|x| x.to_string()).unwrap_or("0".to_owned());
 
     let stats_table = key_value(&vec![
-        ("Guilds".fg_cyan(), ctxt.assyst().prometheus.lock().await.guilds.get().to_string()),
+        ("Guilds".fg_cyan(), ctxt.assyst().prometheus.guilds.get().to_string()),
         ("Shards".fg_cyan(), ctxt.assyst().shard_count.to_string()),
         ("Events".fg_cyan(), events_rate + "/sec"),
         ("Commands".fg_cyan(), commands_rate + "/min")

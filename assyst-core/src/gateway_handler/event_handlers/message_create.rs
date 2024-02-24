@@ -37,7 +37,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, MessageCreate(message): MessageCre
                 }
             }
 
-            assyst.prometheus.lock().await.add_command();
+            assyst.prometheus.add_command();
         },
         Ok(None) => { /* command not found */ },
         Err(error) => {

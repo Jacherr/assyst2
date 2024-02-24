@@ -1,5 +1,3 @@
-#![feature(result_option_inspect)]
-
 use assyst_common::config::config::LoggingWebhook;
 use assyst_common::config::CONFIG;
 use assyst_common::prometheus::Prometheus;
@@ -18,7 +16,7 @@ use serde::Deserialize;
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use tokio::spawn;
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::RwLock;
 use twilight_http::Client as HttpClient;
 use twilight_model::id::marker::{UserMarker, WebhookMarker};
 use twilight_model::id::Id;
@@ -66,11 +64,12 @@ pub struct TopGgWebhookBody {
 struct RouteState {
     pub database: Arc<RwLock<DatabaseHandler>>,
     pub http_client: Arc<HttpClient>,
-    pub prometheus: Arc<Mutex<Prometheus>>,
+    pub prometheus: Arc<Prometheus>,
 }
 
+#[axum::debug_handler]
 async fn prometheus_metrics(State(route_state): State<RouteState>) -> String {
-    route_state.prometheus.lock().await.update().await;
+    route_state.prometheus.update().await;
 
     let encoder = TextEncoder::new();
     let family = prometheus::gather();
@@ -162,11 +161,7 @@ async fn top_gg_webhook(
 }
 
 /// Starts the webserver, providing bot list webhooking and prometheus services.
-pub async fn run(
-    database: Arc<RwLock<DatabaseHandler>>,
-    http_client: Arc<HttpClient>,
-    prometheus: Arc<Mutex<Prometheus>>,
-) {
+pub async fn run(database: Arc<RwLock<DatabaseHandler>>, http_client: Arc<HttpClient>, prometheus: Arc<Prometheus>) {
     let router = Router::new()
         .route("/", get(|| async { Redirect::permanent("https://jacher.io/assyst") }))
         .route("/topgg", get(|| async { Redirect::permanent(&TOP_GG_VOTE_URL) }))

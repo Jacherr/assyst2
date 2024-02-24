@@ -6,7 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-axum = "0.7.4"
+axum-macros = { version = "0.3.0-rc.3" }
+axum = { version = "0.7.4", features = ["macros"] }
 assyst-common = { path = "../assyst-common" }
 assyst-database = { path = "../assyst-database" }
 tokio = { version = "1.34.0", features = ["full"] }

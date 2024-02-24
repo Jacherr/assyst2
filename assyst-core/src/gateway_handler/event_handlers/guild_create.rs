@@ -20,6 +20,6 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: GuildCreate) {
             event.name,
             event.member_count.unwrap_or(0)
         );
-        assyst.prometheus.lock().await.inc_guilds();
+        assyst.prometheus.inc_guilds();
     }
 }
