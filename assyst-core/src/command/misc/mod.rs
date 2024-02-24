@@ -9,7 +9,7 @@ use super::{Category, Command, CommandCtxt};
 
 use assyst_common::ansi::Ansi;
 use assyst_common::markdown::Markdown;
-use assyst_common::util::process::{get_processes_cpu_usage, get_processes_mem_usage};
+use assyst_common::util::process::{get_processes_cpu_usage, get_processes_mem_usage, get_processes_uptimes};
 use assyst_common::util::table::key_value;
 use assyst_proc_macro::command;
 
@@ -189,31 +189,50 @@ pub async fn help(ctxt: CommandCtxt<'_>, label: Option<Word>) -> anyhow::Result<
     category = Category::Misc
 )]
 pub async fn stats(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
+    ctxt.reply("Collecting...").await?;
+
+    let events_rate = ctxt.assyst().prometheus.lock().await.get_events_rate().map(|x| x.to_string()).unwrap_or("unknown".to_owned());
+    let commands_rate = ctxt.assyst().prometheus.lock().await.get_commands_rate().map(|x| x.to_string()).unwrap_or("unknown".to_owned());
+
+    let stats_table = key_value(&vec![
+        ("Guilds".fg_cyan(), ctxt.assyst().prometheus.lock().await.guilds.get().to_string()),
+        ("Shards".fg_cyan(), ctxt.assyst().shard_count.to_string()),
+        ("Events".fg_cyan(), events_rate + "/sec"),
+        ("Commands".fg_cyan(), commands_rate + "/min")
+    ]);
+
     let mem_usages = get_processes_mem_usage();
     let mem_usages_fmt = mem_usages.iter()
-        .map(|x| (x.0.fg_cyan(), (x.1 / 1024 / 1024).to_string() + "MB residential"))
+        .map(|x| (x.0.fg_cyan(), (x.1 / 1024 / 1024).to_string() + "MB"))
         .collect::<Vec<_>>();
 
     let cpu_usages = get_processes_cpu_usage();
     let cpu_usages_fmt = cpu_usages.iter()
-        .map(|x| (x.0.fg_cyan(), x.1.to_string() + "%"))
+        .map(|x| (x.0.fg_cyan(), format!("{:.2?}", x.1) + "%"))
         .collect::<Vec<_>>();
+
+    let uptimes = get_processes_uptimes();
+    let uptimes_fmt = uptimes.iter()
+            .map(|(x, y)| (x.fg_cyan(), y))
+            .collect::<Vec<_>>();
 
     let mut combined_usages: Vec<(String, String)> = vec![];
     for i in mem_usages_fmt {
-        if let Some(cpu) = cpu_usages_fmt.iter().find(|x| x.0 == i.0) {
+        if let Some(cpu) = cpu_usages_fmt.iter().find(|x| x.0 == i.0)
+            && let Some(uptime) = uptimes_fmt.iter().find(|x| x.0 == i.0) {
             combined_usages.push(
                 (
                     cpu.0.clone(),
-                    format!("Memory: {}, CPU: {}", i.1, cpu.1)
+                    format!("Memory: {}, CPU: {}, Uptime: {}", i.1, cpu.1, uptime.1)
                 )
             );
         }
-
     }
 
-    let table = key_value(&combined_usages);
+    let usages_table = key_value(&combined_usages);
 
-    ctxt.reply(table.codeblock("ansi")).await?;
+    let msg = format!("{} {}", stats_table.codeblock("ansi"), usages_table.codeblock("ansi"));
+
+    ctxt.reply(msg).await?;
     Ok(())
 }

@@ -20,20 +20,8 @@ impl RateTracker {
     }
 
     pub fn remove_expired_samples(&mut self) {
-        let mut to_remove = vec![];
-        for (pos, entry) in self.samples.iter().enumerate() {
-            // determine which entries are out of range
-            if Instant::now().duration_since(entry.1) > self.tracking_length {
-                to_remove.push(pos);
-            }
-        }
-
-        debug!("{} samples to remove (expired)", to_remove.len());
-
-        // remove out of range entries
-        for i in to_remove {
-            self.samples.remove(i);
-        }
+        self.samples
+            .retain(|x| Instant::now().duration_since(x.1) <= self.tracking_length);
     }
 
     /// Add a sample to the tracker.

@@ -46,6 +46,8 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: MessageUpdate) {
                             ErrorSeverity::High => err!("{err:?}"),
                         }
                     }
+
+                    assyst.prometheus.lock().await.add_command();
                 },
                 Ok(None) | Err(ParseError::PreParseFail(PreParseError::MessageNotPrefixed(_))) => {
                     if let Some(reply) = assyst.replies.remove(message.id.get())

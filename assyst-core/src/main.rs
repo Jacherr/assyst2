@@ -14,6 +14,7 @@ use assyst_common::util::tracing_init;
 use assyst_common::{err, ok_or_break};
 use gateway_handler::handle_raw_event;
 use gateway_handler::incoming_event::IncomingEvent;
+use tokio::spawn;
 use tracing::{info, trace};
 use twilight_gateway::EventTypeFlags;
 use twilight_model::id::marker::WebhookMarker;
@@ -136,7 +137,9 @@ async fn main() {
             if let Some(parsed_event) = parsed_event {
                 let try_incoming_event: Result<IncomingEvent, _> = parsed_event.try_into();
                 if let Ok(incoming_event) = try_incoming_event {
-                    handle_raw_event(assyst.clone(), incoming_event).await;
+                    assyst.prometheus.lock().await.add_event();
+                    let assyst_c = assyst.clone();
+                    spawn(async move { handle_raw_event(assyst_c.clone(), incoming_event).await });
                 }
             }
         }

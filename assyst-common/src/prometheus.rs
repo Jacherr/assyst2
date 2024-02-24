@@ -1,7 +1,9 @@
 use crate::util::process::get_processes_mem_usage;
+use crate::util::rate_tracker::RateTracker;
 use assyst_database::DatabaseHandler;
-use prometheus::{register_int_gauge, register_int_gauge_vec, IntGauge, IntGaugeVec};
+use prometheus::{register_int_counter, register_int_gauge, register_int_gauge_vec, IntCounter, IntGauge, IntGaugeVec};
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::sync::RwLock;
 use tracing::info;
 
@@ -10,6 +12,10 @@ pub struct Prometheus {
     pub cache_sizes: IntGaugeVec,
     pub memory_usage: IntGaugeVec,
     pub guilds: IntGauge,
+    pub events: IntCounter,
+    pub events_rate_tracker: RateTracker,
+    pub commands: IntCounter,
+    pub commands_rate_tracker: RateTracker,
     pub database_handler: Arc<RwLock<DatabaseHandler>>,
 }
 impl Prometheus {
@@ -18,6 +24,10 @@ impl Prometheus {
             cache_sizes: register_int_gauge_vec!("cache_sizes", "Cache sizes", &["cache"])?,
             memory_usage: register_int_gauge_vec!("memory_usage", "Memory usage in MB", &["process"])?,
             guilds: register_int_gauge!("guilds", "Total guilds")?,
+            events: register_int_counter!("events", "Total number of events")?,
+            events_rate_tracker: RateTracker::new(Duration::from_secs(1)),
+            commands: register_int_counter!("commands", "Total number of commands executed")?,
+            commands_rate_tracker: RateTracker::new(Duration::from_secs(60)),
             database_handler,
         })
     }
@@ -53,5 +63,23 @@ impl Prometheus {
 
     pub fn dec_guilds(&mut self) {
         self.guilds.dec();
+    }
+
+    pub fn add_event(&mut self) {
+        self.events.inc();
+        self.events_rate_tracker.add_sample(self.events.get() as _);
+    }
+
+    pub fn get_events_rate(&mut self) -> Option<isize> {
+        self.events_rate_tracker.get_rate()
+    }
+
+    pub fn add_command(&mut self) {
+        self.commands.inc();
+        self.commands_rate_tracker.add_sample(self.commands.get() as _);
+    }
+
+    pub fn get_commands_rate(&mut self) -> Option<isize> {
+        self.commands_rate_tracker.get_rate()
     }
 }

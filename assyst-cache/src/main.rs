@@ -3,7 +3,7 @@ use assyst_common::ok_or_break;
 use assyst_common::pipe::pipe_server::PipeServer;
 use assyst_common::pipe::CACHE_PIPE_PATH;
 use assyst_common::util::tracing_init;
-use tracing::{info, warn};
+use tracing::{debug, info, warn};
 
 use crate::caches::guilds::GuildCache;
 
@@ -23,7 +23,7 @@ async fn main() {
         loop {
             let job = ok_or_break!(stream.read_object::<CacheJob>().await);
 
-            info!("Handling job: {}", job);
+            debug!("Handling job: {}", job);
 
             let result = match job {
                 CacheJob::HandleReady(event) => {

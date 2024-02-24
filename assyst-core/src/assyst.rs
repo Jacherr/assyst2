@@ -33,7 +33,7 @@ pub struct Assyst {
     pub tasks: Mutex<Vec<Task>>,
     /// The recommended number of shards for this instance.
     pub shard_count: u64,
-    /// Cached command replies
+    /// Cached command replies.
     pub replies: Replies,
 }
 impl Assyst {
