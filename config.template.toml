@@ -1,6 +1,8 @@
 [urls]
 # Proxy URLs for untrusted requests. Leave blank for no proxying.
 proxy = []
+# URL for Filer, the Assyst CDN.
+filer = ""
 
 [authentication]
 # Token to authenticate with Discord.
@@ -13,6 +15,8 @@ top_gg_token = ""
 top_gg_webhook_token = ""
 # Port in which the top.gg webhook runs on.
 top_gg_webhook_port = 3000
+# Authentication key for Filer, the Assyst CDN.
+filer_key = ""
 
 # Assyst database information.
 [database]

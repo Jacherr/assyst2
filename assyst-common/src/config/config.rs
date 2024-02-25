@@ -15,6 +15,7 @@ pub struct AssystConfig {
 #[derive(Deserialize)]
 pub struct Urls {
     pub proxy: Vec<String>,
+    pub filer: String,
 }
 
 #[derive(Deserialize)]
@@ -24,6 +25,7 @@ pub struct Authentication {
     pub top_gg_token: String,
     pub top_gg_webhook_token: String,
     pub top_gg_webhook_port: u16,
+    pub filer_key: String,
 }
 
 #[derive(Deserialize)]

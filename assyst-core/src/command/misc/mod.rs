@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
 use crate::command::Availability;
+use crate::rest::filer::get_filer_stats as filer_stats;
 
 use super::arguments::{Image, ImageUrl, Rest, Time, Word};
 use super::registry::get_or_init_commands;
@@ -208,7 +209,7 @@ pub async fn help(ctxt: CommandCtxt<'_>, label: Option<Word>) -> anyhow::Result<
     access = Availability::Public,
     category = Category::Misc,
     usage = "<section>",
-    examples = ["", "sessions"],
+    examples = ["", "sessions", "database", "filer"],
     aliases = ["info"]
 )]
 pub async fn stats(ctxt: CommandCtxt<'_>, option: Option<Word>) -> anyhow::Result<()> {
@@ -276,6 +277,17 @@ pub async fn stats(ctxt: CommandCtxt<'_>, option: Option<Word>) -> anyhow::Resul
         Ok(table.codeblock("ansi"))
     }
 
+    async fn get_filer_stats(ctxt: &CommandCtxt<'_>) -> anyhow::Result<String> {
+        let stats = filer_stats(ctxt.assyst().clone()).await?;
+
+        let table = key_value(&vec![
+            ("File Count".fg_cyan(), stats.count.to_string()),
+            ("Total Size".fg_cyan(), human_bytes(stats.size_bytes as f64))
+        ]);
+
+        Ok(table.codeblock("ansi"))
+    }
+
     ctxt.reply("Collecting...").await?;
 
     if let Some(Word(ref x)) = option && x.to_lowercase() == "sessions" {
@@ -284,6 +296,10 @@ pub async fn stats(ctxt: CommandCtxt<'_>, option: Option<Word>) -> anyhow::Resul
         ctxt.reply(table).await?;
     } else if let Some(Word(ref x)) = option && (x.to_lowercase() == "database" || x.to_lowercase() == "db") {
         let table = get_database_stats(&ctxt).await?;
+
+        ctxt.reply(table).await?;
+    } else if let Some(Word(ref x)) = option && (x.to_lowercase() == "filer" || x.to_lowercase() == "cdn") {
+        let table = get_filer_stats(&ctxt).await?;
 
         ctxt.reply(table).await?;
     } else {
