@@ -5,7 +5,9 @@ use twilight_model::gateway::payload::incoming::GuildDelete;
 use crate::assyst::ThreadSafeAssyst;
 
 pub async fn handle(assyst: ThreadSafeAssyst, event: GuildDelete) {
-    let should_handle = match assyst.cache_handler.handle_guild_delete_event(event.clone()).await {
+    let id = event.id.get();
+
+    let should_handle = match assyst.cache_handler.handle_guild_delete_event(event).await {
         Ok(s) => s,
         Err(e) => {
             err!("assyst-cache failed to handle GUILD_DELETE event: {}", e.to_string());
@@ -14,7 +16,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: GuildDelete) {
     };
 
     if should_handle {
-        info!("Removed from guild {}", event.id.get());
+        info!("Removed from guild {}", id);
         assyst.prometheus.dec_guilds();
     }
 }

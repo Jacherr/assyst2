@@ -81,7 +81,7 @@ impl Pipe {
         let len = self.stream.read_u32().await?;
         let mut data = vec![0u8; len as usize];
         self.stream.read_exact(&mut data).await?;
-        Ok(String::from_utf8_lossy(&data).to_string())
+        Ok(String::from_utf8_lossy(&data).into_owned())
     }
 
     /// Write a Bincode-serializable object to this stream.
@@ -100,7 +100,7 @@ impl Pipe {
     /// This function will return an Err if the stream is prematurely closed.
     pub async fn write_string<T: AsRef<str>>(&mut self, obj: T) -> anyhow::Result<()> {
         self.stream.write_u32(obj.as_ref().len() as u32).await?;
-        self.stream.write_all(obj.as_ref().to_string().as_bytes()).await?;
+        self.stream.write_all(obj.as_ref().as_bytes()).await?;
         Ok(())
     }
 }
