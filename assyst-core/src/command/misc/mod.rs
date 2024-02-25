@@ -7,6 +7,7 @@ use super::arguments::{Image, ImageUrl, Rest, Time, Word};
 use super::registry::get_or_init_commands;
 use super::{Category, Command, CommandCtxt};
 
+use human_bytes::human_bytes;
 use assyst_common::ansi::Ansi;
 use assyst_common::markdown::Markdown;
 use assyst_common::util::process::{get_processes_cpu_usage, get_processes_mem_usage, get_processes_uptimes};
@@ -211,38 +212,10 @@ pub async fn help(ctxt: CommandCtxt<'_>, label: Option<Word>) -> anyhow::Result<
     aliases = ["info"]
 )]
 pub async fn stats(ctxt: CommandCtxt<'_>, option: Option<Word>) -> anyhow::Result<()> {
-    ctxt.reply("Collecting...").await?;
-
-    if let Some(Word(x)) = option && x.to_lowercase() == "sessions" {
-        let gateway_bot = ctxt.assyst().http_client.gateway().authed().await?.model().await?;
-        let SessionStartLimit {
-            total, 
-            remaining, 
-            max_concurrency,
-            ..
-        } = gateway_bot.session_start_limit;
-
-        let table = key_value(&vec![
-            ("Total".fg_cyan(), total.to_string()),
-            ("Remaining".fg_cyan(), remaining.to_string()),
-            ("Max Concurrency".fg_cyan(), max_concurrency.to_string())
-        ]);
-
-        ctxt.reply(table.codeblock("ansi")).await?;
-    } else {
-        let events_rate = ctxt.assyst().prometheus.get_events_rate().map(|x| x.to_string()).unwrap_or("0".to_owned());
-        let commands_rate = ctxt.assyst().prometheus.get_commands_rate().map(|x| x.to_string()).unwrap_or("0".to_owned());
-    
-        let stats_table = key_value(&vec![
-            ("Guilds".fg_cyan(), ctxt.assyst().prometheus.guilds.get().to_string()),
-            ("Shards".fg_cyan(), ctxt.assyst().shard_count.to_string()),
-            ("Events".fg_cyan(), events_rate + "/sec"),
-            ("Commands".fg_cyan(), commands_rate + "/min")
-        ]);
-    
+    fn get_process_stats() -> String {
         let mem_usages = get_processes_mem_usage();
         let mem_usages_fmt = mem_usages.iter()
-            .map(|x| (x.0.fg_cyan(), (x.1 / 1024 / 1024).to_string() + "MB"))
+            .map(|x| (x.0.fg_cyan(), human_bytes(x.1 as f64)))
             .collect::<Vec<_>>();
     
         let cpu_usages = get_processes_cpu_usage();
@@ -269,8 +242,64 @@ pub async fn stats(ctxt: CommandCtxt<'_>, option: Option<Word>) -> anyhow::Resul
         }
     
         let usages_table = key_value(&combined_usages);
+
+        usages_table.codeblock("ansi")
+    }
+
+    async fn get_session_stats(ctxt: &CommandCtxt<'_>) -> anyhow::Result<String> {
+        let gateway_bot = ctxt.assyst().http_client.gateway().authed().await?.model().await?;
+        let SessionStartLimit {
+            total, 
+            remaining, 
+            max_concurrency,
+            ..
+        } = gateway_bot.session_start_limit;
+
+        let table = key_value(&vec![
+            ("Total".fg_cyan(), total.to_string()),
+            ("Remaining".fg_cyan(), remaining.to_string()),
+            ("Max Concurrency".fg_cyan(), max_concurrency.to_string())
+        ]);
+
+        Ok(table.codeblock("ansi"))
+    }
+
+    async fn get_database_stats(ctxt: &CommandCtxt<'_>) -> anyhow::Result<String> {
+        let database_size = ctxt.assyst().database_handler.read().await.database_size().await?.size;
+        let cache_size = human_bytes(ctxt.assyst().database_handler.read().await.cache.size_of() as f64);
+
+        let table = key_value(&vec![
+            ("Database Size".fg_cyan(), database_size),
+            ("Cache Size".fg_cyan(), cache_size)
+        ]);
+
+        Ok(table.codeblock("ansi"))
+    }
+
+    ctxt.reply("Collecting...").await?;
+
+    if let Some(Word(ref x)) = option && x.to_lowercase() == "sessions" {
+        let table = get_session_stats(&ctxt).await?;
+
+        ctxt.reply(table).await?;
+    } else if let Some(Word(ref x)) = option && (x.to_lowercase() == "database" || x.to_lowercase() == "db") {
+        let table = get_database_stats(&ctxt).await?;
+
+        ctxt.reply(table).await?;
+    } else {
+        let events_rate = ctxt.assyst().prometheus.get_events_rate().map(|x| x.to_string()).unwrap_or("0".to_owned());
+        let commands_rate = ctxt.assyst().prometheus.get_commands_rate().map(|x| x.to_string()).unwrap_or("0".to_owned());
     
-        let msg = format!("{} {}", stats_table.codeblock("ansi"), usages_table.codeblock("ansi"));
+        let stats_table = key_value(&vec![
+            ("Guilds".fg_cyan(), ctxt.assyst().prometheus.guilds.get().to_string()),
+            ("Shards".fg_cyan(), ctxt.assyst().shard_count.to_string()),
+            ("Events".fg_cyan(), events_rate + "/sec"),
+            ("Commands".fg_cyan(), commands_rate + "/min")
+        ]);
+    
+        let usages_table = get_process_stats();
+
+        let msg = format!("{} {}", stats_table.codeblock("ansi"), usages_table);
     
         ctxt.reply(msg).await?;
     }

@@ -38,7 +38,7 @@ pub fn get_processes_mem_usage() -> Vec<(&'static str, usize)> {
 
 /// Attempts to get CPU usage for a PID
 pub fn cpu_usage_percentage_of(pid: usize) -> Option<f64> {
-    let output = exec_sync(&format!("top -b -n 2 -d 0.2 -p {pid} | tail -1 | awk '{{print $9}}'"));
+    let output = exec_sync(&format!("top -b -n 2 -d 1.5 -p {pid} | tail -1 | awk '{{print $9}}'"));
     output
         .ok()
         .map(|x| x.stdout.trim().parse::<f64>().ok())
@@ -48,7 +48,7 @@ pub fn cpu_usage_percentage_of(pid: usize) -> Option<f64> {
 
 /// Gets the CPU usage of the host machine
 pub fn get_host_cpu_usage() -> Option<f64> {
-    let output = exec_sync("top -bn2 -d 0.3 | grep '%Cpu' | tail -1");
+    let output = exec_sync("top -bn2 -d 1.5 | grep '%Cpu' | tail -1");
 
     output
         .ok()

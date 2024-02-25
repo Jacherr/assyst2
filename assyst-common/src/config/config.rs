@@ -85,4 +85,7 @@ pub struct DevAttributes {
     pub disable_bad_translator_channels: bool,
     pub disable_reminder_check: bool,
     pub disable_bot_list_posting: bool,
+    pub dev_guild: u64,
+    pub dev_channel: u64,
+    pub dev_message: bool,
 }

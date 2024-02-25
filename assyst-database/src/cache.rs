@@ -31,4 +31,18 @@ impl DatabaseCache {
         self.prefixes.run_pending_tasks();
         self.prefixes.entry_count() as usize
     }
+
+    pub fn size_of(&self) -> u64 {
+        self.prefixes.run_pending_tasks();
+        let mut prefixes_size = 0;
+
+        for prefix in self.prefixes.iter() {
+            // add key size
+            prefixes_size += 8;
+            // add value size
+            prefixes_size += prefix.1.size_of();
+        }
+
+        prefixes_size
+    }
 }

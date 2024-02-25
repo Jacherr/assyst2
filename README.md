@@ -1,4 +1,15 @@
-# Assyst2
+<div align="center">
+    <img src="https://cdn.discordapp.com/avatars/571661221854707713/a23ec18f81e3d182291471f64685da5f.png?size=128"/><br>
+</div>
+
+# <div align="center"> Assyst2 </div>
+
+<div align="center">
+
+![Discord](https://img.shields.io/discord/1099115731301449758?color=7289DA)
+![GitHub](https://img.shields.io/github/license/jacherr/assyst2)
+
+</div>
 
 Complete rewrite of Assyst, open-sourced. Designed to integrate both with traditional text-based commands as well as slash commands.
 

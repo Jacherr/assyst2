@@ -43,4 +43,8 @@ impl Prefix {
             Err(err) => Err(err.into()),
         };
     }
+
+    pub fn size_of(&self) -> u64 {
+        self.prefix.as_bytes().len() as u64
+    }
 }

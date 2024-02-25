@@ -7,6 +7,11 @@ pub mod model;
 
 static MAX_CONNECTIONS: u32 = 1;
 
+#[derive(sqlx::FromRow, Debug)]
+pub struct DatabaseSize {
+    pub size: String,
+}
+
 /// Database hendler providing a connection to the database and helper methods for inserting,
 /// fetching, deleting and modifying Assyst database data.
 pub struct DatabaseHandler {
@@ -28,5 +33,11 @@ impl DatabaseHandler {
         info!("Connected to database on {}", safe_url);
         let cache = DatabaseCache::new();
         Ok(Self { pool, cache })
+    }
+
+    pub async fn database_size(&self) -> anyhow::Result<DatabaseSize> {
+        let query = r#"SELECT pg_size_pretty(pg_database_size('assyst')) as size"#;
+
+        Ok(sqlx::query_as::<_, DatabaseSize>(query).fetch_one(&self.pool).await?)
     }
 }

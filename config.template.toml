@@ -51,3 +51,12 @@ disable_reminder_check = false
 # Use this to top the bot from POSTing its guild and shard counts to Top.gg. 
 # Useful for development instances.
 disable_bot_list_posting = false
+
+# Whether to send the 'dev message' (see below)
+dev_message = false
+
+# For development instances, send a message when this guild is present in a READY packet.
+dev_guild = 0
+
+# The channel to send the dev message in.
+dev_channel = 0
