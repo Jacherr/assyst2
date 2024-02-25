@@ -52,7 +52,7 @@ pub fn handle_log(message: String) {
         let client = HttpClient::new(CONFIG.authentication.discord_token.clone());
 
         if id == 0 {
-            err!("Failed to trigger panic webhook: Panic webhook ID is 0");
+            tracing::error!("Failed to trigger panic webhook: Panic webhook ID is 0");
         } else {
             let webhook = client
                 .execute_webhook(Id::<WebhookMarker>::new(id), &token)
@@ -61,9 +61,9 @@ pub fn handle_log(message: String) {
             if let Ok(w) = webhook {
                 let _ = w
                     .await
-                    .inspect_err(|e| err!("Failed to trigger panic webhook: {}", e.to_string()));
+                    .inspect_err(|e| tracing::error!("Failed to trigger panic webhook: {}", e.to_string()));
             } else if let Err(e) = webhook {
-                err!("Failed to trigger panic webhook: {}", e.to_string());
+                tracing::error!("Failed to trigger panic webhook: {}", e.to_string());
             }
         }
     });
