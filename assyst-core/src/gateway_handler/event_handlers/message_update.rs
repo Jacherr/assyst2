@@ -26,7 +26,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: MessageUpdate) {
     match convert_message_update_to_message(event) {
         Some(message) => {
             match parse_message_into_command(assyst.clone(), &message).await {
-                Ok(Some((cmd, args))) => {
+                Ok(Some((cmd, args, calling_prefix))) => {
                     let data = CommandData {
                         message_id: message.id.get(),
                         source: Source::Gateway,
@@ -37,6 +37,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: MessageUpdate) {
                         channel_id: message.channel_id.get(),
                         embed: message.embeds.first(),
                         processing_time_start: Instant::now(),
+                        calling_prefix,
                     };
                     let ctxt = CommandCtxt::new(args, &data);
 

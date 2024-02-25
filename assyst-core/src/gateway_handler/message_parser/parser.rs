@@ -41,7 +41,7 @@ use crate::ThreadSafeAssyst;
 pub async fn parse_message_into_command(
     assyst: ThreadSafeAssyst,
     message: &Message,
-) -> Result<Option<(TCommand, &str)>, ParseError> {
+) -> Result<Option<(TCommand, &str, String)>, ParseError> {
     let preprocess = preprocess(assyst.clone(), message).await?;
     // commands can theoretically have spaces in their name so we need to try and identify the
     // set of 'words' in source text to associate with a command name (essentially finding the divide
@@ -59,5 +59,5 @@ pub async fn parse_message_into_command(
     let _metadata = command.metadata();
     // TODO: check metadata
 
-    Ok(Some((command, args)))
+    Ok(Some((command, args, preprocess.prefix)))
 }

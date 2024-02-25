@@ -12,6 +12,7 @@ use assyst_common::markdown::Markdown;
 use assyst_common::util::process::{get_processes_cpu_usage, get_processes_mem_usage, get_processes_uptimes};
 use assyst_common::util::table::key_value;
 use assyst_proc_macro::command;
+use twilight_model::gateway::SessionStartLimit;
 
 #[command(
     name = "remind",
@@ -20,7 +21,8 @@ use assyst_proc_macro::command;
     access = Availability::Public,
     cooldown = Duration::from_secs(2),
     category = Category::Misc,
-    examples = [],
+    usage = "[time] <message>",
+    examples = ["2h do the laundry", "3d30m hand assignment in", "30m"],
 )]
 pub async fn remind(_ctxt: CommandCtxt<'_>, _when: Time, _text: Rest) -> anyhow::Result<()> {
     Ok(())
@@ -32,7 +34,8 @@ pub async fn remind(_ctxt: CommandCtxt<'_>, _when: Time, _text: Rest) -> anyhow:
     cooldown = Duration::from_secs(2), 
     access = Availability::Public, 
     category = Category::Misc,
-    usage = "test"
+    usage = "<url>",
+    examples = ["https://link.to.my/image.png"]
 )]
 pub async fn enlarge(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
     ctxt.reply(source).await?;
@@ -43,7 +46,9 @@ pub async fn enlarge(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()>
     description = "returns the URL of any captured media",
     cooldown = Duration::from_secs(1),
     access = Availability::Public,
-    category = Category::Misc
+    category = Category::Misc,
+    usage = "<url>",
+    examples = ["https://link.to.my/image.png"]
 )]
 pub async fn url(ctxt: CommandCtxt<'_>, source: ImageUrl) -> anyhow::Result<()> {
     ctxt.reply(format!("\u{200b}{source}")).await?;
@@ -54,7 +59,9 @@ pub async fn url(ctxt: CommandCtxt<'_>, source: ImageUrl) -> anyhow::Result<()> 
     description = "ping the discord api",
     cooldown = Duration::from_secs(1),
     access = Availability::Public, 
-    category = Category::Misc
+    category = Category::Misc,
+    usage = "",
+    examples = [""]
 )]
 pub async fn ping(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
     let processing_time = ctxt.data.processing_time_start.elapsed();
@@ -73,7 +80,9 @@ pub async fn ping(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
     description = "get command help",
     cooldown = Duration::from_secs(1),
     access = Availability::Public,
-    category = Category::Misc
+    category = Category::Misc,
+    usage = "<category|command>",
+    examples = ["", "misc", "ping", "tag create"]
 )]
 pub async fn help(ctxt: CommandCtxt<'_>, label: Option<Word>) -> anyhow::Result<()> {
     let cmds = get_or_init_commands();
@@ -111,9 +120,19 @@ pub async fn help(ctxt: CommandCtxt<'_>, label: Option<Word>) -> anyhow::Result<
             });
             let cooldown = format!("{} {} seconds", "Cooldown:".fg_yellow(), meta.cooldown.as_secs());
             let access = "Access: ".fg_yellow() + &meta.access.to_string();
+            let usage = "Usage: ".fg_yellow() + &format!("{}{} {}", ctxt.data.calling_prefix, meta.name, meta.usage.to_string());
+
+            let examples_format = if !meta.examples.is_empty() { 
+                format!("\n{}", meta.examples.iter().map(|x| {
+                    format!("{}{} {}", ctxt.data.calling_prefix, meta.name, x)
+                }).collect::<Vec<_>>().join("\n")) 
+            } else {
+                "None".to_owned()
+            };
+            let examples = "Examples: ".fg_cyan() + &examples_format;
 
             ctxt.reply(
-                format!("{name_fmt} {description}\n\n{aliases}\n{cooldown}\n{access}")
+                format!("{name_fmt} {description}\n\n{aliases}\n{cooldown}\n{access}\n{usage}\n\n{examples}")
                 .trim()
                 .codeblock("ansi"),
             )
@@ -186,53 +205,75 @@ pub async fn help(ctxt: CommandCtxt<'_>, label: Option<Word>) -> anyhow::Result<
     description = "get bot stats",
     cooldown = Duration::from_secs(5),
     access = Availability::Public,
-    category = Category::Misc
+    category = Category::Misc,
+    usage = "<section>",
+    examples = ["", "sessions"],
+    aliases = ["info"]
 )]
-pub async fn stats(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
+pub async fn stats(ctxt: CommandCtxt<'_>, option: Option<Word>) -> anyhow::Result<()> {
     ctxt.reply("Collecting...").await?;
 
-    let events_rate = ctxt.assyst().prometheus.get_events_rate().map(|x| x.to_string()).unwrap_or("0".to_owned());
-    let commands_rate = ctxt.assyst().prometheus.get_commands_rate().map(|x| x.to_string()).unwrap_or("0".to_owned());
+    if let Some(Word(x)) = option && x.to_lowercase() == "sessions" {
+        let gateway_bot = ctxt.assyst().http_client.gateway().authed().await?.model().await?;
+        let SessionStartLimit {
+            total, 
+            remaining, 
+            max_concurrency,
+            ..
+        } = gateway_bot.session_start_limit;
 
-    let stats_table = key_value(&vec![
-        ("Guilds".fg_cyan(), ctxt.assyst().prometheus.guilds.get().to_string()),
-        ("Shards".fg_cyan(), ctxt.assyst().shard_count.to_string()),
-        ("Events".fg_cyan(), events_rate + "/sec"),
-        ("Commands".fg_cyan(), commands_rate + "/min")
-    ]);
+        let table = key_value(&vec![
+            ("Total".fg_cyan(), total.to_string()),
+            ("Remaining".fg_cyan(), remaining.to_string()),
+            ("Max Concurrency".fg_cyan(), max_concurrency.to_string())
+        ]);
 
-    let mem_usages = get_processes_mem_usage();
-    let mem_usages_fmt = mem_usages.iter()
-        .map(|x| (x.0.fg_cyan(), (x.1 / 1024 / 1024).to_string() + "MB"))
-        .collect::<Vec<_>>();
-
-    let cpu_usages = get_processes_cpu_usage();
-    let cpu_usages_fmt = cpu_usages.iter()
-        .map(|x| (x.0.fg_cyan(), format!("{:.2?}", x.1) + "%"))
-        .collect::<Vec<_>>();
+        ctxt.reply(table.codeblock("ansi")).await?;
+    } else {
+        let events_rate = ctxt.assyst().prometheus.get_events_rate().map(|x| x.to_string()).unwrap_or("0".to_owned());
+        let commands_rate = ctxt.assyst().prometheus.get_commands_rate().map(|x| x.to_string()).unwrap_or("0".to_owned());
     
-    let uptimes = get_processes_uptimes();
-    let uptimes_fmt = uptimes.iter()
-            .map(|(x, y)| (x.fg_cyan(), y))
+        let stats_table = key_value(&vec![
+            ("Guilds".fg_cyan(), ctxt.assyst().prometheus.guilds.get().to_string()),
+            ("Shards".fg_cyan(), ctxt.assyst().shard_count.to_string()),
+            ("Events".fg_cyan(), events_rate + "/sec"),
+            ("Commands".fg_cyan(), commands_rate + "/min")
+        ]);
+    
+        let mem_usages = get_processes_mem_usage();
+        let mem_usages_fmt = mem_usages.iter()
+            .map(|x| (x.0.fg_cyan(), (x.1 / 1024 / 1024).to_string() + "MB"))
             .collect::<Vec<_>>();
-
-    let mut combined_usages: Vec<(String, String)> = vec![];
-    for i in mem_usages_fmt {
-        if let Some(cpu) = cpu_usages_fmt.iter().find(|x| x.0 == i.0)
-            && let Some(uptime) = uptimes_fmt.iter().find(|x| x.0 == i.0) {
-            combined_usages.push(
-                (
-                    cpu.0.clone(),
-                    format!("Memory: {}, CPU: {}, Uptime: {}", i.1, cpu.1, uptime.1)
-                )
-            );
+    
+        let cpu_usages = get_processes_cpu_usage();
+        let cpu_usages_fmt = cpu_usages.iter()
+            .map(|x| (x.0.fg_cyan(), format!("{:.2?}", x.1) + "%"))
+            .collect::<Vec<_>>();
+    
+        let uptimes = get_processes_uptimes();
+        let uptimes_fmt = uptimes.iter()
+                .map(|(x, y)| (x.fg_cyan(), y))
+                .collect::<Vec<_>>();
+    
+        let mut combined_usages: Vec<(String, String)> = vec![];
+        for i in mem_usages_fmt {
+            if let Some(cpu) = cpu_usages_fmt.iter().find(|x| x.0 == i.0)
+                && let Some(uptime) = uptimes_fmt.iter().find(|x| x.0 == i.0) {
+                combined_usages.push(
+                    (
+                        cpu.0.clone(),
+                        format!("Memory: {}, CPU: {}, Uptime: {}", i.1, cpu.1, uptime.1)
+                    )
+                );
+            }
         }
+    
+        let usages_table = key_value(&combined_usages);
+    
+        let msg = format!("{} {}", stats_table.codeblock("ansi"), usages_table.codeblock("ansi"));
+    
+        ctxt.reply(msg).await?;
     }
 
-    let usages_table = key_value(&combined_usages);
-
-    let msg = format!("{} {}", stats_table.codeblock("ansi"), usages_table.codeblock("ansi"));
-
-    ctxt.reply(msg).await?;
     Ok(())
 }

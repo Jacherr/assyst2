@@ -105,6 +105,7 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
     let access = fields.remove("access").expect("missing access");
     let category = fields.remove("category").expect("missing category");
     let examples = fields.remove("examples").unwrap_or(empty_array_expr());
+    let usage = fields.remove("usage").expect("missing usage");
 
     let following = quote::quote! {
         pub struct #struct_name;
@@ -120,6 +121,7 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
                     aliases: &#aliases,
                     category: #category,
                     examples: &#examples,
+                    usage: #usage
                 };
                 &META
             }

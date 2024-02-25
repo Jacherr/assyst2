@@ -16,7 +16,7 @@ use crate::ThreadSafeAssyst;
 /// message to a command for further processing.
 pub async fn handle(assyst: ThreadSafeAssyst, MessageCreate(message): MessageCreate) {
     match parse_message_into_command(assyst.clone(), &message).await {
-        Ok(Some((cmd, args))) => {
+        Ok(Some((cmd, args, calling_prefix))) => {
             let data = CommandData {
                 message_id: message.id.get(),
                 source: Source::Gateway,
@@ -27,6 +27,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, MessageCreate(message): MessageCre
                 channel_id: message.channel_id.get(),
                 embed: message.embeds.first(),
                 processing_time_start: Instant::now(),
+                calling_prefix,
             };
             let ctxt = CommandCtxt::new(args, &data);
 

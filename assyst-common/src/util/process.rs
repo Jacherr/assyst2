@@ -103,6 +103,26 @@ pub fn get_processes_uptimes() -> Vec<(&'static str, String)> {
     let host_uptime = get_uptime_of(1).unwrap_or("unknown".to_owned());
     uptimes.push((HOST_PROCESS, host_uptime));
 
+    // format uptimes to be xd xh xm xs
+    for (_, ref mut uptime) in uptimes.iter_mut() {
+        if *uptime != "offline".fg_red() {
+            let split = uptime
+                .replace("-", ":")
+                .split(":")
+                .map(|x| x.parse::<usize>().unwrap_or(0))
+                .collect::<Vec<_>>();
+            *uptime = if split.len() == 2 {
+                format!("{}m {}s", split[0], split[1])
+            } else if split.len() == 3 {
+                format!("{}h {}m {}s", split[0], split[1], split[2])
+            } else if split.len() == 4 {
+                format!("{}d {}h {}m {}s", split[0], split[1], split[2], split[3])
+            } else {
+                unreachable!()
+            }
+        }
+    }
+
     uptimes
 }
 

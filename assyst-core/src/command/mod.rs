@@ -82,6 +82,7 @@ pub struct CommandMetadata {
     pub access: Availability,
     pub category: Category,
     pub examples: &'static [&'static str],
+    pub usage: &'static str,
 }
 
 #[derive(Clone, PartialEq, Eq, Hash)]
@@ -157,6 +158,7 @@ pub struct CommandData<'a> {
     /// `None` in a slash command, otherwise set if the message is a reply
     pub referenced_message: Option<&'a Message>,
     pub processing_time_start: Instant,
+    pub calling_prefix: String,
 }
 
 pub struct CommandCtxt<'a> {
