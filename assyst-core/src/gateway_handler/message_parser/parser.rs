@@ -33,11 +33,9 @@ use crate::ThreadSafeAssyst;
 ///
 /// **Step 4**: Parse the Command from the Message itself. If it fails to parse, prematurely return.
 ///
-/// **Step 5**: Using the parsed Command, identify some metadata conditionals, is the command
-/// age-restricted, allowed in dms, the user has permission to use it, the cooldown
-/// ratelimit isn't exceeded?
-///
 /// Once all steps are complete, a Command is returned, ready for execution.
+/// Note that metadata is checked *during* execution (i.e., in the base command's `Command::execute`
+/// implementation, see [`crate::command::check_metadata`])
 pub async fn parse_message_into_command(
     assyst: ThreadSafeAssyst,
     message: &Message,
@@ -56,9 +54,6 @@ pub async fn parse_message_into_command(
     let Some(command) = find_command_by_name(command) else {
         return Ok(None);
     };
-    let _metadata = command.metadata();
-
-    // TODO: check role permissions, channel permissions, whitelist/blacklist, ...
 
     Ok(Some((command, args, preprocess.prefix)))
 }

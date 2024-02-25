@@ -16,6 +16,19 @@ pub static CACHE_PIPE_PATH: &str = "/tmp/assyst-cache-com";
 
 static POLL_FREQUENCY: Duration = Duration::from_secs(10);
 
+/// Like [`String::from_utf8_lossy`], but takes an owned `Vec<u8>` and is
+/// able to reuse the vec's allocation if the bytes are valid UTF-8.
+///
+/// It is much more efficient for valid UTF-8, but will be
+/// much worse than `String::from_utf8` for invalid UTF-8, so
+/// only use it if valid UTF-8 is likely!
+fn string_from_likely_utf8(bytes: Vec<u8>) -> String {
+    String::from_utf8(bytes).unwrap_or_else(|err| {
+        // Unlucky, data was invalid UTF-8, so try again but use lossy decoding this time.
+        String::from_utf8_lossy(err.as_bytes()).into_owned()
+    })
+}
+
 /// Pipe is a utility class that wraps a [UnixStream], providing helper functions for easy reading
 /// and writing of serde-Serializable types via Bincode.
 pub struct Pipe {
@@ -75,13 +88,14 @@ impl Pipe {
 
     /// Read a UTF8-encoded String from this stream.
     ///
-    /// The string is read as a Vec<u8> and converted into a String using `String::from_utf8_lossy`.
+    /// Note: this function heavily favors the "likely UTF-8" case and will be worse
+    /// for invalid UTF-8 (see [`string_from_likely_utf8`]).
     /// This function will return an Err if the stream is prematurely closed.
     pub async fn read_string(&mut self) -> anyhow::Result<String> {
         let len = self.stream.read_u32().await?;
         let mut data = vec![0u8; len as usize];
         self.stream.read_exact(&mut data).await?;
-        Ok(String::from_utf8_lossy(&data).into_owned())
+        Ok(string_from_likely_utf8(data))
     }
 
     /// Write a Bincode-serializable object to this stream.
@@ -90,6 +104,7 @@ impl Pipe {
     /// able to serialize the data to the specified type.
     pub async fn write_object<T: Serialize>(&mut self, obj: T) -> anyhow::Result<()> {
         let buffer = serialize(&obj)?;
+        debug_assert!(buffer.len() <= u32::MAX as usize, "attempted to write more than 4 GB");
         self.stream.write_u32(buffer.len() as u32).await?;
         self.stream.write_all(&buffer).await?;
         Ok(())
@@ -99,8 +114,10 @@ impl Pipe {
     ///
     /// This function will return an Err if the stream is prematurely closed.
     pub async fn write_string<T: AsRef<str>>(&mut self, obj: T) -> anyhow::Result<()> {
-        self.stream.write_u32(obj.as_ref().len() as u32).await?;
-        self.stream.write_all(obj.as_ref().as_bytes()).await?;
+        let obj = obj.as_ref();
+        debug_assert!(obj.len() <= u32::MAX as usize, "attempted to write more than 4 GB");
+        self.stream.write_u32(obj.len() as u32).await?;
+        self.stream.write_all(obj.as_bytes()).await?;
         Ok(())
     }
 }

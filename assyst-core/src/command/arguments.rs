@@ -28,11 +28,29 @@ impl ParseArgument for u64 {
 
 impl<T: ParseArgument> ParseArgument for Option<T> {
     async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
+        // TODO: should we be using commit_if_ok to undo failed parsers?
         match T::parse(ctxt).await {
             Ok(v) => Ok(Some(v)),
             Err(err) if err.get_severity() == ErrorSeverity::High => Err(err),
             _ => Ok(None),
         }
+    }
+}
+
+impl<T: ParseArgument> ParseArgument for Vec<T> {
+    async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
+        let mut items = Vec::new();
+
+        loop {
+            // `Option<T>`'s parser takes care of recovering from low severity errors
+            // and any `Err`s returned are fatal, so we can just use `?`
+            match <Option<T>>::parse(ctxt).await? {
+                Some(value) => items.push(value),
+                None => break,
+            }
+        }
+
+        Ok(items)
     }
 }
 

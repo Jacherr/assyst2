@@ -33,6 +33,7 @@ impl syn::parse::Parse for CommandAttributes {
 ///
 /// impl Command for remind_command {
 ///     fn execute(&mut self, ctxt: &mut CommandCtxt<'_>) {
+///         check_metadata()?;
 ///         let p1 = Time::parse(ctxt)?;
 ///         let p2 = Rest::parse(ctxt)?;
 ///         remind(p1, p2)
@@ -130,8 +131,14 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
                 &META
             }
 
+            fn subcommand(&self, _sub: &str) -> Option<crate::command::TCommand> {
+                None
+            }
+
             async fn execute(&self, mut ctxt: crate::command::CommandCtxt<'_>) -> Result<(), crate::command::ExecutionError> {
                 use crate::command::arguments::ParseArgument;
+
+                crate::command::check_metadata(self.metadata(), &mut ctxt).await?;
 
                 #(
                     let #parse_idents = #parse_exprs.map_err(crate::command::ExecutionError::Parse)?;

@@ -5,9 +5,10 @@ use crate::command::Availability;
 use crate::rest::filer::{get_filer_stats as filer_stats, FilerStats};
 
 use super::arguments::{Image, ImageUrl, Rest, Time, Word};
-use super::registry::get_or_init_commands;
+use super::registry::{find_command_by_name, get_or_init_commands};
 use super::{Category, Command, CommandCtxt};
 
+use anyhow::bail;
 use human_bytes::human_bytes;
 use assyst_common::ansi::Ansi;
 use assyst_common::markdown::Markdown;
@@ -15,6 +16,8 @@ use assyst_common::util::process::{get_processes_cpu_usage, get_processes_mem_us
 use assyst_common::util::table::key_value;
 use assyst_proc_macro::command;
 use twilight_model::gateway::SessionStartLimit;
+
+pub mod tag;
 
 #[command(
     name = "remind",
@@ -86,7 +89,7 @@ pub async fn ping(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
     usage = "<category|command>",
     examples = ["", "misc", "ping", "tag create"]
 )]
-pub async fn help(ctxt: CommandCtxt<'_>, label: Option<Word>) -> anyhow::Result<()> {
+pub async fn help(ctxt: CommandCtxt<'_>, labels: Vec<Word>) -> anyhow::Result<()> {
     let cmds = get_or_init_commands();
 
     // group commands by their category
@@ -106,13 +109,39 @@ pub async fn help(ctxt: CommandCtxt<'_>, label: Option<Word>) -> anyhow::Result<
         }
     }
 
+    let mut labels = labels.into_iter();
     // if we have some argument
-    if let Some(l) = label {
-        let tx = l.0.to_lowercase();
+    if let Some(Word(base_command)) = labels.next() {
 
-        // if said argument is a command
-        if let Some(cmd) = cmds.get(&*tx) {
-            let meta = &cmd.metadata();
+        // if the base is a command
+        if let Some(mut command) = find_command_by_name(&base_command) {
+            let mut usage = format!("{}{}", "Usage: ".fg_yellow(), ctxt.data.calling_prefix);
+
+            // For better error reporting, store the "chain of commands" (e.g. `-t create`)
+            let mut command_chain = command.metadata().name.to_owned();
+
+            // If there are more arguments, follow the chain of subcommands and build up the usage along the way
+            for Word(mut label) in labels.into_iter() {
+                let metadata = command.metadata();
+                usage += metadata.name;
+                usage += " ";
+
+                label.make_ascii_lowercase();
+
+                match command.subcommand(&label) {
+                    Some(sc) => command = sc,
+                    None => bail!("subcommand {} does not exist (use {}help {})", label, ctxt.data.calling_prefix, command_chain)
+                }
+
+                command_chain += " ";
+                command_chain += command.metadata().name;
+            }
+            usage += command.metadata().name;
+            usage += " ";
+            usage += command.metadata().usage;
+            
+            let meta = command.metadata();
+
             let name_fmt = (meta.name.to_owned() + ":").fg_green();
             let description = meta.description;
             let aliases = "Aliases: ".fg_yellow() + &(if !meta.aliases.is_empty() {
@@ -122,12 +151,11 @@ pub async fn help(ctxt: CommandCtxt<'_>, label: Option<Word>) -> anyhow::Result<
             });
             let cooldown = format!("{} {} seconds", "Cooldown:".fg_yellow(), meta.cooldown.as_secs());
             let access = "Access: ".fg_yellow() + &meta.access.to_string();
-            let usage = "Usage: ".fg_yellow() + &format!("{}{} {}", ctxt.data.calling_prefix, meta.name, meta.usage.to_string());
 
             let examples_format = if !meta.examples.is_empty() { 
                 format!("\n{}", meta.examples.iter().map(|x| {
                     format!("{}{} {}", ctxt.data.calling_prefix, meta.name, x)
-                }).collect::<Vec<_>>().join("\n")) 
+                }).collect::<Vec<_>>().join("\n"))
             } else {
                 "None".to_owned()
             };
@@ -139,23 +167,23 @@ pub async fn help(ctxt: CommandCtxt<'_>, label: Option<Word>) -> anyhow::Result<
                 .codeblock("ansi"),
             )
             .await?;
-            // otherwise, its either irrelevant or a category
         } else {
-            let g: Category = tx.clone().into();
+            // ... if it isn't a command, then go check if it's a category
+            let group: Category = base_command.clone().into();
 
             // if its a category
-            if let Category::None(_) = g {
+            if let Category::None(_) = group {
                 ctxt.reply(format!(
                     "{} No command or group named {} found.",
                     emoji::symbols::warning::WARNING.glyph,
-                    tx.codestring()
+                    base_command.codestring()
                 ))
                 .await?;
             // irrelevant
             } else {
                 let mut txt = String::new();
-                txt += &format!("{g}:").fg_green();
-                let l = groups.get(&g);
+                txt += &format!("{group}:").fg_green();
+                let l = groups.get(&group);
 
                 if let Some(list) = l {
                     for i in list {

@@ -16,8 +16,6 @@ use crate::gateway_handler::message_parser::parser::parse_message_into_command;
 use crate::replies::ReplyState;
 use crate::ThreadSafeAssyst;
 
-use super::ctxt_exec;
-
 /// Handle a [MessageUpdate] event sent from the Discord gateway.
 ///
 /// Message updates are used to check the following:
@@ -46,7 +44,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: MessageUpdate) {
                     };
                     let ctxt = CommandCtxt::new(args, &data);
 
-                    if let Err(err) = ctxt_exec(&ctxt, cmd).await {
+                    if let Err(err) = cmd.execute(ctxt.clone()).await {
                         match err.get_severity() {
                             ErrorSeverity::Low => debug!("{err:?}"),
                             ErrorSeverity::High => match err {

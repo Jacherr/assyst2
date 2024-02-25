@@ -39,8 +39,11 @@ pub enum TagParseError {
     ArgsExhausted,
     ParseIntError(ParseIntError),
     ParseToMillisError(ParseToMillisError),
-    TwilightHttp(twilight_http::Error),
-    TwilightDeserialize(twilight_http::response::DeserializeBodyError),
+    // NB: boxed to reduce size -- twilight errors are very large (100+b), which would cause the size of this enum to
+    // explode
+    // these are very unlikely to occur, so it's okay
+    TwilightHttp(Box<twilight_http::Error>),
+    TwilightDeserialize(Box<twilight_http::response::DeserializeBodyError>),
     DownloadError(DownloadError),
     UnsupportedSticker(StickerFormatType),
     Reqwest(reqwest::Error),
@@ -55,6 +58,7 @@ pub enum TagParseError {
     NoImageFound,
     MediaDownloadFail,
     IllegalAgeRestrictedCommand,
+    InvalidSubcommand,
 }
 
 impl GetErrorSeverity for TagParseError {
@@ -104,6 +108,7 @@ impl Display for TagParseError {
             TagParseError::IllegalAgeRestrictedCommand => {
                 f.write_str("this command is only available in age restricted channels")
             },
+            TagParseError::InvalidSubcommand => f.write_str("no subcommand found for given name"),
         }
     }
 }
@@ -117,13 +122,13 @@ impl From<DownloadError> for TagParseError {
 
 impl From<twilight_http::response::DeserializeBodyError> for TagParseError {
     fn from(v: twilight_http::response::DeserializeBodyError) -> Self {
-        Self::TwilightDeserialize(v)
+        Self::TwilightDeserialize(Box::new(v))
     }
 }
 
 impl From<twilight_http::Error> for TagParseError {
     fn from(v: twilight_http::Error) -> Self {
-        Self::TwilightHttp(v)
+        Self::TwilightHttp(Box::new(v))
     }
 }
 

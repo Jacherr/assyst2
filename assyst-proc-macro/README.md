@@ -2,6 +2,8 @@
 
 This crate defines proc macros, used primarily by the `assyst-core` crate for its `#[command]` macro.
 
+NOTE: if you're looking to implement a **command group**, use the `assyst_core::command::define_commandgroup!` macro.
+
 ### `#[command]`
 This macro allows you to write bot commands (independent of the source: gateway or interaction) as regular async functions.
 
