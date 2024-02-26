@@ -209,7 +209,7 @@ pub async fn help(ctxt: CommandCtxt<'_>, label: Option<Word>) -> anyhow::Result<
     access = Availability::Public,
     category = Category::Misc,
     usage = "<section>",
-    examples = ["", "sessions", "database", "filer"],
+    examples = ["", "sessions", "database", "filer", "all"],
     aliases = ["info"]
 )]
 pub async fn stats(ctxt: CommandCtxt<'_>, option: Option<Word>) -> anyhow::Result<()> {
@@ -288,6 +288,20 @@ pub async fn stats(ctxt: CommandCtxt<'_>, option: Option<Word>) -> anyhow::Resul
         Ok(table.codeblock("ansi"))
     }
 
+    fn get_general_stats(ctxt: &CommandCtxt<'_>) -> String {
+        let events_rate = ctxt.assyst().prometheus.get_events_rate().map(|x| x.to_string()).unwrap_or("0".to_owned());
+        let commands_rate = ctxt.assyst().prometheus.get_commands_rate().map(|x| x.to_string()).unwrap_or("0".to_owned());
+    
+        let stats_table = key_value(&vec![
+            ("Guilds".fg_cyan(), ctxt.assyst().prometheus.guilds.get().to_string()),
+            ("Shards".fg_cyan(), ctxt.assyst().shard_count.to_string()),
+            ("Events".fg_cyan(), events_rate + "/sec"),
+            ("Commands".fg_cyan(), commands_rate + "/min")
+        ]);
+
+        stats_table.codeblock("ansi")
+    }
+
     ctxt.reply("Collecting...").await?;
 
     if let Some(Word(ref x)) = option && x.to_lowercase() == "sessions" {
@@ -302,20 +316,24 @@ pub async fn stats(ctxt: CommandCtxt<'_>, option: Option<Word>) -> anyhow::Resul
         let table = get_filer_stats(&ctxt).await?;
 
         ctxt.reply(table).await?;
+    } else if let Some(Word(ref x)) = option && x.to_lowercase() == "all" {
+        let stats_table = get_general_stats(&ctxt);        
+        let usages_table = get_process_stats();
+        let db_table = get_database_stats(&ctxt).await?;
+        let filer_table = get_filer_stats(&ctxt).await?;
+        let session_table = get_session_stats(&ctxt).await?;
+
+        let full_output = format!(
+            "**General**\n{stats_table}\n**Processes**\n{usages_table}\n**Database**\n{db_table}\n**Filer**\n{filer_table}\n**Sessions**\n{session_table}"
+        );
+
+        ctxt.reply(full_output).await?;
     } else {
-        let events_rate = ctxt.assyst().prometheus.get_events_rate().map(|x| x.to_string()).unwrap_or("0".to_owned());
-        let commands_rate = ctxt.assyst().prometheus.get_commands_rate().map(|x| x.to_string()).unwrap_or("0".to_owned());
-    
-        let stats_table = key_value(&vec![
-            ("Guilds".fg_cyan(), ctxt.assyst().prometheus.guilds.get().to_string()),
-            ("Shards".fg_cyan(), ctxt.assyst().shard_count.to_string()),
-            ("Events".fg_cyan(), events_rate + "/sec"),
-            ("Commands".fg_cyan(), commands_rate + "/min")
-        ]);
-    
+        // default to general and process stats
+        let stats_table = get_general_stats(&ctxt);        
         let usages_table = get_process_stats();
 
-        let msg = format!("{} {}", stats_table.codeblock("ansi"), usages_table);
+        let msg = format!("{} {}", stats_table, usages_table);
     
         ctxt.reply(msg).await?;
     }
