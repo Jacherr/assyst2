@@ -46,25 +46,27 @@ macro_rules! err {
 }
 
 pub fn handle_log(message: String) {
-    tokio::spawn(async move {
-        let LoggingWebhook { id, token } = CONFIG.logging_webhooks.error.clone();
+    if CONFIG.logging_webhooks.enable_webhooks {
+        tokio::spawn(async move {
+            let LoggingWebhook { id, token } = CONFIG.logging_webhooks.error.clone();
 
-        let client = HttpClient::new(CONFIG.authentication.discord_token.clone());
+            let client = HttpClient::new(CONFIG.authentication.discord_token.clone());
 
-        if id == 0 {
-            tracing::error!("Failed to trigger panic webhook: Panic webhook ID is 0");
-        } else {
-            let webhook = client
-                .execute_webhook(Id::<WebhookMarker>::new(id), &token)
-                .content(&message);
+            if id == 0 {
+                tracing::error!("Failed to trigger error webhook: Error webhook ID is 0");
+            } else {
+                let webhook = client
+                    .execute_webhook(Id::<WebhookMarker>::new(id), &token)
+                    .content(&message);
 
-            if let Ok(w) = webhook {
-                let _ = w
-                    .await
-                    .inspect_err(|e| tracing::error!("Failed to trigger panic webhook: {}", e.to_string()));
-            } else if let Err(e) = webhook {
-                tracing::error!("Failed to trigger panic webhook: {}", e.to_string());
+                if let Ok(w) = webhook {
+                    let _ = w
+                        .await
+                        .inspect_err(|e| tracing::error!("Failed to trigger error webhook: {}", e.to_string()));
+                } else if let Err(e) = webhook {
+                    tracing::error!("Failed to trigger error webhook: {}", e.to_string());
+                }
             }
-        }
-    });
+        });
+    }
 }

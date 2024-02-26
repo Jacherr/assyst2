@@ -1,5 +1,6 @@
 use crate::assyst::ThreadSafeAssyst;
 use anyhow::bail;
+use assyst_common::config::CONFIG;
 use assyst_common::err;
 use assyst_database::model::free_tier_2_requests::FreeTier2Requests;
 use bincode::{deserialize, serialize};
@@ -13,24 +14,28 @@ use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 use tokio::spawn;
-use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
+use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 use tokio::sync::oneshot::{self, Sender};
 use tokio::sync::Mutex;
 use tokio::time::sleep;
 use tracing::info;
 
+pub mod jobs;
+
 static CONNECTED: AtomicBool = AtomicBool::new(false);
-pub type WsiSender = UnboundedSender<(Sender<JobResult>, FifoSend, usize)>;
+pub type WsiSender = (Sender<JobResult>, FifoSend, usize);
 
 pub struct WsiHandler {
-    pub wsi_tx: WsiSender,
+    pub wsi_tx: UnboundedSender<WsiSender>,
 }
 impl WsiHandler {
-    pub fn new(sender: WsiSender) -> WsiHandler {
-        WsiHandler { wsi_tx: sender }
+    pub fn new() -> WsiHandler {
+        let (tx, rx) = unbounded_channel::<WsiSender>();
+        Self::listen(rx, &CONFIG.urls.wsi);
+        WsiHandler { wsi_tx: tx }
     }
 
-    pub async fn listen(job_rx: UnboundedReceiver<(Sender<JobResult>, FifoSend, usize)>, socket: &str) {
+    pub fn listen(job_rx: UnboundedReceiver<WsiSender>, socket: &str) {
         let job_rx = Arc::new(Mutex::new(job_rx));
         let socket = socket.to_owned();
 
@@ -38,7 +43,11 @@ impl WsiHandler {
             loop {
                 let stream = match TcpStream::connect(&socket).await {
                     Ok(stream) => stream,
-                    Err(_) => {
+                    Err(e) => {
+                        err!(
+                            "Failed to connect to WSI server ({}), attempting reconnection in 10 sec...",
+                            e.to_string()
+                        );
                         sleep(Duration::from_secs(10)).await;
                         continue;
                     },

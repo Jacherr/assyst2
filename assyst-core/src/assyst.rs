@@ -2,6 +2,7 @@ use crate::cache_handler::CacheHandler;
 use crate::replies::Replies;
 use crate::rest::patreon::Patron;
 use crate::task::Task;
+use crate::wsi_handler::WsiHandler;
 use assyst_common::config::CONFIG;
 use assyst_common::pipe::CACHE_PIPE_PATH;
 use assyst_common::prometheus::Prometheus;
@@ -35,6 +36,8 @@ pub struct Assyst {
     pub shard_count: u64,
     /// Cached command replies.
     pub replies: Replies,
+    /// Handler for WSI.
+    pub wsi_handler: WsiHandler,
 }
 impl Assyst {
     pub async fn new() -> anyhow::Result<Assyst> {
@@ -54,6 +57,7 @@ impl Assyst {
             tasks: Mutex::new(vec![]),
             shard_count,
             replies: Replies::new(),
+            wsi_handler: WsiHandler::new(),
         })
     }
 

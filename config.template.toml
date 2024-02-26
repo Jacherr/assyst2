@@ -3,6 +3,8 @@
 proxy = []
 # URL for Filer, the Assyst CDN.
 filer = ""
+# URL for the WSI TCP server.
+wsi = ""
 
 [authentication]
 # Token to authenticate with Discord.
@@ -34,6 +36,8 @@ default = "-"
 panic = { token = "", id = 0 }
 error = { token = "", id = 0 }
 vote = { token = "", id = 0 }
+# Whether to use the webhooks on vote, panic, and error.
+enable_webhooks = true
 
 [dev]
 # These Discord user IDs have full control of the bot, including developer-only commands.

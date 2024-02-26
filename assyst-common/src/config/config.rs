@@ -16,6 +16,7 @@ pub struct AssystConfig {
 pub struct Urls {
     pub proxy: Vec<String>,
     pub filer: String,
+    pub wsi: String,
 }
 
 #[derive(Deserialize)]
@@ -72,6 +73,7 @@ pub struct LoggingWebhooks {
     pub panic: LoggingWebhook,
     pub error: LoggingWebhook,
     pub vote: LoggingWebhook,
+    pub enable_webhooks: bool
 }
 
 #[derive(Deserialize, Clone)]

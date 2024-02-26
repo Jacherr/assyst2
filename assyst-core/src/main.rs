@@ -57,26 +57,28 @@ async fn main() {
             let assyst = assyst.clone();
             let msg = format!("A thread has panicked: ```{}```", info);
 
-            let LoggingWebhook { id, token } = CONFIG.logging_webhooks.panic.clone();
+            if CONFIG.logging_webhooks.enable_webhooks {
+                let LoggingWebhook { id, token } = CONFIG.logging_webhooks.panic.clone();
 
-            handle.spawn(async move {
-                if id == 0 {
-                    err!("Failed to trigger panic webhook: Panic webhook ID is 0");
-                } else {
-                    let webhook = assyst
-                        .http_client
-                        .execute_webhook(Id::<WebhookMarker>::new(id), &token)
-                        .content(&msg);
+                handle.spawn(async move {
+                    if id == 0 {
+                        err!("Failed to trigger panic webhook: Panic webhook ID is 0");
+                    } else {
+                        let webhook = assyst
+                            .http_client
+                            .execute_webhook(Id::<WebhookMarker>::new(id), &token)
+                            .content(&msg);
 
-                    if let Ok(w) = webhook {
-                        let _ = w
-                            .await
-                            .inspect_err(|e| err!("Failed to trigger panic webhook: {}", e.to_string()));
-                    } else if let Err(e) = webhook {
-                        err!("Failed to trigger panic webhook: {}", e.to_string());
+                        if let Ok(w) = webhook {
+                            let _ = w
+                                .await
+                                .inspect_err(|e| err!("Failed to trigger panic webhook: {}", e.to_string()));
+                        } else if let Err(e) = webhook {
+                            err!("Failed to trigger panic webhook: {}", e.to_string());
+                        }
                     }
-                }
-            });
+                });
+            }
         }));
     }
 
