@@ -2,7 +2,7 @@ use assyst_common::config::config::LoggingWebhook;
 use assyst_common::config::CONFIG;
 use assyst_common::prometheus::Prometheus;
 use assyst_common::{err, BOT_ID};
-use assyst_database::model::free_tier_1_requests::FreeTier1Requests;
+use assyst_database::model::free_tier_2_requests::FreeTier2Requests;
 use assyst_database::model::user_votes::UserVotes;
 use assyst_database::DatabaseHandler;
 use axum::extract::State;
@@ -21,7 +21,7 @@ use twilight_http::Client as HttpClient;
 use twilight_model::id::marker::{UserMarker, WebhookMarker};
 use twilight_model::id::Id;
 
-const FREE_TIER_1_REQUESTS_ON_VOTE: u64 = 15;
+const FREE_TIER_2_REQUESTS_ON_VOTE: u64 = 15;
 lazy_static! {
     static ref TOP_GG_VOTE_URL: String = format!("https://top.gg/bot/{}/vote", BOT_ID);
 }
@@ -87,19 +87,16 @@ async fn top_gg_webhook(
         .parse::<u64>()
         .inspect_err(|e| err!("Failed to parse user id {}: {}", body.user, e.to_string()))?;
 
-    FreeTier1Requests::change_free_tier_1_requests(
-        &*route_state.database.read().await,
-        user_id,
-        FREE_TIER_1_REQUESTS_ON_VOTE,
-    )
-    .await
-    .inspect_err(|e| {
-        err!(
-            "Failed to add free tier 1 requests for user {}: {}",
-            user_id,
-            e.to_string()
-        )
-    })?;
+    FreeTier2Requests::new(user_id)
+        .change_free_tier_2_requests(&*route_state.database.read().await, FREE_TIER_2_REQUESTS_ON_VOTE as i64)
+        .await
+        .inspect_err(|e| {
+            err!(
+                "Failed to add free tier 1 requests for user {}: {}",
+                user_id,
+                e.to_string()
+            )
+        })?;
 
     let user = route_state
         .http_client
@@ -144,7 +141,7 @@ async fn top_gg_webhook(
     if let Some(v) = voter {
         let message = format!(
             "{0}#{1} voted for Assyst on top.gg and got {2} free tier 1 requests!\n{0}#{1} has voted {3} total times.",
-            user.name, user.discriminator, FREE_TIER_1_REQUESTS_ON_VOTE, v.count
+            user.name, user.discriminator, FREE_TIER_2_REQUESTS_ON_VOTE, v.count
         );
 
         let LoggingWebhook { id, token } = CONFIG.logging_webhooks.vote.clone();

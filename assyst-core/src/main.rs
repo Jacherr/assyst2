@@ -28,6 +28,7 @@ mod gateway_handler;
 mod replies;
 mod rest;
 mod task;
+mod wsi_handler;
 
 // Jemallocator is probably unnecessary for the average instance,
 // but when handling hundreds of events per second the performance improvement
