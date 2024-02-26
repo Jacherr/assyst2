@@ -9,7 +9,7 @@ use shared::fifo::{FifoSend, WsiRequest};
 use shared::job::JobResult;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
@@ -163,11 +163,12 @@ impl WsiHandler {
 
     /// This function will remove a free voter request if the user has any
     /// and are not a patron!
-    pub async fn get_request_tier(assyst: ThreadSafeAssyst, user_id: u64) -> Result<usize, anyhow::Error> {
-        let patrons = assyst.patrons.lock().unwrap();
-        let patron = patrons.iter().find(|i| i.user_id == user_id);
-        if let Some(p) = patron {
-            return Ok(p.tier.clone() as usize);
+    pub async fn get_request_tier(&self, assyst: ThreadSafeAssyst, user_id: u64) -> Result<usize, anyhow::Error> {
+        if let Some(p) = {
+            let patrons = assyst.patrons.lock().unwrap();
+            patrons.iter().find(|i| i.user_id == user_id).cloned()
+        } {
+            return Ok(p.tier as usize);
         }
 
         let user_tier1 =
@@ -188,7 +189,7 @@ impl WsiHandler {
             bail!("Assyst cannot establish a connection to the image server at this time. Try again in a few minutes.");
         }
 
-        let premium_level = Self::get_request_tier(assyst.clone(), user_id).await?;
+        let premium_level = self.get_request_tier(assyst, user_id).await?;
 
         let (tx, rx) = oneshot::channel::<JobResult>();
         self.wsi_tx.send((tx, job, premium_level))?;

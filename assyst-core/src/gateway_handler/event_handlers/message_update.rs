@@ -37,6 +37,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: MessageUpdate) {
                         channel_id: message.channel_id.get(),
                         embed: message.embeds.first(),
                         processing_time_start: Instant::now(),
+                        author: &message.author,
                         calling_prefix,
                     };
                     let ctxt = CommandCtxt::new(args, &data);

@@ -37,6 +37,7 @@ use async_trait::async_trait;
 use twilight_model::channel::message::sticker::MessageSticker;
 use twilight_model::channel::message::Embed;
 use twilight_model::channel::{Attachment, Message};
+use twilight_model::user::User;
 
 use self::errors::{ArgsExhausted, ExecutionError};
 use self::messagebuilder::MessageBuilder;
@@ -48,6 +49,7 @@ pub mod messagebuilder;
 pub mod misc;
 pub mod registry;
 pub mod source;
+pub mod wsi;
 
 /// Defines who can use a command in a server.
 #[derive(Clone, Copy, Debug)]
@@ -144,6 +146,7 @@ pub type TCommand = &'static (dyn Command + Send + Sync);
 
 /// Other static data that can be shared and does not need to be cloned between
 /// subcontexts
+#[derive(Clone)]
 pub struct CommandData<'a> {
     /// The source of this command invocation
     pub source: Source,
@@ -159,8 +162,10 @@ pub struct CommandData<'a> {
     pub referenced_message: Option<&'a Message>,
     pub processing_time_start: Instant,
     pub calling_prefix: String,
+    pub author: &'a User,
 }
 
+#[derive(Clone)]
 pub struct CommandCtxt<'a> {
     args: SplitAsciiWhitespace<'a>,
     pub data: &'a CommandData<'a>,

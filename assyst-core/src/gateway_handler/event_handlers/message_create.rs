@@ -1,3 +1,4 @@
+use std::fmt::format;
 use std::time::Instant;
 
 use assyst_common::err;
@@ -27,14 +28,18 @@ pub async fn handle(assyst: ThreadSafeAssyst, MessageCreate(message): MessageCre
                 channel_id: message.channel_id.get(),
                 embed: message.embeds.first(),
                 processing_time_start: Instant::now(),
+                author: &message.author,
                 calling_prefix,
             };
             let ctxt = CommandCtxt::new(args, &data);
 
-            if let Err(err) = cmd.execute(ctxt).await {
+            if let Err(err) = cmd.execute(ctxt.clone()).await {
                 match err.get_severity() {
                     ErrorSeverity::Low => debug!("{err:?}"),
-                    ErrorSeverity::High => err!("{err:?}"),
+                    ErrorSeverity::High => {
+                        let _ = ctxt.reply(format!(":warning: `{err:?}`")).await;
+                        err!("{err:?}")
+                    },
                 }
             }
 
