@@ -8,6 +8,7 @@ use twilight_model::gateway::payload::incoming::MessageUpdate;
 use twilight_model::id::Id;
 use twilight_model::util::Timestamp;
 
+use crate::command::errors::{ExecutionError, TagParseError};
 use crate::command::source::Source;
 use crate::command::{CommandCtxt, CommandData};
 use crate::gateway_handler::message_parser::error::{ErrorSeverity, GetErrorSeverity, ParseError, PreParseError};
@@ -42,10 +43,25 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: MessageUpdate) {
                     };
                     let ctxt = CommandCtxt::new(args, &data);
 
-                    if let Err(err) = cmd.execute(ctxt).await {
+                    if let Err(err) = cmd.execute(ctxt.clone()).await {
                         match err.get_severity() {
                             ErrorSeverity::Low => debug!("{err:?}"),
-                            ErrorSeverity::High => err!("{err:?}"),
+                            ErrorSeverity::High => match err {
+                                // if invalid args: report usage to user
+                                ExecutionError::Parse(TagParseError::ArgsExhausted) => {
+                                    let _ = ctxt
+                                        .reply(format!(
+                                            ":warning: `{err}\nUsage: {}{} {}`",
+                                            ctxt.data.calling_prefix,
+                                            cmd.metadata().name,
+                                            cmd.metadata().usage
+                                        ))
+                                        .await;
+                                },
+                                _ => {
+                                    let _ = ctxt.reply(format!(":warning: `{err}`")).await;
+                                },
+                            },
                         }
                     }
 
