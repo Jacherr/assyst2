@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
 use crate::command::Availability;
-use crate::rest::filer::get_filer_stats as filer_stats;
+use crate::rest::filer::{get_filer_stats as filer_stats, FilerStats};
 
 use super::arguments::{Image, ImageUrl, Rest, Time, Word};
 use super::registry::get_or_init_commands;
@@ -210,7 +210,8 @@ pub async fn help(ctxt: CommandCtxt<'_>, label: Option<Word>) -> anyhow::Result<
     category = Category::Misc,
     usage = "<section>",
     examples = ["", "sessions", "database", "filer", "all"],
-    aliases = ["info"]
+    aliases = ["info"],
+    send_processing = true
 )]
 pub async fn stats(ctxt: CommandCtxt<'_>, option: Option<Word>) -> anyhow::Result<()> {
     fn get_process_stats() -> String {
@@ -265,24 +266,19 @@ pub async fn stats(ctxt: CommandCtxt<'_>, option: Option<Word>) -> anyhow::Resul
         Ok(table.codeblock("ansi"))
     }
 
-    async fn get_database_stats(ctxt: &CommandCtxt<'_>) -> anyhow::Result<String> {
+    async fn get_persistent_storage_stats(ctxt: &CommandCtxt<'_>) -> anyhow::Result<String> {
         let database_size = ctxt.assyst().database_handler.read().await.database_size().await?.size;
         let cache_size = human_bytes(ctxt.assyst().database_handler.read().await.cache.size_of() as f64);
+        let filer_stats = filer_stats(ctxt.assyst().clone()).await.unwrap_or(FilerStats {
+            count: 0,
+            size_bytes: 0
+        });
 
         let table = key_value(&vec![
-            ("Database Size".fg_cyan(), database_size),
-            ("Cache Size".fg_cyan(), cache_size)
-        ]);
-
-        Ok(table.codeblock("ansi"))
-    }
-
-    async fn get_filer_stats(ctxt: &CommandCtxt<'_>) -> anyhow::Result<String> {
-        let stats = filer_stats(ctxt.assyst().clone()).await?;
-
-        let table = key_value(&vec![
-            ("File Count".fg_cyan(), stats.count.to_string()),
-            ("Total Size".fg_cyan(), human_bytes(stats.size_bytes as f64))
+            ("Database Total Size".fg_cyan(), database_size),
+            ("Cache Total Size".fg_cyan(), cache_size),
+            ("Filer File Count".fg_cyan(), filer_stats.count.to_string()),
+            ("Filer Total Size".fg_cyan(), human_bytes(filer_stats.size_bytes as f64))
         ]);
 
         Ok(table.codeblock("ansi"))
@@ -302,29 +298,22 @@ pub async fn stats(ctxt: CommandCtxt<'_>, option: Option<Word>) -> anyhow::Resul
         stats_table.codeblock("ansi")
     }
 
-    ctxt.reply("Collecting...").await?;
-
     if let Some(Word(ref x)) = option && x.to_lowercase() == "sessions" {
         let table = get_session_stats(&ctxt).await?;
 
         ctxt.reply(table).await?;
-    } else if let Some(Word(ref x)) = option && (x.to_lowercase() == "database" || x.to_lowercase() == "db") {
-        let table = get_database_stats(&ctxt).await?;
-
-        ctxt.reply(table).await?;
-    } else if let Some(Word(ref x)) = option && (x.to_lowercase() == "filer" || x.to_lowercase() == "cdn") {
-        let table = get_filer_stats(&ctxt).await?;
+    } else if let Some(Word(ref x)) = option && (x.to_lowercase() == "persistent" || x.to_lowercase() == "storage") {
+        let table = get_persistent_storage_stats(&ctxt).await?;
 
         ctxt.reply(table).await?;
     } else if let Some(Word(ref x)) = option && x.to_lowercase() == "all" {
         let stats_table = get_general_stats(&ctxt);        
         let usages_table = get_process_stats();
-        let db_table = get_database_stats(&ctxt).await?;
-        let filer_table = get_filer_stats(&ctxt).await?;
+        let storage_table = get_persistent_storage_stats(&ctxt).await?;
         let session_table = get_session_stats(&ctxt).await?;
 
         let full_output = format!(
-            "**General**\n{stats_table}\n**Processes**\n{usages_table}\n**Database**\n{db_table}\n**Filer**\n{filer_table}\n**Sessions**\n{session_table}"
+            "**General**\n{stats_table}\n**Processes**\n{usages_table}\n**Persistent Storage**\n{storage_table}\n**Sessions**\n{session_table}"
         );
 
         ctxt.reply(full_output).await?;
