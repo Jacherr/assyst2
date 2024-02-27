@@ -1,22 +1,24 @@
 use crate::assyst::ThreadSafeAssyst;
+use crate::rest::patreon::Patron;
 use anyhow::bail;
 use assyst_common::config::CONFIG;
 use assyst_common::err;
 use assyst_database::model::free_tier_2_requests::FreeTier2Requests;
+use assyst_database::DatabaseHandler;
 use bincode::{deserialize, serialize};
 use shared::errors::ProcessingError;
 use shared::fifo::{FifoSend, WsiRequest};
 use shared::job::JobResult;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 use tokio::spawn;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 use tokio::sync::oneshot::{self, Sender};
-use tokio::sync::Mutex;
+use tokio::sync::RwLock;
 use tokio::time::sleep;
 use tracing::info;
 
@@ -26,17 +28,23 @@ static CONNECTED: AtomicBool = AtomicBool::new(false);
 pub type WsiSender = (Sender<JobResult>, FifoSend, usize);
 
 pub struct WsiHandler {
+    database_handler: Arc<RwLock<DatabaseHandler>>,
+    patrons: Arc<Mutex<Vec<Patron>>>,
     pub wsi_tx: UnboundedSender<WsiSender>,
 }
 impl WsiHandler {
-    pub fn new() -> WsiHandler {
+    pub fn new(database_handler: Arc<RwLock<DatabaseHandler>>, patrons: Arc<Mutex<Vec<Patron>>>) -> WsiHandler {
         let (tx, rx) = unbounded_channel::<WsiSender>();
         Self::listen(rx, &CONFIG.urls.wsi);
-        WsiHandler { wsi_tx: tx }
+        WsiHandler {
+            wsi_tx: tx,
+            database_handler,
+            patrons,
+        }
     }
 
     pub fn listen(job_rx: UnboundedReceiver<WsiSender>, socket: &str) {
-        let job_rx = Arc::new(Mutex::new(job_rx));
+        let job_rx = Arc::new(tokio::sync::Mutex::new(job_rx));
         let socket = socket.to_owned();
 
         spawn(async move {
@@ -90,7 +98,7 @@ impl WsiHandler {
                         };
 
                         let job_id = deserialized.id();
-                        let tx = jobs_clone.lock().await.remove(&job_id);
+                        let tx = jobs_clone.lock().unwrap().remove(&job_id);
 
                         if let Some(tx) = tx {
                             // if this fails it means it timed out
@@ -118,7 +126,7 @@ impl WsiHandler {
                         let wsi_request = WsiRequest::new(id, premium_level, job);
                         let job = serialize(&wsi_request).unwrap();
 
-                        jobs.lock().await.insert(id, tx);
+                        jobs.lock().unwrap().insert(id, tx);
 
                         match writer.write_u32(job.len() as u32).await {
                             Err(e) => {
@@ -144,16 +152,17 @@ impl WsiHandler {
                 };
 
                 CONNECTED.store(false, Ordering::Relaxed);
-                let mut lock = jobs_clone_2.lock().await;
-                let keys = lock.keys().map(|x| *x).collect::<Vec<_>>().clone();
-
-                for job in keys {
-                    let tx = lock.remove(&job).unwrap();
-                    let _ = tx.send(JobResult::new_err(
-                        0,
-                        ProcessingError::Other("The image server died. Try again in a few seconds.".to_owned()),
-                    ));
-                }
+                {
+                    let mut lock = jobs_clone_2.lock().unwrap();
+                    let keys = lock.keys().map(|x| *x).collect::<Vec<_>>().clone();
+                    for job in keys {
+                        let tx = lock.remove(&job).unwrap();
+                        let _ = tx.send(JobResult::new_err(
+                            0,
+                            ProcessingError::Other("The image server died. Try again in a few seconds.".to_owned()),
+                        ));
+                    }
+                };
 
                 err!("Lost connection to WSI server, attempting reconnection in 10 sec...");
                 sleep(Duration::from_secs(10)).await;
@@ -163,20 +172,20 @@ impl WsiHandler {
 
     /// This function will remove a free voter request if the user has any
     /// and are not a patron!
-    pub async fn get_request_tier(&self, assyst: ThreadSafeAssyst, user_id: u64) -> Result<usize, anyhow::Error> {
+    pub async fn get_request_tier(&self, user_id: u64) -> Result<usize, anyhow::Error> {
         if let Some(p) = {
-            let patrons = assyst.patrons.lock().unwrap();
+            let patrons = self.patrons.lock().unwrap();
             patrons.iter().find(|i| i.user_id == user_id).cloned()
         } {
             return Ok(p.tier as usize);
         }
 
         let user_tier1 =
-            FreeTier2Requests::get_user_free_tier_2_requests(&*assyst.database_handler.read().await, user_id).await?;
+            FreeTier2Requests::get_user_free_tier_2_requests(&*self.database_handler.read().await, user_id).await?;
 
         if user_tier1.count > 0 {
             user_tier1
-                .change_free_tier_2_requests(&*assyst.database_handler.read().await, -1)
+                .change_free_tier_2_requests(&*self.database_handler.read().await, -1)
                 .await?;
             Ok(2)
         } else {
@@ -184,12 +193,12 @@ impl WsiHandler {
         }
     }
 
-    pub async fn run_job(&self, assyst: ThreadSafeAssyst, job: FifoSend, user_id: u64) -> anyhow::Result<Vec<u8>> {
+    pub async fn run_job(&self, job: FifoSend, user_id: u64) -> anyhow::Result<Vec<u8>> {
         if !CONNECTED.load(Ordering::Relaxed) {
             bail!("Assyst cannot establish a connection to the image server at this time. Try again in a few minutes.");
         }
 
-        let premium_level = self.get_request_tier(assyst, user_id).await?;
+        let premium_level = self.get_request_tier(user_id).await?;
 
         let (tx, rx) = oneshot::channel::<JobResult>();
         self.wsi_tx.send((tx, job, premium_level))?;

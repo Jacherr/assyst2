@@ -16,20 +16,7 @@ fn trim_content_fits(content: &mut String) {
     }
 }
 
-pub async fn edit(ctxt: &CommandCtxt<'_>, mut builder: MessageBuilder, reply: ReplyInUse) -> anyhow::Result<()> {
-    // If either the already-sent reply or the builder has an
-    // attachment, we need to delete the reply and send another one, since an attachment can't be
-    // edited.
-    if builder.attachment.is_some() || reply.has_attachments {
-        ctxt.data
-            .assyst
-            .http_client
-            .delete_message(Id::new(ctxt.data.channel_id), Id::new(reply.message_id))
-            .await?;
-
-        return create_message(ctxt, builder).await;
-    }
-
+pub async fn edit(ctxt: &CommandCtxt<'_>, builder: MessageBuilder, reply: ReplyInUse) -> anyhow::Result<()> {
     let allowed_mentions = AllowedMentions::default();
 
     let mut message = ctxt
@@ -39,9 +26,26 @@ pub async fn edit(ctxt: &CommandCtxt<'_>, mut builder: MessageBuilder, reply: Re
         .update_message(Id::new(ctxt.data.channel_id), Id::new(reply.message_id))
         .allowed_mentions(Some(&allowed_mentions));
 
-    if let Some(content) = &mut builder.content {
+    let mut content_clone = builder.content.clone();
+
+    if builder.attachment.is_none() && builder.content.as_ref().map(|x| x.trim().is_empty()).unwrap_or(true) {
+        message = message.content(Some("[Empty Response]"))?;
+    } else if let Some(content) = &mut content_clone {
         trim_content_fits(content);
         message = message.content(Some(content))?;
+    }
+
+    let attachments;
+    if let Some(attachment) = builder.attachment {
+        attachments = [TwilightAttachment::from_bytes(
+            attachment.name.into(),
+            attachment.data,
+            0,
+        )];
+        message = message.attachments(&attachments)?;
+        if builder.content.is_none() {
+            message = message.content(Some(""))?;
+        }
     }
 
     message.await?;
@@ -58,7 +62,9 @@ async fn create_message(ctxt: &CommandCtxt<'_>, mut builder: MessageBuilder) -> 
         .create_message(Id::new(ctxt.data.channel_id))
         .allowed_mentions(Some(&allowed_mentions));
 
-    if let Some(content) = &mut builder.content {
+    if builder.attachment.is_none() && builder.content.as_ref().map(|x| x.trim().is_empty()).unwrap_or(true) {
+        message = message.content("[Empty Response]")?;
+    } else if let Some(content) = &mut builder.content {
         trim_content_fits(content);
         message = message.content(content)?;
     }

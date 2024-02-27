@@ -11,16 +11,17 @@ use crate::command::{Availability, Category, CommandCtxt};
     access = Availability::Public,
     category = Category::Misc,
     usage = "[image] [caption]",
-    examples = ["https://link.to.my/image.png"]
+    examples = ["https://link.to.my/image.png"],
+    send_processing = true
 )]
 pub async fn caption(ctxt: CommandCtxt<'_>, source: Image, text: Rest) -> anyhow::Result<()> {
     let result = ctxt
         .assyst()
         .wsi_handler
-        .caption(ctxt.assyst().clone(), source.0, text.0, ctxt.data.author.id.get())
+        .caption(source.0, text.0, ctxt.data.author.id.get())
         .await?;
 
-    ctxt.reply(Image(result)).await?;
+    ctxt.reply(result).await?;
 
     Ok(())
 }

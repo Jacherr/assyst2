@@ -34,7 +34,19 @@ pub async fn handle(assyst: ThreadSafeAssyst, MessageCreate(message): MessageCre
             };
             let ctxt = CommandCtxt::new(args, &data);
 
-            if let Err(err) = cmd.execute(ctxt.clone()).await {
+            if let Err(err) = {
+                {
+                    if cmd.metadata().send_processing {
+                        if let Err(e) = ctxt.reply("Processing...").await {
+                            Err(ExecutionError::Command(e))
+                        } else {
+                            cmd.execute(ctxt.clone()).await
+                        }
+                    } else {
+                        cmd.execute(ctxt.clone()).await
+                    }
+                }
+            } {
                 match err.get_severity() {
                     ErrorSeverity::Low => debug!("{err:?}"),
                     ErrorSeverity::High => match err {

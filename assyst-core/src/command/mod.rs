@@ -85,6 +85,8 @@ pub struct CommandMetadata {
     pub category: Category,
     pub examples: &'static [&'static str],
     pub usage: &'static str,
+    /// Whether to send a "Processing..." reply when the command starts executing
+    pub send_processing: bool
 }
 
 #[derive(Clone, PartialEq, Eq, Hash)]

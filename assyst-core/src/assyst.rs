@@ -25,7 +25,7 @@ pub struct Assyst {
     /// about current ratelimits.
     pub http_client: Arc<HttpClient>,
     /// List of the current patrons to Assyst.
-    pub patrons: Mutex<Vec<Patron>>,
+    pub patrons: Arc<Mutex<Vec<Patron>>>,
     /// Prometheus handler for graph metrics.
     pub prometheus: Arc<Prometheus>,
     /// The reqwest client, used to issue general HTTP requests
@@ -46,18 +46,19 @@ impl Assyst {
         let database_handler = Arc::new(RwLock::new(
             DatabaseHandler::new(CONFIG.database.to_url(), CONFIG.database.to_url_safe()).await?,
         ));
+        let patrons = Arc::new(Mutex::new(vec![]));
 
         Ok(Assyst {
             cache_handler: CacheHandler::new(CACHE_PIPE_PATH),
             database_handler: database_handler.clone(),
             http_client: Arc::new(http_client),
-            patrons: Mutex::new(vec![]),
-            prometheus: Arc::new(Prometheus::new(database_handler)?),
+            patrons: patrons.clone(),
+            prometheus: Arc::new(Prometheus::new(database_handler.clone())?),
             reqwest_client: reqwest::Client::new(),
             tasks: Mutex::new(vec![]),
             shard_count,
             replies: Replies::new(),
-            wsi_handler: WsiHandler::new(),
+            wsi_handler: WsiHandler::new(database_handler.clone(), patrons.clone()),
         })
     }
 

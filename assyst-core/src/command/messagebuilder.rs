@@ -66,3 +66,11 @@ impl From<(Image, &str)> for MessageBuilder {
         }
     }
 }
+impl From<Vec<u8>> for MessageBuilder {
+    fn from(value: Vec<u8>) -> Self {
+        Self {
+            attachment: Some(Image(value).into()),
+            content: None
+        }
+    }
+}

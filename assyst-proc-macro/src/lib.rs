@@ -7,7 +7,7 @@ use proc_macro2::Span;
 use quote::{quote, quote_spanned, ToTokens};
 use syn::punctuated::Punctuated;
 use syn::token::Bracket;
-use syn::{parse_macro_input, Expr, ExprArray, ExprLit, FnArg, Ident, Item, Lit, LitStr, Meta, PatType, Token, Type};
+use syn::{parse_macro_input, Expr, ExprArray, ExprLit, FnArg, Ident, Item, Lit, LitBool, LitStr, Meta, PatType, Token, Type};
 
 struct CommandAttributes(syn::punctuated::Punctuated<syn::Meta, Token![,]>);
 
@@ -104,8 +104,9 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
     let cooldown = fields.remove("cooldown").expect("missing cooldown");
     let access = fields.remove("access").expect("missing access");
     let category = fields.remove("category").expect("missing category");
-    let examples = fields.remove("examples").unwrap_or(empty_array_expr());
+    let examples = fields.remove("examples").unwrap_or_else(empty_array_expr);
     let usage = fields.remove("usage").expect("missing usage");
+    let send_processing = fields.remove("send_processing").unwrap_or(Expr::Lit(ExprLit { attrs: Vec::new(), lit: Lit::Bool(LitBool::new(false, Span::call_site()))}));
 
     let following = quote::quote! {
         pub struct #struct_name;
@@ -121,7 +122,8 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
                     aliases: &#aliases,
                     category: #category,
                     examples: &#examples,
-                    usage: #usage
+                    usage: #usage,
+                    send_processing: #send_processing
                 };
                 &META
             }
