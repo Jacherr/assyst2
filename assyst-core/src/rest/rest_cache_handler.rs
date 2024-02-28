@@ -1,4 +1,5 @@
 use moka::sync::Cache;
+use std::mem::size_of;
 use std::sync::Arc;
 use std::time::Duration;
 use twilight_http::Client as HttpClient;
@@ -29,7 +30,7 @@ impl RestCacheHandler {
     pub fn size_of(&self) -> u64 {
         let mut size = 0;
         self.guild_upload_limits.run_pending_tasks();
-        size += self.guild_upload_limits.entry_count() * 16 /* key + value */;
+        size += self.guild_upload_limits.entry_count() * (size_of::<u64>() as u64 * 2) /* sizeof(u64) * 2 for key + value */;
         size
     }
 
