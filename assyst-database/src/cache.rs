@@ -1,3 +1,4 @@
+use std::mem::size_of;
 use std::time::Duration;
 
 use moka::sync::Cache;
@@ -38,7 +39,7 @@ impl DatabaseCache {
 
         for prefix in self.prefixes.iter() {
             // add key size
-            prefixes_size += 8;
+            prefixes_size += size_of::<u64>() as u64;
             // add value size
             prefixes_size += prefix.1.size_of();
         }
