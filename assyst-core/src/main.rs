@@ -21,10 +21,10 @@ use twilight_model::id::marker::WebhookMarker;
 use twilight_model::id::Id;
 
 mod assyst;
-mod cache_handler;
 mod command;
 mod downloader;
 mod gateway_handler;
+mod persistent_cache_handler;
 mod replies;
 mod rest;
 mod task;

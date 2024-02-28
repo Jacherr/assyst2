@@ -86,7 +86,7 @@ pub struct CommandMetadata {
     pub examples: &'static [&'static str],
     pub usage: &'static str,
     /// Whether to send a "Processing..." reply when the command starts executing
-    pub send_processing: bool
+    pub send_processing: bool,
 }
 
 #[derive(Clone, PartialEq, Eq, Hash)]
@@ -154,6 +154,8 @@ pub struct CommandData<'a> {
     pub source: Source,
     pub message_id: u64,
     pub channel_id: u64,
+    /// `None` in a DM
+    pub guild_id: Option<u64>,
     /// `None` in a slash command
     pub attachment: Option<&'a Attachment>,
     /// `None` in a slash command

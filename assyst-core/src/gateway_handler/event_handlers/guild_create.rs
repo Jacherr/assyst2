@@ -9,7 +9,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: GuildCreate) {
     let name = event.name.clone();
     let member_count = event.member_count.unwrap_or(0);
 
-    let should_handle = match assyst.cache_handler.handle_guild_create_event(event).await {
+    let should_handle = match assyst.persistent_cache_handler.handle_guild_create_event(event).await {
         Ok(s) => s,
         Err(e) => {
             err!("assyst-cache failed to handle GUILD_CREATE event: {}", e.to_string());

@@ -35,7 +35,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: Ready) {
             .unwrap();
     }
 
-    match assyst.cache_handler.handle_ready_event(event).await {
+    match assyst.persistent_cache_handler.handle_ready_event(event).await {
         Ok(num) => {
             info!("Adding {num} guilds to prometheus metrics from READY event");
             assyst.prometheus.add_guilds(num);

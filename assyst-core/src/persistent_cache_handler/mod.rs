@@ -12,14 +12,14 @@ use twilight_model::gateway::payload::incoming::{GuildCreate, GuildDelete, Ready
 /// Main cache handler for Assyst, except the database cache. Abstracts away the two main caches:
 /// assyst-cache (persistent across assyst-core restarts) and the local cache (emptied on
 /// assyst-core restarts).
-pub struct CacheHandler {
+pub struct PersistentCacheHandler {
     pub cache_tx: UnboundedSender<CacheJobSend>,
 }
-impl CacheHandler {
-    pub fn new(path: &str) -> CacheHandler {
+impl PersistentCacheHandler {
+    pub fn new(path: &str) -> PersistentCacheHandler {
         let (tx, rx) = unbounded_channel::<CacheJobSend>();
-        CacheHandler::init_pipe(rx, path);
-        CacheHandler { cache_tx: tx }
+        PersistentCacheHandler::init_pipe(rx, path);
+        PersistentCacheHandler { cache_tx: tx }
     }
 
     fn init_pipe(mut rx: UnboundedReceiver<CacheJobSend>, path: &str) {

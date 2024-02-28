@@ -1,6 +1,7 @@
-use crate::cache_handler::CacheHandler;
+use crate::persistent_cache_handler::PersistentCacheHandler;
 use crate::replies::Replies;
 use crate::rest::patreon::Patron;
+use crate::rest::rest_cache_handler::RestCacheHandler;
 use crate::task::Task;
 use crate::wsi_handler::WsiHandler;
 use assyst_common::config::CONFIG;
@@ -18,9 +19,13 @@ pub type ThreadSafeAssyst = Arc<Assyst>;
 /// Stores stateful information and connections.
 pub struct Assyst {
     /// Handler for the persistent assyst-cache.
-    pub cache_handler: CacheHandler,
+    pub persistent_cache_handler: PersistentCacheHandler,
     /// Handler for the Assyst database. RwLocked to allow concurrent reads.
     pub database_handler: Arc<RwLock<DatabaseHandler>>,
+    /// Handler for WSI.
+    pub wsi_handler: WsiHandler,
+    /// Handler for the REST cache.
+    pub rest_cache_handler: RestCacheHandler,
     /// HTTP client for Discord. Handles all HTTP requests to Discord, storing stateful information
     /// about current ratelimits.
     pub http_client: Arc<HttpClient>,
@@ -36,12 +41,10 @@ pub struct Assyst {
     pub shard_count: u64,
     /// Cached command replies.
     pub replies: Replies,
-    /// Handler for WSI.
-    pub wsi_handler: WsiHandler,
 }
 impl Assyst {
     pub async fn new() -> anyhow::Result<Assyst> {
-        let http_client = HttpClient::new(CONFIG.authentication.discord_token.clone());
+        let http_client = Arc::new(HttpClient::new(CONFIG.authentication.discord_token.clone()));
         let shard_count = http_client.gateway().authed().await?.model().await?.shards;
         let database_handler = Arc::new(RwLock::new(
             DatabaseHandler::new(CONFIG.database.to_url(), CONFIG.database.to_url_safe()).await?,
@@ -49,9 +52,9 @@ impl Assyst {
         let patrons = Arc::new(Mutex::new(vec![]));
 
         Ok(Assyst {
-            cache_handler: CacheHandler::new(CACHE_PIPE_PATH),
+            persistent_cache_handler: PersistentCacheHandler::new(CACHE_PIPE_PATH),
             database_handler: database_handler.clone(),
-            http_client: Arc::new(http_client),
+            http_client: http_client.clone(),
             patrons: patrons.clone(),
             prometheus: Arc::new(Prometheus::new(database_handler.clone())?),
             reqwest_client: reqwest::Client::new(),
@@ -59,6 +62,7 @@ impl Assyst {
             shard_count,
             replies: Replies::new(),
             wsi_handler: WsiHandler::new(database_handler.clone(), patrons.clone()),
+            rest_cache_handler: RestCacheHandler::new(http_client.clone()),
         })
     }
 

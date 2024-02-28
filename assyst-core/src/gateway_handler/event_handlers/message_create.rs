@@ -31,6 +31,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, MessageCreate(message): MessageCre
                 processing_time_start: Instant::now(),
                 author: &message.author,
                 calling_prefix,
+                guild_id: message.guild_id.map(|x| x.get()),
             };
             let ctxt = CommandCtxt::new(args, &data);
 

@@ -209,7 +209,7 @@ pub async fn help(ctxt: CommandCtxt<'_>, label: Option<Word>) -> anyhow::Result<
     access = Availability::Public,
     category = Category::Misc,
     usage = "<section>",
-    examples = ["", "sessions", "database", "filer", "all"],
+    examples = ["", "sessions", "storage", "all"],
     aliases = ["info"],
     send_processing = true
 )]
@@ -266,19 +266,21 @@ pub async fn stats(ctxt: CommandCtxt<'_>, option: Option<Word>) -> anyhow::Resul
         Ok(table.codeblock("ansi"))
     }
 
-    async fn get_persistent_storage_stats(ctxt: &CommandCtxt<'_>) -> anyhow::Result<String> {
+    async fn get_storage_stats(ctxt: &CommandCtxt<'_>) -> anyhow::Result<String> {
         let database_size = ctxt.assyst().database_handler.read().await.database_size().await?.size;
         let cache_size = human_bytes(ctxt.assyst().database_handler.read().await.cache.size_of() as f64);
         let filer_stats = filer_stats(ctxt.assyst().clone()).await.unwrap_or(FilerStats {
             count: 0,
             size_bytes: 0
         });
+        let rest_cache_size = human_bytes(ctxt.assyst().rest_cache_handler.size_of() as f64);
 
         let table = key_value(&vec![
             ("Database Total Size".fg_cyan(), database_size),
             ("Cache Total Size".fg_cyan(), cache_size),
             ("Filer File Count".fg_cyan(), filer_stats.count.to_string()),
-            ("Filer Total Size".fg_cyan(), human_bytes(filer_stats.size_bytes as f64))
+            ("Filer Total Size".fg_cyan(), human_bytes(filer_stats.size_bytes as f64)),
+            ("Rest Cache Total Size".fg_cyan(), rest_cache_size)
         ]);
 
         Ok(table.codeblock("ansi"))
@@ -302,18 +304,18 @@ pub async fn stats(ctxt: CommandCtxt<'_>, option: Option<Word>) -> anyhow::Resul
         let table = get_session_stats(&ctxt).await?;
 
         ctxt.reply(table).await?;
-    } else if let Some(Word(ref x)) = option && (x.to_lowercase() == "persistent" || x.to_lowercase() == "storage") {
-        let table = get_persistent_storage_stats(&ctxt).await?;
+    } else if let Some(Word(ref x)) = option && (x.to_lowercase() == "caches" || x.to_lowercase() == "storage") {
+        let table = get_storage_stats(&ctxt).await?;
 
         ctxt.reply(table).await?;
     } else if let Some(Word(ref x)) = option && x.to_lowercase() == "all" {
         let stats_table = get_general_stats(&ctxt);        
         let usages_table = get_process_stats();
-        let storage_table = get_persistent_storage_stats(&ctxt).await?;
+        let storage_table = get_storage_stats(&ctxt).await?;
         let session_table = get_session_stats(&ctxt).await?;
 
         let full_output = format!(
-            "**General**\n{stats_table}\n**Processes**\n{usages_table}\n**Persistent Storage**\n{storage_table}\n**Sessions**\n{session_table}"
+            "**General**\n{stats_table}\n**Processes**\n{usages_table}\n**Storage and Caches**\n{storage_table}\n**Sessions**\n{session_table}"
         );
 
         ctxt.reply(full_output).await?;
