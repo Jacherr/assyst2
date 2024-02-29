@@ -87,6 +87,7 @@ pub struct CommandMetadata {
     pub usage: &'static str,
     /// Whether to send a "Processing..." reply when the command starts executing
     pub send_processing: bool,
+    pub age_restricted: bool,
 }
 
 #[derive(Clone, PartialEq, Eq, Hash)]

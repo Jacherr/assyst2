@@ -1,4 +1,4 @@
-use super::error::ParseError;
+use super::error::{MetadataCheckInvalidated, ParseError};
 use super::preprocess::preprocess;
 use twilight_model::channel::Message;
 
@@ -57,7 +57,8 @@ pub async fn parse_message_into_command(
         return Ok(None);
     };
     let _metadata = command.metadata();
-    // TODO: check metadata
+
+    // TODO: check role permissions, channel permissions, whitelist/blacklist, ...
 
     Ok(Some((command, args, preprocess.prefix)))
 }

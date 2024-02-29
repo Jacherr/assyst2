@@ -3,7 +3,7 @@ use std::mem::size_of;
 use std::sync::Arc;
 use std::time::Duration;
 use twilight_http::Client as HttpClient;
-use twilight_model::guild::PremiumTier;
+use twilight_model::{guild::PremiumTier, id::marker::ChannelMarker};
 use twilight_model::id::marker::GuildMarker;
 use twilight_model::id::Id;
 
@@ -15,6 +15,7 @@ use super::{
 pub struct RestCacheHandler {
     http_client: Arc<HttpClient>,
     guild_upload_limits: Cache<u64, u64>,
+    channel_nsfw_status: Cache<u64, bool>
 }
 impl RestCacheHandler {
     pub fn new(client: Arc<HttpClient>) -> RestCacheHandler {
@@ -24,13 +25,19 @@ impl RestCacheHandler {
                 .max_capacity(1000)
                 .time_to_idle(Duration::from_secs(60 * 5))
                 .build(),
+            channel_nsfw_status: Cache::builder()
+                .max_capacity(1000)
+                .time_to_idle(Duration::from_secs(60 * 5))
+                .build(),
         }
     }
 
     pub fn size_of(&self) -> u64 {
         let mut size = 0;
         self.guild_upload_limits.run_pending_tasks();
-        size += self.guild_upload_limits.entry_count() * (size_of::<u64>() as u64 * 2) /* sizeof(u64) * 2 for key + value */;
+        self.channel_nsfw_status.run_pending_tasks();
+        size += self.guild_upload_limits.entry_count() * (size_of::<u64>() as u64 * 2); /* sizeof(u64) * 2 for key + value */
+        size += self.channel_nsfw_status.entry_count() * size_of::<(u64, bool)>() as u64;
         size
     }
 
@@ -59,5 +66,24 @@ impl RestCacheHandler {
         self.guild_upload_limits.insert(guild_id, amount);
 
         Ok(amount)
+    }
+
+    pub async fn channel_is_age_restricted(&self, channel_id: u64) -> anyhow::Result<bool> {
+        if let Some(nsfw) = self.channel_nsfw_status.get(&channel_id) {
+            return Ok(nsfw);
+        }
+
+        let nsfw = self
+            .http_client
+            .channel(Id::<ChannelMarker>::new(channel_id))
+            .await?
+            .model()
+            .await?
+            .nsfw
+            .unwrap_or(false);
+
+        self.channel_nsfw_status.insert(channel_id, nsfw);
+
+        Ok(nsfw)
     }
 }

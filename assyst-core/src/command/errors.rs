@@ -54,6 +54,7 @@ pub enum TagParseError {
     NoImageInHistory,
     NoImageFound,
     MediaDownloadFail,
+    IllegalAgeRestrictedCommand,
 }
 
 impl GetErrorSeverity for TagParseError {
@@ -100,6 +101,9 @@ impl Display for TagParseError {
                 f.write_str("an image was expected as an argument, but no image could be found")
             },
             TagParseError::MediaDownloadFail => f.write_str("failed to download media content"),
+            TagParseError::IllegalAgeRestrictedCommand => {
+                f.write_str("this command is only available in age restricted channels")
+            },
         }
     }
 }

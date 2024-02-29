@@ -12,6 +12,8 @@ use crate::gateway_handler::message_parser::error::{ErrorSeverity, GetErrorSever
 use crate::gateway_handler::message_parser::parser::parse_message_into_command;
 use crate::ThreadSafeAssyst;
 
+use super::ctxt_exec;
+
 /// Handle a [MessageCreate] event received from the Discord gateway.
 ///
 /// This function passes the message to the command parser, which then attempts to convert the
@@ -35,19 +37,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, MessageCreate(message): MessageCre
             };
             let ctxt = CommandCtxt::new(args, &data);
 
-            if let Err(err) = {
-                {
-                    if cmd.metadata().send_processing {
-                        if let Err(e) = ctxt.reply("Processing...").await {
-                            Err(ExecutionError::Command(e))
-                        } else {
-                            cmd.execute(ctxt.clone()).await
-                        }
-                    } else {
-                        cmd.execute(ctxt.clone()).await
-                    }
-                }
-            } {
+            if let Err(err) = ctxt_exec(&ctxt, cmd).await {
                 match err.get_severity() {
                     ErrorSeverity::Low => debug!("{err:?}"),
                     ErrorSeverity::High => match err {

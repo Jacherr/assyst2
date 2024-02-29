@@ -106,7 +106,8 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
     let category = fields.remove("category").expect("missing category");
     let examples = fields.remove("examples").unwrap_or_else(empty_array_expr);
     let usage = fields.remove("usage").expect("missing usage");
-    let send_processing = fields.remove("send_processing").unwrap_or(Expr::Lit(ExprLit { attrs: Vec::new(), lit: Lit::Bool(LitBool::new(false, Span::call_site()))}));
+    let send_processing = fields.remove("send_processing").unwrap_or_else(false_expr);
+    let age_restricted = fields.remove("age_restricted").unwrap_or_else(false_expr);
 
     let following = quote::quote! {
         pub struct #struct_name;
@@ -123,7 +124,8 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
                     category: #category,
                     examples: &#examples,
                     usage: #usage,
-                    send_processing: #send_processing
+                    send_processing: #send_processing,
+                    age_restricted: #age_restricted
                 };
                 &META
             }
@@ -182,4 +184,11 @@ fn empty_array_expr() -> Expr {
         bracket_token: Bracket::default(),
         elems: Default::default()
     })
+}
+
+fn false_expr() -> Expr {
+    Expr::Lit(ExprLit { 
+        attrs: Vec::new(), 
+        lit: Lit::Bool(LitBool::new(false, Span::call_site()))}
+    )
 }
