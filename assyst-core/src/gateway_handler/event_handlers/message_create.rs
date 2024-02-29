@@ -1,4 +1,3 @@
-use std::fmt::format;
 use std::time::Instant;
 
 use assyst_common::err;
@@ -11,8 +10,6 @@ use crate::command::{CommandCtxt, CommandData};
 use crate::gateway_handler::message_parser::error::{ErrorSeverity, GetErrorSeverity};
 use crate::gateway_handler::message_parser::parser::parse_message_into_command;
 use crate::ThreadSafeAssyst;
-
-use super::ctxt_exec;
 
 /// Handle a [MessageCreate] event received from the Discord gateway.
 ///
@@ -37,7 +34,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, MessageCreate(message): MessageCre
             };
             let ctxt = CommandCtxt::new(args, &data);
 
-            if let Err(err) = ctxt_exec(&ctxt, cmd).await {
+            if let Err(err) = cmd.execute(ctxt.clone()).await {
                 match err.get_severity() {
                     ErrorSeverity::Low => debug!("{err:?}"),
                     ErrorSeverity::High => match err {

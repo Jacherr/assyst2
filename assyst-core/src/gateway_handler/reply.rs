@@ -99,7 +99,7 @@ pub async fn edit(ctxt: &CommandCtxt<'_>, builder: MessageBuilder, reply: ReplyI
     Ok(())
 }
 
-async fn create_message(ctxt: &CommandCtxt<'_>, mut builder: MessageBuilder) -> anyhow::Result<()> {
+async fn create_message(ctxt: &CommandCtxt<'_>, builder: MessageBuilder) -> anyhow::Result<()> {
     let allowed_mentions = AllowedMentions::default();
 
     let mut message = ctxt

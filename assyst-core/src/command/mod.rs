@@ -33,6 +33,7 @@ use std::time::{Duration, Instant};
 
 use super::gateway_handler::reply as gateway_reply;
 use crate::assyst::ThreadSafeAssyst;
+use crate::command::errors::TagParseError;
 use async_trait::async_trait;
 use twilight_model::channel::message::sticker::MessageSticker;
 use twilight_model::channel::message::Embed;
@@ -45,6 +46,7 @@ use self::source::Source;
 
 pub mod arguments;
 pub mod errors;
+pub mod group;
 pub mod messagebuilder;
 pub mod misc;
 pub mod registry;
@@ -137,7 +139,18 @@ impl From<String> for Category {
 // #[async_trait] here :(
 #[async_trait]
 pub trait Command {
+    /// Returns the **direct** metadata.
+    ///
+    /// It's important to note that this might not return what you're looking for! In particular, if
+    /// this is a command group, then this method will (maybe unsurprisingly) return the metadata of
+    /// the command group only, not a specific subcommand!
+    ///
+    /// If you do want metadata of a subcommand, you may want to follow a chain of `subcommand`
+    /// calls.
     fn metadata(&self) -> &'static CommandMetadata;
+
+    /// Tries to find a subcommand given a name, provided that `self` is a command group
+    fn subcommand(&self, s: &str) -> Option<TCommand>;
 
     /// Parses arguments and executes the command.
     async fn execute(&self, ctxt: CommandCtxt<'_>) -> Result<(), ExecutionError>;
@@ -236,4 +249,29 @@ impl<'a> CommandCtxt<'a> {
     pub fn rest(&self) -> Result<&'a str, ArgsExhausted> {
         self.args.remainder().ok_or(ArgsExhausted)
     }
+}
+
+pub async fn check_metadata(
+    metadata: &'static CommandMetadata,
+    ctxt: &mut CommandCtxt<'_>,
+) -> Result<(), ExecutionError> {
+    if metadata.age_restricted {
+        let channel_age_restricted = ctxt
+            .assyst()
+            .rest_cache_handler
+            .channel_is_age_restricted(ctxt.data.channel_id)
+            .await
+            .unwrap_or(false);
+
+        if !channel_age_restricted {
+            return Err(ExecutionError::Parse(TagParseError::IllegalAgeRestrictedCommand));
+        };
+    };
+
+    if metadata.send_processing {
+        if let Err(e) = ctxt.reply("Processing...").await {
+            return Err(ExecutionError::Command(e));
+        }
+    }
+    Ok(())
 }
