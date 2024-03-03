@@ -1,4 +1,3 @@
-use crate::assyst::ThreadSafeAssyst;
 use crate::rest::patreon::Patron;
 use anyhow::bail;
 use assyst_common::config::CONFIG;

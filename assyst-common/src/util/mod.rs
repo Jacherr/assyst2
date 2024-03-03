@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use time::format_description;
 use tracing::info;
 use tracing_subscriber::fmt::time::UtcTime;
@@ -74,4 +76,17 @@ pub fn tracing_init() {
         .init();
 
     info!("Initialised logging");
+}
+
+pub fn format_duration(duration: &Duration) -> String {
+    if *duration > Duration::SECOND {
+        let seconds = duration.as_millis() as f64 / 1000.0;
+        format!("{seconds:.2}s")
+    } else if *duration > Duration::MILLISECOND {
+        let millis = duration.as_micros() as f64 / 1000.0;
+        format!("{millis:.2}ms")
+    } else {
+        let micros = duration.as_nanos() as f64 / 1000.0;
+        format!("{micros:.2}μs")
+    }
 }

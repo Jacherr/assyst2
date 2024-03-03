@@ -1,3 +1,5 @@
+#![feature(trait_alias)]
+
 use cache::DatabaseCache;
 use sqlx::postgres::{PgPool, PgPoolOptions};
 use tracing::info;

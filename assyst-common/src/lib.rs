@@ -1,3 +1,5 @@
+#![feature(duration_constants, trait_alias)]
+
 pub mod ansi;
 pub mod cache;
 pub mod config;

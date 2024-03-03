@@ -3,18 +3,6 @@ use twilight_model::id::marker::GuildMarker;
 use twilight_model::id::Id;
 use twilight_model::user::User;
 
-/// Attempts to resolve a guild's owner's user ID
-pub async fn get_guild_owner(http: &Client, guild_id: u64) -> anyhow::Result<u64> {
-    Ok(http
-        .guild(Id::<GuildMarker>::new(guild_id))
-        .await?
-        .model()
-        .await
-        .unwrap()
-        .owner_id
-        .get())
-}
-
 pub fn get_default_avatar_url(user: &User) -> String {
     // Unwrapping discrim parsing is ok, it should never be out of range or non-numeric
     let suffix = if user.discriminator == 0 {
@@ -24,7 +12,7 @@ pub fn get_default_avatar_url(user: &User) -> String {
         // Legacy
         user.discriminator % 5
     };
-    format!("https://cdn.discordapp.com/embed/avatars/{}.png", suffix)
+    format!("https://cdn.discordapp.com/embed/avatars/{}.png?size=1024", suffix)
 }
 
 pub fn get_avatar_url(user: &User) -> String {
@@ -38,5 +26,9 @@ pub fn get_avatar_url(user: &User) -> String {
     } else {
         "png"
     };
-    format!("https://cdn.discordapp.com/avatars/{}/{}.{}", user.id, avatar, ext)
+
+    format!(
+        "https://cdn.discordapp.com/avatars/{}/{}.{}?size=1024",
+        user.id, avatar, ext
+    )
 }

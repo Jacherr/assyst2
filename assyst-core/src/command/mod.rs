@@ -34,6 +34,7 @@ use std::time::{Duration, Instant};
 use super::gateway_handler::reply as gateway_reply;
 use crate::assyst::ThreadSafeAssyst;
 use crate::command::errors::TagParseError;
+use crate::wsi_handler::WsiHandler;
 use async_trait::async_trait;
 use twilight_model::channel::message::sticker::MessageSticker;
 use twilight_model::channel::message::Embed;
@@ -156,6 +157,21 @@ pub trait Command {
     async fn execute(&self, ctxt: CommandCtxt<'_>) -> Result<(), ExecutionError>;
 }
 
+/// A set of timings used to diagnose slow areas of parsing for commands.
+#[derive(Clone)]
+pub struct ExecutionTimings {
+    /// Total time spent on the preprocessing phase.
+    pub preprocess_total: Duration,
+    /// Total time spent determining the correct prefix.
+    pub prefix_determiner: Duration,
+    /// Total time spent on the parsing phase.
+    pub parse_total: Duration,
+    /// Instant checking command metadata started.
+    pub metadata_check_start: Instant,
+    /// Instant full command processing started.
+    pub processing_time_start: Instant,
+}
+
 /// Just a type alias for a command as a trait object with other necessary bounds.
 /// See [Command] for more documentation.
 pub type TCommand = &'static (dyn Command + Send + Sync);
@@ -178,7 +194,7 @@ pub struct CommandData<'a> {
     pub assyst: &'a ThreadSafeAssyst,
     /// `None` in a slash command, otherwise set if the message is a reply
     pub referenced_message: Option<&'a Message>,
-    pub processing_time_start: Instant,
+    pub execution_timings: ExecutionTimings,
     pub calling_prefix: String,
     pub author: &'a User,
 }
@@ -206,6 +222,10 @@ impl<'a> CommandCtxt<'a> {
 
     pub fn assyst(&self) -> &'a ThreadSafeAssyst {
         self.data.assyst
+    }
+
+    pub fn wsi_handler(&self) -> &'a WsiHandler {
+        &self.data.assyst.wsi_handler
     }
 
     /// Cheaply forks this context. Useful for trying different combinations

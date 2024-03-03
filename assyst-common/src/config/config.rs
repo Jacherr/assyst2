@@ -73,7 +73,7 @@ pub struct LoggingWebhooks {
     pub panic: LoggingWebhook,
     pub error: LoggingWebhook,
     pub vote: LoggingWebhook,
-    pub enable_webhooks: bool
+    pub enable_webhooks: bool,
 }
 
 #[derive(Deserialize, Clone)]

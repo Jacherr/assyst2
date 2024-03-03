@@ -1,22 +1,30 @@
+use moka::sync::Cache;
+use std::hash::Hash;
 use std::mem::size_of;
 use std::time::Duration;
 
-use moka::sync::Cache;
-
 use crate::model::prefix::Prefix;
+
+trait TCacheV = Send + Sync + Clone + 'static;
+trait TCacheK = Hash + Send + Sync + Eq + Clone + 'static;
+
+fn default_cache<K: TCacheK, V: TCacheV>() -> Cache<K, V> {
+    Cache::builder()
+        .max_capacity(1000)
+        .time_to_idle(Duration::from_secs(60 * 5))
+        .build()
+}
 
 /// In-memory cache collection for frequently accessed areas of the database.
 pub struct DatabaseCache {
     prefixes: Cache<u64, Prefix>,
+    global_blacklist: Cache<u64, bool>,
 }
 impl DatabaseCache {
     pub fn new() -> Self {
         DatabaseCache {
-            // 10,000 entries max, if prefix not accessed in 5 mins then remove from cache
-            prefixes: Cache::builder()
-                .max_capacity(10000)
-                .time_to_idle(Duration::from_secs(60 * 5))
-                .build(),
+            prefixes: default_cache(),
+            global_blacklist: default_cache(),
         }
     }
 
@@ -33,17 +41,29 @@ impl DatabaseCache {
         self.prefixes.entry_count() as usize
     }
 
+    pub fn get_user_global_blacklist(&self, user_id: u64) -> Option<bool> {
+        self.global_blacklist.get(&user_id)
+    }
+
+    pub fn set_user_global_blacklist(&self, user_id: u64, blacklisted: bool) {
+        self.global_blacklist.insert(user_id, blacklisted);
+    }
+
     pub fn size_of(&self) -> u64 {
         self.prefixes.run_pending_tasks();
-        let mut prefixes_size = 0;
+        self.global_blacklist.run_pending_tasks();
+
+        let mut size = 0;
 
         for prefix in self.prefixes.iter() {
             // add key size
-            prefixes_size += size_of::<u64>() as u64;
+            size += size_of::<u64>() as u64;
             // add value size
-            prefixes_size += prefix.1.size_of();
+            size += prefix.1.size_of();
         }
 
-        prefixes_size
+        size += self.global_blacklist.entry_count() * size_of::<(u64, bool)>() as u64;
+
+        size
     }
 }

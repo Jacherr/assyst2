@@ -1,4 +1,4 @@
-#![feature(let_chains, str_split_whitespace_remainder, round_char_boundary)]
+#![feature(let_chains, str_split_whitespace_remainder, round_char_boundary, trait_alias)]
 
 use std::sync::Arc;
 use std::time::Duration;

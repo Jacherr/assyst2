@@ -1,6 +1,7 @@
 use crate::DatabaseHandler;
+use std::hash::Hash;
 
-#[derive(Clone)]
+#[derive(Clone, Hash, PartialEq)]
 /// A Prefix is a unique identifier for invocating message-based commands in a guild. This table is
 /// relatively simple, holding only a guild ID and its associated prefix, since each guild can only
 /// have one prefix at a time.

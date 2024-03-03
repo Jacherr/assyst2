@@ -7,7 +7,9 @@ use proc_macro2::Span;
 use quote::{quote, quote_spanned, ToTokens};
 use syn::punctuated::Punctuated;
 use syn::token::Bracket;
-use syn::{parse_macro_input, Expr, ExprArray, ExprLit, FnArg, Ident, Item, Lit, LitBool, LitStr, Meta, PatType, Token, Type};
+use syn::{
+    parse_macro_input, Expr, ExprArray, ExprLit, FnArg, Ident, Item, Lit, LitBool, LitStr, Meta, PatType, Token, Type,
+};
 
 struct CommandAttributes(syn::punctuated::Punctuated<syn::Meta, Token![,]>);
 
@@ -135,7 +137,11 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
                 None
             }
 
-            async fn execute(&self, mut ctxt: crate::command::CommandCtxt<'_>) -> Result<(), crate::command::ExecutionError> {
+            async fn execute(
+                &self,
+                mut ctxt:
+                crate::command::CommandCtxt<'_>
+            ) -> Result<(), crate::command::ExecutionError> {
                 use crate::command::arguments::ParseArgument;
 
                 crate::command::check_metadata(self.metadata(), &mut ctxt).await?;
@@ -181,7 +187,7 @@ fn verify_input_is_ctxt(inputs: &Punctuated<FnArg, Token![,]>) {
 fn str_expr(s: &str) -> Expr {
     Expr::Lit(ExprLit {
         attrs: Vec::new(),
-        lit: Lit::Str(LitStr::new(s, Span::call_site()))
+        lit: Lit::Str(LitStr::new(s, Span::call_site())),
     })
 }
 
@@ -189,13 +195,13 @@ fn empty_array_expr() -> Expr {
     Expr::Array(ExprArray {
         attrs: Default::default(),
         bracket_token: Bracket::default(),
-        elems: Default::default()
+        elems: Default::default(),
     })
 }
 
 fn false_expr() -> Expr {
-    Expr::Lit(ExprLit { 
-        attrs: Vec::new(), 
-        lit: Lit::Bool(LitBool::new(false, Span::call_site()))}
-    )
+    Expr::Lit(ExprLit {
+        attrs: Vec::new(),
+        lit: Lit::Bool(LitBool::new(false, Span::call_site())),
+    })
 }

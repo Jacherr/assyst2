@@ -1,10 +1,19 @@
-use super::error::{MetadataCheckInvalidated, ParseError};
+use std::time::Instant;
+
+use super::error::ParseError;
 use super::preprocess::preprocess;
 use twilight_model::channel::Message;
 
 use crate::command::registry::find_command_by_name;
-use crate::command::TCommand;
+use crate::command::{ExecutionTimings, TCommand};
 use crate::ThreadSafeAssyst;
+
+pub struct ParseResult<'a> {
+    pub command: TCommand,
+    pub args: &'a str,
+    pub calling_prefix: String,
+    pub execution_timings: ExecutionTimings,
+}
 
 /// Parse any generic Message object into a Command.
 ///
@@ -39,8 +48,15 @@ use crate::ThreadSafeAssyst;
 pub async fn parse_message_into_command(
     assyst: ThreadSafeAssyst,
     message: &Message,
-) -> Result<Option<(TCommand, &str, String)>, ParseError> {
+    processing_time_start: Instant,
+) -> Result<Option<ParseResult>, ParseError> {
+    let parse_start = Instant::now();
+    let preprocess_start = Instant::now();
+
     let preprocess = preprocess(assyst.clone(), message).await?;
+
+    let preprocess_time = preprocess_start.elapsed();
+
     // commands can theoretically have spaces in their name so we need to try and identify the
     // set of 'words' in source text to associate with a command name (essentially finding the divide
     // between command name and command arguments)
@@ -55,5 +71,16 @@ pub async fn parse_message_into_command(
         return Ok(None);
     };
 
-    Ok(Some((command, args, preprocess.prefix)))
+    Ok(Some(ParseResult {
+        command,
+        args,
+        calling_prefix: preprocess.prefix,
+        execution_timings: ExecutionTimings {
+            processing_time_start,
+            parse_total: parse_start.elapsed(),
+            prefix_determiner: preprocess.prefixing_determiner_time,
+            metadata_check_start: Instant::now(),
+            preprocess_total: preprocess_time,
+        },
+    }))
 }

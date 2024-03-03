@@ -16,8 +16,10 @@ use crate::ThreadSafeAssyst;
 /// This function passes the message to the command parser, which then attempts to convert the
 /// message to a command for further processing.
 pub async fn handle(assyst: ThreadSafeAssyst, MessageCreate(message): MessageCreate) {
-    match parse_message_into_command(assyst.clone(), &message).await {
-        Ok(Some((cmd, args, calling_prefix))) => {
+    let processing_time_start = Instant::now();
+
+    match parse_message_into_command(assyst.clone(), &message, processing_time_start).await {
+        Ok(Some(result)) => {
             let data = CommandData {
                 message_id: message.id.get(),
                 source: Source::Gateway,
@@ -27,14 +29,14 @@ pub async fn handle(assyst: ThreadSafeAssyst, MessageCreate(message): MessageCre
                 sticker: message.sticker_items.first(),
                 channel_id: message.channel_id.get(),
                 embed: message.embeds.first(),
-                processing_time_start: Instant::now(),
+                execution_timings: result.execution_timings,
                 author: &message.author,
-                calling_prefix,
+                calling_prefix: result.calling_prefix,
                 guild_id: message.guild_id.map(|x| x.get()),
             };
-            let ctxt = CommandCtxt::new(args, &data);
+            let ctxt = CommandCtxt::new(result.args, &data);
 
-            if let Err(err) = cmd.execute(ctxt.clone()).await {
+            if let Err(err) = result.command.execute(ctxt.clone()).await {
                 match err.get_severity() {
                     ErrorSeverity::Low => debug!("{err:?}"),
                     ErrorSeverity::High => match err {
@@ -44,8 +46,8 @@ pub async fn handle(assyst: ThreadSafeAssyst, MessageCreate(message): MessageCre
                                 .reply(format!(
                                     ":warning: `{err}\nUsage: {}{} {}`",
                                     ctxt.data.calling_prefix,
-                                    cmd.metadata().name,
-                                    cmd.metadata().usage
+                                    result.command.metadata().name,
+                                    result.command.metadata().usage
                                 ))
                                 .await;
                         },

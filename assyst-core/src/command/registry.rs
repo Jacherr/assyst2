@@ -23,6 +23,7 @@ declare_commands!(
     misc::help_command,
     misc::stats_command,
     wsi::caption_command,
+    wsi::resize_command,
     misc::tag::tag_command
 );
 

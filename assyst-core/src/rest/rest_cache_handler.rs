@@ -1,10 +1,11 @@
 use moka::sync::Cache;
+use std::hash::Hash;
 use std::mem::size_of;
 use std::sync::Arc;
 use std::time::Duration;
 use twilight_http::Client as HttpClient;
-use twilight_model::{guild::PremiumTier, id::marker::ChannelMarker};
-use twilight_model::id::marker::GuildMarker;
+use twilight_model::guild::PremiumTier;
+use twilight_model::id::marker::{ChannelMarker, GuildMarker};
 use twilight_model::id::Id;
 
 use super::{
@@ -12,23 +13,29 @@ use super::{
     PREMIUM_TIER3_DISCORD_UPLOAD_LIMIT_BYTES,
 };
 
+trait TCacheV = Send + Sync + Clone + 'static;
+trait TCacheK = Hash + Send + Sync + Eq + Clone + 'static;
+
+fn default_cache<K: TCacheK, V: TCacheV>() -> Cache<K, V> {
+    Cache::builder()
+        .max_capacity(1000)
+        .time_to_idle(Duration::from_secs(60 * 5))
+        .build()
+}
+
 pub struct RestCacheHandler {
     http_client: Arc<HttpClient>,
     guild_upload_limits: Cache<u64, u64>,
-    channel_nsfw_status: Cache<u64, bool>
+    channel_nsfw_status: Cache<u64, bool>,
+    guild_owners: Cache<u64, u64>,
 }
 impl RestCacheHandler {
     pub fn new(client: Arc<HttpClient>) -> RestCacheHandler {
         RestCacheHandler {
             http_client: client,
-            guild_upload_limits: Cache::builder()
-                .max_capacity(1000)
-                .time_to_idle(Duration::from_secs(60 * 5))
-                .build(),
-            channel_nsfw_status: Cache::builder()
-                .max_capacity(1000)
-                .time_to_idle(Duration::from_secs(60 * 5))
-                .build(),
+            guild_upload_limits: default_cache(),
+            channel_nsfw_status: default_cache(),
+            guild_owners: default_cache(),
         }
     }
 
@@ -36,8 +43,11 @@ impl RestCacheHandler {
         let mut size = 0;
         self.guild_upload_limits.run_pending_tasks();
         self.channel_nsfw_status.run_pending_tasks();
-        size += self.guild_upload_limits.entry_count() * (size_of::<u64>() as u64 * 2); /* sizeof(u64) * 2 for key + value */
+        self.guild_owners.run_pending_tasks();
+
+        size += self.guild_upload_limits.entry_count() * size_of::<(u64, u64)>() as u64;
         size += self.channel_nsfw_status.entry_count() * size_of::<(u64, bool)>() as u64;
+        size += self.guild_owners.entry_count() * size_of::<(u64, u64)>() as u64;
         size
     }
 
@@ -85,5 +95,24 @@ impl RestCacheHandler {
         self.channel_nsfw_status.insert(channel_id, nsfw);
 
         Ok(nsfw)
+    }
+
+    pub async fn get_guild_owner(&self, guild_id: u64) -> anyhow::Result<u64> {
+        if let Some(owner) = self.guild_owners.get(&guild_id) {
+            return Ok(owner);
+        }
+
+        let owner = self
+            .http_client
+            .guild(Id::<GuildMarker>::new(guild_id))
+            .await?
+            .model()
+            .await?
+            .owner_id
+            .get();
+
+        self.guild_owners.insert(guild_id, owner);
+
+        Ok(owner)
     }
 }
