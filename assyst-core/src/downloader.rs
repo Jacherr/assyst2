@@ -6,6 +6,7 @@ use crate::assyst::Assyst;
 use assyst_common::config::CONFIG;
 use bytes::Bytes;
 use futures_util::{Stream, StreamExt};
+use human_bytes::human_bytes;
 use reqwest::{Client, StatusCode, Url};
 
 pub const ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES: usize = 100_000_000;
@@ -27,7 +28,7 @@ impl fmt::Display for DownloadError {
         match self {
             DownloadError::ProxyNetworkError => write!(f, "Failed to connect to proxy"),
             DownloadError::InvalidStatus => write!(f, "Invalid status received from proxy"),
-            DownloadError::LimitExceeded(b) => write!(f, "The output file exceeded the maximum file size limit of {}MB. Try using a smaller input.", b / 1000 / 1000),
+            DownloadError::LimitExceeded(limit) => write!(f, "The output file exceeded the maximum file size limit of {}. Try using a smaller input.", human_bytes((*limit) as f64)),
             DownloadError::Url(e) => write!(f, "Failed to parse URL: {}", e),
             DownloadError::NoHost => write!(f, "No host found in URL"),
             DownloadError::Reqwest(e) => write!(f, "{}", e),
@@ -126,8 +127,10 @@ pub async fn download_content(assyst: &Assyst, url: &str, limit: usize) -> Resul
         }
     }
 
-    // Getting here means that the proxy failed or the bot is configured to not use one. Try without
-    // proxy
+    // Conditions for downloading with no proxy:
+    // - Proxy not configured,
+    // - Proxy failed,
+    // - Domain is whitelisted
     let stream = download_no_proxy(client, url).await?;
     read_stream(stream, limit).await
 }

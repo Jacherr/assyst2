@@ -20,8 +20,8 @@ declare_commands!(
     misc::enlarge_command,
     misc::ping_command,
     misc::url_command,
-    misc::help_command,
-    misc::stats_command,
+    misc::help::help_command,
+    misc::stats::stats_command,
     wsi::caption_command,
     wsi::resize_command,
     misc::tag::tag_command
