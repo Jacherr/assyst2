@@ -75,13 +75,13 @@ pub async fn ping(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
     ctxt.reply("ping!").await?;
     let ping_elapsed = format_duration(&ping_start.elapsed());
 
-    let table = key_value(&vec![
-        ("Full Processing Time".fg_cyan(), format!("{processing_time}")),
-        ("Metadata and Args Parsing".fg_cyan(), format!("{metadata_time}")),
-        ("Preprocessing Time".fg_cyan(), format!("{preprocess_time}")),
-        ("Prefix Determinism Time".fg_cyan(), format!("{prefix_time}")),
-        ("Full Parsing Time".fg_cyan(), format!("{parse_time}")),
-        ("Response Time".fg_cyan(), format!("{ping_elapsed}")),
+    let table = key_value(&[
+        ("Full Processing Time".fg_cyan(), processing_time.to_string()),
+        ("Metadata and Args Parsing".fg_cyan(), metadata_time.to_string()),
+        ("Preprocessing Time".fg_cyan(), preprocess_time.to_string()),
+        ("Prefix Determinism Time".fg_cyan(), prefix_time.to_string()),
+        ("Full Parsing Time".fg_cyan(), parse_time.to_string()),
+        ("Response Time".fg_cyan(), ping_elapsed.to_string()),
     ]);
 
     ctxt.reply(format!("Pong!\n{}", table.codeblock("ansi"))).await?;

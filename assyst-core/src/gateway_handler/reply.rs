@@ -54,7 +54,7 @@ async fn get_filer_url(
         }
         return Ok(None);
     }
-    return Ok(None);
+    Ok(None)
 }
 
 pub async fn edit(ctxt: &CommandCtxt<'_>, builder: MessageBuilder, reply: ReplyInUse) -> anyhow::Result<()> {

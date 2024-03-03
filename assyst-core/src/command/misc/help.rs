@@ -49,7 +49,7 @@ pub async fn help(ctxt: CommandCtxt<'_>, labels: Vec<Word>) -> anyhow::Result<()
             let mut command_chain = command.metadata().name.to_owned();
 
             // If there are more arguments, follow the chain of subcommands and build up the usage along the way
-            for Word(mut label) in labels.into_iter() {
+            for Word(mut label) in labels {
                 let metadata = command.metadata();
                 usage += metadata.name;
                 usage += " ";

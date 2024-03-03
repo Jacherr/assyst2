@@ -1,3 +1,4 @@
+#![allow(clippy::match_single_binding, clippy::single_match)] // shh...
 use crate::assyst::ThreadSafeAssyst;
 
 use self::incoming_event::IncomingEvent;
@@ -15,7 +16,7 @@ pub async fn handle_raw_event(context: ThreadSafeAssyst, event: IncomingEvent) {
             event_handlers::ready::handle(context, event).await;
         },
         IncomingEvent::MessageCreate(event) => {
-            event_handlers::message_create::handle(context, event).await;
+            event_handlers::message_create::handle(context, *event).await;
         },
         IncomingEvent::MessageUpdate(event) => {
             event_handlers::message_update::handle(context, event).await;
@@ -24,7 +25,7 @@ pub async fn handle_raw_event(context: ThreadSafeAssyst, event: IncomingEvent) {
             event_handlers::message_delete::handle(context, event).await;
         },
         IncomingEvent::GuildCreate(event) => {
-            event_handlers::guild_create::handle(context, event).await;
+            event_handlers::guild_create::handle(context, *event).await;
         },
         IncomingEvent::GuildDelete(event) => {
             event_handlers::guild_delete::handle(context, event).await;

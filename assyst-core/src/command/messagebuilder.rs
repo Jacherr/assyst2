@@ -10,7 +10,7 @@ pub struct Attachment {
 
 impl From<Image> for Attachment {
     fn from(value: Image) -> Self {
-        let ext = get_sig(&value.0).unwrap_or_else(|| Type::PNG).as_str();
+        let ext = get_sig(&value.0).unwrap_or(Type::PNG).as_str();
         Attachment {
             name: format!("attachment.{ext}").into(),
             data: value.0,

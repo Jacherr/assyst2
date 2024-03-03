@@ -37,8 +37,8 @@ pub async fn caption(ctxt: CommandCtxt<'_>, source: Image, text: Rest) -> anyhow
 )]
 pub async fn resize(ctxt: CommandCtxt<'_>, source: Image, size: Option<Word>) -> anyhow::Result<()> {
     let result = if let Some(ref i_size) = size
-        && i_size.0.contains("x")
-        && let Some((width, height)) = i_size.0.split_once("x")
+        && i_size.0.contains('x')
+        && let Some((width, height)) = i_size.0.split_once('x')
     {
         let width = width.parse::<u32>().context("Invalid width.")?;
         let height = height.parse::<u32>().context("Invalid height.")?;

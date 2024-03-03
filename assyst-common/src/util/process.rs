@@ -3,13 +3,13 @@ use std::process::Command;
 
 use crate::ansi::Ansi;
 
-static PROCESSES: &[&'static str] = &["assyst-core", "assyst-cache", "assyst-gateway", "filer"];
-static HOST_PROCESS: &'static str = "host machine";
+static PROCESSES: &[&str] = &["assyst-core", "assyst-cache", "assyst-gateway", "filer"];
+static HOST_PROCESS: &str = "host machine";
 
 /// Attempts to extract memory usage in bytes for a process by PID
 pub fn get_memory_usage_for(pid: &str) -> Option<usize> {
     let field = 1;
-    let contents = std::fs::read(&format!("/proc/{pid}/statm")).ok()?;
+    let contents = std::fs::read(format!("/proc/{pid}/statm")).ok()?;
     let contents = String::from_utf8(contents).ok()?;
     let s = contents.split_whitespace().nth(field)?;
     let npages = s.parse::<usize>().ok()?;
@@ -18,7 +18,7 @@ pub fn get_memory_usage_for(pid: &str) -> Option<usize> {
 
 pub fn get_host_memory_usage() -> Option<usize> {
     let output = exec_sync("free -b | head -2 | tail -1 | awk {{'print $3'}}");
-    output.ok().map(|x| x.stdout.trim().parse::<usize>().ok()).flatten()
+    output.ok().and_then(|x| x.stdout.trim().parse::<usize>().ok())
 }
 
 /// Gets the memory usage in bytes of all 'relevant'' processes.
@@ -41,8 +41,7 @@ pub fn cpu_usage_percentage_of(pid: usize) -> Option<f64> {
     let output = exec_sync(&format!("top -b -n 2 -d 1.5 -p {pid} | tail -1 | awk '{{print $9}}'"));
     output
         .ok()
-        .map(|x| x.stdout.trim().parse::<f64>().ok())
-        .flatten()
+        .and_then(|x| x.stdout.trim().parse::<f64>().ok())
         .map(|x| x / num_cpus::get() as f64)
 }
 
@@ -52,12 +51,9 @@ pub fn get_host_cpu_usage() -> Option<f64> {
 
     output
         .ok()
-        .map(|x| x.stdout.trim().split(",").nth(3).map(|y| y.to_owned()))
-        .flatten()
-        .map(|x| x.trim().split(" ").nth(0).map(|y| y.trim().to_owned()))
-        .flatten()
-        .map(|x| x.trim().parse::<f64>().ok().map(|x| 100.0 - x))
-        .flatten()
+        .and_then(|x| x.stdout.trim().split(',').nth(3).map(|y| y.to_owned()))
+        .and_then(|x| x.trim().split(' ').next().map(|y| y.trim().to_owned()))
+        .and_then(|x| x.trim().parse::<f64>().ok().map(|x| 100.0 - x))
 }
 
 /// Gets the CPU usage of all 'relevant' processes
@@ -107,8 +103,8 @@ pub fn get_processes_uptimes() -> Vec<(&'static str, String)> {
     for (_, ref mut uptime) in uptimes.iter_mut() {
         if *uptime != "offline".fg_red() {
             let split = uptime
-                .replace("-", ":")
-                .split(":")
+                .replace('-', ":")
+                .split(':')
                 .map(|x| x.parse::<usize>().unwrap_or(0))
                 .collect::<Vec<_>>();
             *uptime = if split.len() == 2 {
@@ -129,7 +125,7 @@ pub fn get_processes_uptimes() -> Vec<(&'static str, String)> {
 /// Attempts to get the PID of a process by its name
 pub fn pid_of(name: &str) -> Option<usize> {
     let result = exec_sync(&format!("pidof {name}")).ok()?.stdout;
-    Some(result.trim().parse().ok()?)
+    result.trim().parse().ok()
 }
 
 #[derive(Clone, Debug)]
@@ -141,7 +137,7 @@ pub struct CommandOutput {
 /// Executes a bash command
 pub fn exec_sync(command: &str) -> Result<CommandOutput, std::io::Error> {
     let mut cmd = Command::new("bash");
-    cmd.args(&["-c", command]);
+    cmd.args(["-c", command]);
 
     let output = cmd.output()?;
 

@@ -32,10 +32,7 @@ impl Type {
         }
     }
     pub fn is_video(&self) -> bool {
-        match self {
-            Type::MP4 | Type::WEBM => true,
-            _ => false,
-        }
+        matches!(self, Type::MP4 | Type::WEBM)
     }
 }
 

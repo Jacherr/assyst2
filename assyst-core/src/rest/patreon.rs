@@ -18,14 +18,15 @@ pub enum PatronTier {
     Tier1 = 1,
     Tier0 = 0,
 }
-impl Into<u64> for PatronTier {
-    fn into(self) -> u64 {
-        match self {
-            Self::Tier0 => 0,
-            Self::Tier1 => 1,
-            Self::Tier2 => 2,
-            Self::Tier3 => 3,
-            Self::Tier4 => 4,
+
+impl From<PatronTier> for u64 {
+    fn from(val: PatronTier) -> Self {
+        match val {
+            PatronTier::Tier0 => 0,
+            PatronTier::Tier1 => 1,
+            PatronTier::Tier2 => 2,
+            PatronTier::Tier3 => 3,
+            PatronTier::Tier4 => 4,
         }
     }
 }
@@ -168,11 +169,8 @@ pub async fn get_patrons(assyst: ThreadSafeAssyst) -> Result<Vec<Patron>, Error>
             .as_ref()
             .map(|s| s.discord.as_ref().map(|d| d.user_id.clone()));
 
-        match discord {
-            Some(Some(d)) => {
-                discord_connections.insert(id, d.parse::<u64>().unwrap());
-            },
-            _ => (),
+        if let Some(Some(d)) = discord {
+            discord_connections.insert(id, d.parse::<u64>().unwrap());
         };
     }
 
@@ -183,15 +181,12 @@ pub async fn get_patrons(assyst: ThreadSafeAssyst) -> Result<Vec<Patron>, Error>
         let tier = e.1;
 
         let discord = discord_connections.get(&patron_id);
-        match discord {
-            Some(d) => {
-                patrons.push(Patron {
-                    user_id: d.clone(),
-                    tier,
-                    admin: false,
-                });
-            },
-            _ => (),
+        if let Some(d) = discord {
+            patrons.push(Patron {
+                user_id: *d,
+                tier,
+                admin: false,
+            });
         };
     }
 

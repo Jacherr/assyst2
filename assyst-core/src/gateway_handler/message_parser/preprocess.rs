@@ -24,8 +24,8 @@ pub struct PreprocessResult {
 
 /// Returns `Some(prefix)` if the prefix is the mention of the bot, otherwise `None`
 pub fn message_mention_prefix(content: &str) -> Option<String> {
-    let mention_no_nickname = format!("<@{}>", BOT_ID);
-    let mention_nickname = format!("<@!{}>", BOT_ID);
+    let mention_no_nickname = format!("<@{BOT_ID}>");
+    let mention_nickname = format!("<@!{BOT_ID}>");
 
     if content.starts_with(&mention_no_nickname) {
         Some(mention_no_nickname)
@@ -76,16 +76,13 @@ pub async fn parse_prefix(
                 default_prefix
                     .set(&mut *assyst.database_handler.write().await, guild_id)
                     .await
-                    .map_err(|e| PreParseError::Failure(format!("failed to set default prefix: {}", e.to_string())))?;
+                    .map_err(|e| PreParseError::Failure(format!("failed to set default prefix: {e}")))?;
 
                 CONFIG.prefix.default.clone()
             },
             // error fetching, throw error
             Err(error) => {
-                return Err(PreParseError::Failure(format!(
-                    "failed to fetch prefixes: {}",
-                    error.to_string()
-                )));
+                return Err(PreParseError::Failure(format!("failed to fetch prefixes: {error}")));
             },
         }
     };
@@ -103,8 +100,7 @@ pub async fn user_globally_blacklisted(assyst: ThreadSafeAssyst, id: u64) -> Res
     match blacklisted {
         Ok(x) => Ok(x),
         Err(error) => Err(PreParseError::Failure(format!(
-            "failed to fetch global blacklist: {}",
-            error.to_string()
+            "failed to fetch global blacklist: {error}",
         ))),
     }
 }
@@ -152,7 +148,7 @@ pub async fn preprocess(assyst: ThreadSafeAssyst, message: &Message) -> Result<P
                 .rest_cache_handler
                 .get_guild_owner(message.guild_id.unwrap().get())
                 .await
-                .map_err(|x| PreParseError::Failure(format!("failed to get guild owner: {}", x.to_string())))?,
+                .map_err(|x| PreParseError::Failure(format!("failed to get guild owner: {x}")))?,
         )
     } else {
         None

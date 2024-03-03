@@ -65,7 +65,7 @@ pub async fn stats(ctxt: CommandCtxt<'_>, option: Option<Word>) -> anyhow::Resul
             ..
         } = gateway_bot.session_start_limit;
 
-        let table = key_value(&vec![
+        let table = key_value(&[
             ("Total".fg_cyan(), total.to_string()),
             ("Remaining".fg_cyan(), remaining.to_string()),
             ("Max Concurrency".fg_cyan(), max_concurrency.to_string()),
@@ -108,7 +108,7 @@ pub async fn stats(ctxt: CommandCtxt<'_>, option: Option<Word>) -> anyhow::Resul
             .map(|x| x.to_string())
             .unwrap_or("0".to_owned());
 
-        let stats_table = key_value(&vec![
+        let stats_table = key_value(&[
             ("Guilds".fg_cyan(), ctxt.assyst().prometheus.guilds.get().to_string()),
             ("Shards".fg_cyan(), ctxt.assyst().shard_count.to_string()),
             ("Events".fg_cyan(), events_rate + "/sec"),

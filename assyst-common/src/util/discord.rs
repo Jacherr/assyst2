@@ -1,6 +1,3 @@
-use twilight_http::Client;
-use twilight_model::id::marker::GuildMarker;
-use twilight_model::id::Id;
 use twilight_model::user::User;
 
 pub fn get_default_avatar_url(user: &User) -> String {

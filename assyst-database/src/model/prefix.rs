@@ -30,7 +30,7 @@ impl Prefix {
 
         let query = "SELECT * FROM prefixes WHERE guild = $1";
 
-        return match sqlx::query_as::<_, (String,)>(query)
+        match sqlx::query_as::<_, (String,)>(query)
             .bind(guild_id as i64)
             .fetch_one(&handler.pool)
             .await
@@ -42,7 +42,7 @@ impl Prefix {
             },
             Err(sqlx::Error::RowNotFound) => Ok(None),
             Err(err) => Err(err.into()),
-        };
+        }
     }
 
     pub fn size_of(&self) -> u64 {
