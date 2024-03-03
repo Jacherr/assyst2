@@ -80,12 +80,9 @@ impl WsiHandler {
                             Ok(x) => x,
                         };
                         let mut buf = vec![0; length as usize];
-                        match reader.read_exact(&mut buf).await {
-                            Err(e) => {
-                                err!("Failed to read buffer from WSI: {:?}", e);
-                                break;
-                            },
-                            _ => {},
+                        if let Err(e) = reader.read_exact(&mut buf).await {
+                            err!("Failed to read buffer from WSI: {:?}", e);
+                            break;
                         }
 
                         let deserialized = match deserialize::<JobResult>(&buf) {
@@ -127,20 +124,14 @@ impl WsiHandler {
 
                         jobs.lock().unwrap().insert(id, tx);
 
-                        match writer.write_u32(job.len() as u32).await {
-                            Err(e) => {
-                                err!("Failed to write to WSI: {:?}", e.to_string());
-                                break;
-                            },
-                            _ => {},
+                        if let Err(e) = writer.write_u32(job.len() as u32).await {
+                            err!("Failed to write to WSI: {:?}", e.to_string());
+                            break;
                         }
 
-                        match writer.write_all(&job).await {
-                            Err(e) => {
-                                err!("Failed to write to WSI: {:?}", e.to_string());
-                                break;
-                            },
-                            _ => {},
+                        if let Err(e) = writer.write_all(&job).await {
+                            err!("Failed to write to WSI: {:?}", e.to_string());
+                            break;
                         }
                     }
                 });
@@ -153,7 +144,7 @@ impl WsiHandler {
                 CONNECTED.store(false, Ordering::Relaxed);
                 {
                     let mut lock = jobs_clone_2.lock().unwrap();
-                    let keys = lock.keys().map(|x| *x).collect::<Vec<_>>().clone();
+                    let keys = lock.keys().copied().collect::<Vec<_>>().clone();
                     for job in keys {
                         let tx = lock.remove(&job).unwrap();
                         let _ = tx.send(JobResult::new_err(

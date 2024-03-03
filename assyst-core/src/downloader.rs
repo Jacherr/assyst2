@@ -41,8 +41,8 @@ impl std::error::Error for DownloadError {}
 fn get_next_proxy() -> &'static str {
     let config = &CONFIG;
     let len = config.urls.proxy.len();
-    let next = &config.urls.proxy[PROXY_NUM.fetch_add(1, Ordering::Relaxed) % len];
-    next
+
+    (&config.urls.proxy[PROXY_NUM.fetch_add(1, Ordering::Relaxed) % len]) as _
 }
 
 async fn download_with_proxy(

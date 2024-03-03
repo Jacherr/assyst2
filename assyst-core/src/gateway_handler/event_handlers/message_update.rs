@@ -101,7 +101,7 @@ fn convert_message_update_to_message(event: MessageUpdate) -> Option<Message> {
     let author = event.author?;
     let content = event.content.unwrap_or_default();
     let embeds = event.embeds.unwrap_or_default();
-    let kind = event.kind.unwrap_or_else(|| MessageType::Regular);
+    let kind = event.kind.unwrap_or(MessageType::Regular);
     let mention_everyone = event.mention_everyone.unwrap_or_default();
     let mention_roles = event.mention_roles.unwrap_or_default();
     let pinned = event.pinned.unwrap_or_default();

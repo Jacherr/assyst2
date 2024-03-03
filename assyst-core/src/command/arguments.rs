@@ -41,13 +41,10 @@ impl<T: ParseArgument> ParseArgument for Vec<T> {
     async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
         let mut items = Vec::new();
 
-        loop {
-            // `Option<T>`'s parser takes care of recovering from low severity errors
-            // and any `Err`s returned are fatal, so we can just use `?`
-            match <Option<T>>::parse(ctxt).await? {
-                Some(value) => items.push(value),
-                None => break,
-            }
+        // `Option<T>`'s parser takes care of recovering from low severity errors
+        // and any `Err`s returned are fatal, so we can just use `?`
+        while let Some(value) = <Option<T>>::parse(ctxt).await? {
+            items.push(value)
         }
 
         Ok(items)
@@ -98,7 +95,7 @@ impl ImageUrl {
         let user_id = regex::USER_MENTION
             .captures(word)
             .and_then(|user_id_capture| user_id_capture.get(1))
-            .and_then(|id| Some(id.as_str()))
+            .map(|id| id.as_str())
             .and_then(|id| id.parse::<u64>().ok())
             .ok_or(TagParseError::NoMention)?;
 
@@ -192,7 +189,7 @@ impl ImageUrl {
         }
 
         if let Some(e) = emoji::lookup_by_glyph::lookup(word) {
-            let codepoint = e.codepoint.to_lowercase().replace(" ", "-").replace("-fe0f", "");
+            let codepoint = e.codepoint.to_lowercase().replace(' ', "-").replace("-fe0f", "");
 
             let emoji_url = format!("https://bignutty.gitlab.io/emojipedia-data/data/{}.json", codepoint);
             let dl = ctxt

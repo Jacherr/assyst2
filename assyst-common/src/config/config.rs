@@ -46,7 +46,7 @@ impl Database {
     }
 
     pub fn to_url_safe(&self) -> String {
-        let mut host = self.host.split(".").take(2).collect::<Vec<_>>();
+        let mut host = self.host.split('.').take(2).collect::<Vec<_>>();
         host.push("###");
         host.push("###");
 

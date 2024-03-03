@@ -58,16 +58,13 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
     let mut fields = HashMap::new();
 
     for attr in attrs {
-        match attr {
-            Meta::NameValue(meta) => {
-                let ident = meta
-                    .path
-                    .get_ident()
-                    .expect("#[command] attribute key should be an identifier");
+        if let Meta::NameValue(meta) = attr {
+            let ident = meta
+                .path
+                .get_ident()
+                .expect("#[command] attribute key should be an identifier");
 
-                fields.insert(ident.to_string(), meta.value);
-            },
-            _ => {},
+            fields.insert(ident.to_string(), meta.value);
         }
     }
 
@@ -164,7 +161,7 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
 fn is_rest_type(ty: &Type) -> Option<Span> {
     if let Type::Path(p) = ty
         && let Some(ident) = p.path.get_ident()
-        && ident.to_string() == "Rest"
+        && *ident == "Rest"
     {
         Some(ident.span())
     } else {

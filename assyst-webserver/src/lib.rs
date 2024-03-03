@@ -73,8 +73,7 @@ async fn prometheus_metrics(State(route_state): State<RouteState>) -> String {
 
     let encoder = TextEncoder::new();
     let family = prometheus::gather();
-    let response = encoder.encode_to_string(&family).expect("Encoding failed");
-    response
+    encoder.encode_to_string(&family).expect("Encoding failed")
 }
 
 async fn top_gg_webhook(

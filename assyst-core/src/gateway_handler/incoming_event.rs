@@ -5,10 +5,10 @@ use twilight_model::gateway::payload::incoming::{
 
 #[derive(Debug)]
 pub enum IncomingEvent {
-    MessageCreate(MessageCreate),
+    MessageCreate(Box<MessageCreate>), // this struct is huge.
     MessageUpdate(MessageUpdate),
     MessageDelete(MessageDelete),
-    GuildCreate(GuildCreate),
+    GuildCreate(Box<GuildCreate>), // same problem
     GuildDelete(GuildDelete),
     ShardReady(Ready),
 }
@@ -18,10 +18,10 @@ impl TryFrom<GatewayEvent> for IncomingEvent {
     fn try_from(event: GatewayEvent) -> Result<Self, ()> {
         match event {
             GatewayEvent::Dispatch(_, event) => match event {
-                DispatchEvent::MessageCreate(message) => Ok(IncomingEvent::MessageCreate(*message)),
+                DispatchEvent::MessageCreate(message) => Ok(IncomingEvent::MessageCreate(message)),
                 DispatchEvent::MessageUpdate(message) => Ok(IncomingEvent::MessageUpdate(*message)),
                 DispatchEvent::MessageDelete(message) => Ok(IncomingEvent::MessageDelete(message)),
-                DispatchEvent::GuildCreate(guild) => Ok(IncomingEvent::GuildCreate(*guild)),
+                DispatchEvent::GuildCreate(guild) => Ok(IncomingEvent::GuildCreate(guild)),
                 DispatchEvent::GuildDelete(guild) => Ok(IncomingEvent::GuildDelete(guild)),
                 DispatchEvent::Ready(ready) => Ok(IncomingEvent::ShardReady(*ready)),
                 _ => Err(()),
