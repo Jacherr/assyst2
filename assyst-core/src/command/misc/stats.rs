@@ -95,18 +95,8 @@ pub async fn stats(ctxt: CommandCtxt<'_>, option: Option<Word>) -> anyhow::Resul
     }
 
     fn get_general_stats(ctxt: &CommandCtxt<'_>) -> String {
-        let events_rate = ctxt
-            .assyst()
-            .prometheus
-            .get_events_rate()
-            .map(|x| x.to_string())
-            .unwrap_or("0".to_owned());
-        let commands_rate = ctxt
-            .assyst()
-            .prometheus
-            .get_commands_rate()
-            .map(|x| x.to_string())
-            .unwrap_or("0".to_owned());
+        let events_rate = ctxt.assyst().prometheus.get_events_rate().to_string();
+        let commands_rate = ctxt.assyst().prometheus.get_commands_rate().to_string();
 
         let stats_table = key_value(&[
             ("Guilds".fg_cyan(), ctxt.assyst().prometheus.guilds.get().to_string()),

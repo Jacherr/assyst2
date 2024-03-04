@@ -7,7 +7,7 @@ use tokio::time::Instant;
 /// or the rate of events being received.
 pub struct RateTracker {
     tracking_length: Duration,
-    samples: Vec<(isize, Instant)>,
+    samples: Vec<Instant>,
 }
 impl RateTracker {
     pub fn new(tracking_length: Duration) -> RateTracker {
@@ -17,23 +17,21 @@ impl RateTracker {
         }
     }
 
+    /// Removes all samples from this tracker which are older than the tracking length.
     pub fn remove_expired_samples(&mut self) {
         self.samples
-            .retain(|x| Instant::now().duration_since(x.1) <= self.tracking_length);
+            .retain(|x| Instant::now().duration_since(*x) <= self.tracking_length);
     }
 
     /// Add a sample to the tracker.
-    ///
-    /// The sample can take a value.
-    pub fn add_sample(&mut self, value: isize) {
-        // add new sample
-        self.samples.push((value, Instant::now()));
+    pub fn add_sample(&mut self) {
+        self.samples.push(Instant::now());
         self.remove_expired_samples();
     }
 
-    /// Fetches the difference between the largest and smallest sample in the tracker.
-    pub fn get_rate(&mut self) -> Option<isize> {
+    /// Fetches the amount of current non-expired samples.
+    pub fn get_rate(&mut self) -> usize {
         self.remove_expired_samples();
-        Some(self.samples.last()?.0 - self.samples.first()?.0)
+        self.samples.len()
     }
 }

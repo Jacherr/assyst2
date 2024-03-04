@@ -67,25 +67,19 @@ impl Prometheus {
 
     pub fn add_event(&self) {
         self.events.inc();
-        self.events_rate_tracker
-            .lock()
-            .unwrap()
-            .add_sample(self.events.get() as _);
+        self.events_rate_tracker.lock().unwrap().add_sample();
     }
 
-    pub fn get_events_rate(&self) -> Option<isize> {
+    pub fn get_events_rate(&self) -> usize {
         self.events_rate_tracker.lock().unwrap().get_rate()
     }
 
     pub fn add_command(&self) {
         self.commands.inc();
-        self.commands_rate_tracker
-            .lock()
-            .unwrap()
-            .add_sample(self.commands.get() as _);
+        self.commands_rate_tracker.lock().unwrap().add_sample();
     }
 
-    pub fn get_commands_rate(&self) -> Option<isize> {
+    pub fn get_commands_rate(&self) -> usize {
         self.commands_rate_tracker.lock().unwrap().get_rate()
     }
 }
