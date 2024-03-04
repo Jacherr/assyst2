@@ -5,7 +5,7 @@ use tracing::info;
 
 use crate::command::CommandMetadata;
 
-use super::{misc, wsi, TCommand};
+use super::{misc, services, wsi, TCommand};
 
 macro_rules! declare_commands {
     ($($name:path),*) => {
@@ -24,7 +24,8 @@ declare_commands!(
     misc::stats::stats_command,
     wsi::caption_command,
     wsi::resize_command,
-    misc::tag::tag_command
+    misc::tag::tag_command,
+    services::r34_command
 );
 
 static COMMANDS: OnceLock<HashMap<&'static str, TCommand>> = OnceLock::new();
