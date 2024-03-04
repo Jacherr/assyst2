@@ -4,11 +4,11 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-twilight-http = "0.15.4"
+twilight-http = "=0.16.0-rc.1"
 serde = { version = "1.0.190", features = ["derive"] }
 tokio = { version = "1.33.0", features = ["full"] }
-twilight-gateway = "0.15.4"
-twilight-model = "0.15.4"
+twilight-gateway = "=0.16.0-rc.1"
+twilight-model = "=0.16.0-rc.1"
 anyhow = "1.0.75"
 toml = "0.8.8"
 futures-util = { version = "0.3", default-features = false }

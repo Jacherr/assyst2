@@ -70,10 +70,10 @@ pub async fn edit(ctxt: &CommandCtxt<'_>, builder: MessageBuilder, reply: ReplyI
     let mut content_clone = builder.content.clone();
 
     if builder.attachment.is_none() && builder.content.as_ref().map(|x| x.trim().is_empty()).unwrap_or(true) {
-        message = message.content(Some("[Empty Response]"))?;
+        message = message.content(Some("[Empty Response]"));
     } else if let Some(content) = &mut content_clone {
         trim_content_fits(content);
-        message = message.content(Some(content))?;
+        message = message.content(Some(content));
     }
 
     let attachments;
@@ -81,16 +81,16 @@ pub async fn edit(ctxt: &CommandCtxt<'_>, builder: MessageBuilder, reply: ReplyI
     if let Some(attachment) = builder.attachment {
         if let Some(found_url) = get_filer_url(ctxt, builder.content.as_ref(), attachment.data.clone()).await? {
             url = found_url;
-            message = message.content(Some(&url))?;
+            message = message.content(Some(&url));
         } else {
             attachments = [TwilightAttachment::from_bytes(
                 attachment.name.into(),
                 attachment.data,
                 0,
             )];
-            message = message.attachments(&attachments)?;
+            message = message.attachments(&attachments);
             if builder.content.is_none() {
-                message = message.content(Some(""))?;
+                message = message.content(Some(""));
             }
         };
     }
@@ -112,10 +112,10 @@ async fn create_message(ctxt: &CommandCtxt<'_>, builder: MessageBuilder) -> anyh
     let mut content_clone = builder.content.clone();
 
     if builder.attachment.is_none() && builder.content.as_ref().map(|x| x.trim().is_empty()).unwrap_or(true) {
-        message = message.content("[Empty Response]")?;
+        message = message.content("[Empty Response]");
     } else if let Some(content) = &mut content_clone {
         trim_content_fits(content);
-        message = message.content(content)?;
+        message = message.content(content);
     }
 
     let attachments;
@@ -123,16 +123,16 @@ async fn create_message(ctxt: &CommandCtxt<'_>, builder: MessageBuilder) -> anyh
     if let Some(attachment) = builder.attachment {
         if let Some(found_url) = get_filer_url(ctxt, builder.content.as_ref(), attachment.data.clone()).await? {
             url = found_url;
-            message = message.content(&url)?;
+            message = message.content(&url);
         } else {
             attachments = [TwilightAttachment::from_bytes(
                 attachment.name.into(),
                 attachment.data,
                 0,
             )];
-            message = message.attachments(&attachments)?;
+            message = message.attachments(&attachments);
             if builder.content.is_none() {
-                message = message.content("")?;
+                message = message.content("");
             }
         };
     }

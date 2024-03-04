@@ -64,18 +64,12 @@ async fn main() {
                     if id == 0 {
                         err!("Failed to trigger panic webhook: Panic webhook ID is 0");
                     } else {
-                        let webhook = assyst
+                        let _ = assyst
                             .http_client
                             .execute_webhook(Id::<WebhookMarker>::new(id), &token)
-                            .content(&msg);
-
-                        if let Ok(w) = webhook {
-                            let _ = w
-                                .await
-                                .inspect_err(|e| err!("Failed to trigger panic webhook: {}", e.to_string()));
-                        } else if let Err(e) = webhook {
-                            err!("Failed to trigger panic webhook: {}", e.to_string());
-                        }
+                            .content(&msg)
+                            .await
+                            .inspect_err(|e| err!("Failed to trigger panic webhook: {}", e.to_string()));
                     }
                 });
             }

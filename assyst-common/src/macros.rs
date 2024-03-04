@@ -59,13 +59,9 @@ pub fn handle_log(message: String) {
                     .execute_webhook(Id::<WebhookMarker>::new(id), &token)
                     .content(&message);
 
-                if let Ok(w) = webhook {
-                    let _ = w
-                        .await
-                        .inspect_err(|e| tracing::error!("Failed to trigger error webhook: {}", e.to_string()));
-                } else if let Err(e) = webhook {
-                    tracing::error!("Failed to trigger error webhook: {}", e.to_string());
-                }
+                let _ = webhook
+                    .await
+                    .inspect_err(|e| tracing::error!("Failed to trigger error webhook: {}", e.to_string()));
             }
         });
     }

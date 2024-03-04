@@ -1,7 +1,6 @@
 use crate::assyst::ThreadSafeAssyst;
 use anyhow::{bail, Context};
 use rand::prelude::SliceRandom;
-use rand::Rng;
 use serde::Deserialize;
 
 static R34_URL: &'static str = "https://api.rule34.xxx/index.php?tags=";

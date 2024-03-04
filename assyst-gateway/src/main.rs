@@ -4,12 +4,10 @@ use assyst_common::pipe::pipe_server::PipeServer;
 use assyst_common::pipe::GATEWAY_PIPE_PATH;
 use assyst_common::util::tracing_init;
 use futures_util::StreamExt;
-use std::sync::Arc;
-use tokio::sync::mpsc::unbounded_channel;
-use tokio::sync::Mutex;
-use tracing::{debug, info, trace, warn};
-use twilight_gateway::stream::{create_recommended, ShardMessageStream};
-use twilight_gateway::{Config as GatewayConfig, Intents, Message};
+use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
+use tokio::{signal, spawn};
+use tracing::{debug, info, warn};
+use twilight_gateway::{create_recommended, ConfigBuilder as GatewayConfigBuilder, Intents, Message, Shard};
 use twilight_http::Client as HttpClient;
 use twilight_model::gateway::payload::outgoing::update_presence::UpdatePresencePayload;
 use twilight_model::gateway::presence::{Activity, ActivityType, Status};
@@ -43,7 +41,7 @@ lazy_static::lazy_static! {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> anyhow::Result<()> {
     if std::env::consts::OS != "linux" {
         panic!("Assyst is supported on Linux only.")
     }
@@ -56,11 +54,11 @@ async fn main() {
 
     let intents = Intents::MESSAGE_CONTENT | Intents::GUILDS | Intents::GUILD_MESSAGES;
     debug!("intents={:?}", intents);
-    let gateway_config = GatewayConfig::builder(CONFIG.authentication.discord_token.clone(), intents)
+    let gateway_config = GatewayConfigBuilder::new(CONFIG.authentication.discord_token.clone(), intents)
         .presence(presence)
         .build();
 
-    let mut shards = create_recommended(&http_client, gateway_config.clone(), |_, _| gateway_config.clone())
+    let shards = create_recommended(&http_client, gateway_config.clone(), |_, _| gateway_config.clone())
         .await
         .unwrap()
         .collect::<Vec<_>>();
@@ -88,13 +86,27 @@ async fn main() {
         }
     });
 
-    let message_stream = Arc::new(Mutex::new(ShardMessageStream::new(shards.iter_mut())));
+    let mut tasks = vec![];
+    let shards_count = shards.len();
 
-    while let Some((_, event)) = message_stream.lock().await.next().await {
-        if let Ok(Message::Text(event)) = event {
-            trace!("discord message received: {}", event);
+    for shard in shards {
+        info!(
+            "Registering runner for shard {} of {}",
+            shard.id().number(),
+            shards_count - 1
+        );
+        tasks.push(spawn(runner(shard, tx.clone())));
+    }
 
-            tx.send(event).unwrap();
+    signal::ctrl_c().await?;
+
+    Ok(())
+}
+
+async fn runner(mut shard: Shard, tx: UnboundedSender<String>) {
+    while let Some(Ok(item)) = shard.next().await {
+        if let Message::Text(message) = item {
+            tx.send(message).unwrap();
         }
     }
 }

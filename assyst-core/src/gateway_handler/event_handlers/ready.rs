@@ -30,7 +30,6 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: Ready) {
             .http_client
             .create_message(channel)
             .content("Dev shard is READY!")
-            .unwrap()
             .await
             .unwrap();
     }

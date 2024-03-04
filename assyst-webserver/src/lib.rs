@@ -149,7 +149,6 @@ async fn top_gg_webhook(
             .http_client
             .execute_webhook(Id::<WebhookMarker>::new(id), &token)
             .content(&message)
-            .unwrap()
             .await;
     };
 
