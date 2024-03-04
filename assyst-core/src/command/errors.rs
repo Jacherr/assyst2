@@ -1,11 +1,13 @@
 use std::fmt::Display;
-use std::num::ParseIntError;
+use std::num::{ParseFloatError, ParseIntError};
 
 use assyst_common::util::ParseToMillisError;
 use twilight_model::channel::message::sticker::StickerFormatType;
 
 use crate::downloader::DownloadError;
 use crate::gateway_handler::message_parser::error::{ErrorSeverity, GetErrorSeverity};
+
+use super::arguments::DesiredCmpTy;
 
 #[derive(Debug)]
 pub enum ExecutionError {
@@ -38,6 +40,7 @@ pub struct ArgsExhausted;
 pub enum TagParseError {
     ArgsExhausted,
     ParseIntError(ParseIntError),
+    ParseFloatError(ParseFloatError),
     ParseToMillisError(ParseToMillisError),
     // NB: boxed to reduce size -- twilight errors are very large (100+b), which would cause the size of this enum to
     // explode
@@ -59,6 +62,10 @@ pub enum TagParseError {
     MediaDownloadFail,
     IllegalAgeRestrictedCommand,
     InvalidSubcommand,
+    // given, cmp_to, adjective
+    ComparisonError(DesiredCmpTy, DesiredCmpTy, String),
+    // given, min, max
+    RangeError(DesiredCmpTy, DesiredCmpTy, DesiredCmpTy),
 }
 
 impl GetErrorSeverity for TagParseError {
@@ -85,6 +92,7 @@ impl Display for TagParseError {
         match self {
             TagParseError::ArgsExhausted => f.write_str("an argument is required but none were found"),
             TagParseError::ParseIntError(err) => write!(f, "failed to parse an argument as a number: {err}"),
+            TagParseError::ParseFloatError(err) => write!(f, "failed to parse an argument as a number: {err}"),
             TagParseError::ParseToMillisError(err) => write!(f, "failed to parse an argument as time: {err}"),
             TagParseError::TwilightHttp(_) => f.write_str("failed to send a request to discord"),
             TagParseError::TwilightDeserialize(_) => f.write_str("failed to parse a response from discord"),
@@ -109,6 +117,12 @@ impl Display for TagParseError {
                 f.write_str("this command is only available in age restricted channels")
             },
             TagParseError::InvalidSubcommand => f.write_str("no subcommand found for given name"),
+            TagParseError::ComparisonError(given, cmp_to, adjective) => {
+                write!(f, "expected a value {adjective} {cmp_to}, got {given}")
+            },
+            TagParseError::RangeError(given, min, max) => {
+                write!(f, "expected a value between {min}-{max}, got {given}")
+            },
         }
     }
 }
@@ -146,5 +160,11 @@ impl From<ArgsExhausted> for TagParseError {
 impl From<ParseIntError> for TagParseError {
     fn from(value: ParseIntError) -> Self {
         Self::ParseIntError(value)
+    }
+}
+
+impl From<ParseFloatError> for TagParseError {
+    fn from(value: ParseFloatError) -> Self {
+        Self::ParseFloatError(value)
     }
 }

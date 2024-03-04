@@ -1,4 +1,5 @@
 use std::fmt::Display;
+use std::ops::Deref;
 
 use assyst_common::util::discord::get_avatar_url;
 use assyst_common::util::{parse_to_millis, regex};
@@ -19,12 +20,21 @@ pub trait ParseArgument: Sized {
     async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError>;
 }
 
-impl ParseArgument for u64 {
-    async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
-        let word = ctxt.next_word()?;
-        Ok(word.parse()?)
-    }
+// impl for number types
+macro_rules! ii_this {
+    ($($t:path)*) => {
+        $(
+            impl ParseArgument for $t {
+                async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
+                    let word = ctxt.next_word()?;
+                    Ok(word.parse()?)
+                }
+            }
+        )*
+    };
 }
+
+ii_this!(u8 i8 u16 i16 u32 i32 u64 i64 u128 i128 usize isize f64 f32);
 
 impl<T: ParseArgument> ParseArgument for Option<T> {
     async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
@@ -86,8 +96,93 @@ impl ParseArgument for Rest {
     }
 }
 
-pub struct ImageUrl(String);
+#[derive(Debug)]
+pub struct Removable<T>(pub Option<T>);
 
+impl<T> Deref for Removable<T> {
+    type Target = Option<T>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+pub const NONE_STR: &str = "_"; // change if `_` is undesirable.
+impl<T> ParseArgument for Removable<T>
+where
+    T: ParseArgument,
+{
+    async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
+        let word = ctxt.next_word()?;
+
+        if word == NONE_STR {
+            Ok(Self(None))
+        } else {
+            Ok(Self(Some(T::parse(ctxt).await?)))
+        }
+    }
+}
+
+pub type DesiredCmpTy = isize;
+
+macro_rules! cmp_arg {
+    ($($label:ident $l:literal => $op:tt,)*) => {
+        $(
+            pub struct $label<const N: DesiredCmpTy>(DesiredCmpTy);
+
+            impl<const N: DesiredCmpTy> ParseArgument for $label<N> {
+                async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
+                    let value = DesiredCmpTy::parse(ctxt).await?;
+
+                    if value $op N { Ok(Self(value)) } else { Err(TagParseError::ComparisonError(value, N, $l.to_string())) }
+                }
+            }
+        )*
+    };
+}
+
+cmp_arg!(
+    Gt "greater than" => >,
+    Ge "greater than or equal to" => >=,
+    Lt "less than" => <,
+    Le "less than or equal to" => <=,
+    Eq "equal to" => ==, // redundant, probably
+    Ne "not equal to" => !=,
+);
+
+pub struct Ranged<const A: DesiredCmpTy, const B: DesiredCmpTy>(DesiredCmpTy);
+
+impl<const A: DesiredCmpTy, const B: DesiredCmpTy> ParseArgument for Ranged<A, B> {
+    async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
+        let value = DesiredCmpTy::parse(ctxt).await?;
+
+        if A <= value && value <= B {
+            Ok(Self(value))
+        } else { 
+            Err(TagParseError::RangeError(value, A, B))
+        }
+    }
+}
+        
+// TODO: @trueharuu
+// pub struct Flag<const LABEL: &'static str, T>(Option<T>);
+// pub const FLAG_PREFIX: &str = "-";
+
+// impl<const LABEL: &'static str, T> ParseArgument for Flag<LABEL, T>
+// where
+//     T: ParseArgument,
+// {
+//     async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
+//         let mut f = ctxt.fork();
+//         let label = f.next_word()?;
+//         if label.strip_prefix(FLAG_PREFIX) == Some(LABEL) {
+//             Ok(Self(Some(T::parse(&mut f).await?)))
+//         } else {
+//             // there was no flag present.
+//             Ok(Self(None))
+//         }
+//     }
+// }
+
+pub struct ImageUrl(String);
 impl ImageUrl {
     async fn from_mention(mut ctxt: CommandCtxt<'_>) -> Result<(Self, CommandCtxt<'_>), TagParseError> {
         let word = ctxt.next_word()?;
