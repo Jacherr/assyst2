@@ -2,32 +2,35 @@ use crate::util::process::get_processes_mem_usage;
 use crate::util::rate_tracker::RateTracker;
 use assyst_database::DatabaseHandler;
 use prometheus::{register_int_counter, register_int_gauge, register_int_gauge_vec, IntCounter, IntGauge, IntGaugeVec};
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tokio::sync::RwLock;
 use tracing::info;
 
-/// Gauges for all metrics tracked by Prometheus.
-pub struct Prometheus {
+/// Handler for general metrics, including rate trackers, Prometheus metrics, etc.
+pub struct MetricsHandler {
     pub cache_sizes: IntGaugeVec,
     pub memory_usage: IntGaugeVec,
     pub guilds: IntGauge,
     pub events: IntCounter,
     pub events_rate_tracker: Mutex<RateTracker>,
     pub commands: IntCounter,
-    pub commands_rate_tracker: Mutex<RateTracker>,
+    pub total_commands_rate_tracker: Mutex<RateTracker>,
+    pub individual_commands_rate_trackers: Mutex<HashMap<&'static str /* command name */, RateTracker>>,
     pub database_handler: Arc<RwLock<DatabaseHandler>>,
 }
-impl Prometheus {
-    pub fn new(database_handler: Arc<RwLock<DatabaseHandler>>) -> anyhow::Result<Prometheus> {
-        Ok(Prometheus {
+impl MetricsHandler {
+    pub fn new(database_handler: Arc<RwLock<DatabaseHandler>>) -> anyhow::Result<MetricsHandler> {
+        Ok(MetricsHandler {
             cache_sizes: register_int_gauge_vec!("cache_sizes", "Cache sizes", &["cache"])?,
             memory_usage: register_int_gauge_vec!("memory_usage", "Memory usage in MB", &["process"])?,
             guilds: register_int_gauge!("guilds", "Total guilds")?,
             events: register_int_counter!("events", "Total number of events")?,
             events_rate_tracker: Mutex::new(RateTracker::new(Duration::from_secs(1))),
             commands: register_int_counter!("commands", "Total number of commands executed")?,
-            commands_rate_tracker: Mutex::new(RateTracker::new(Duration::from_secs(60))),
+            total_commands_rate_tracker: Mutex::new(RateTracker::new(Duration::from_secs(60))),
+            individual_commands_rate_trackers: Mutex::new(HashMap::new()),
             database_handler,
         })
     }
@@ -76,10 +79,22 @@ impl Prometheus {
 
     pub fn add_command(&self) {
         self.commands.inc();
-        self.commands_rate_tracker.lock().unwrap().add_sample();
+        self.total_commands_rate_tracker.lock().unwrap().add_sample();
     }
 
     pub fn get_commands_rate(&self) -> usize {
-        self.commands_rate_tracker.lock().unwrap().get_rate()
+        self.total_commands_rate_tracker.lock().unwrap().get_rate()
+    }
+
+    pub fn add_individual_command_usage(&self, command_name: &'static str) {
+        let mut lock = self.individual_commands_rate_trackers.lock().unwrap();
+        let entry = lock.get_mut(&command_name);
+        if let Some(entry) = entry {
+            entry.add_sample();
+        } else {
+            let mut tracker = RateTracker::new(Duration::from_secs(60 * 60));
+            tracker.add_sample();
+            lock.insert(command_name, tracker);
+        }
     }
 }

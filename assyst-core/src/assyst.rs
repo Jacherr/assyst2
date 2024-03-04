@@ -5,8 +5,8 @@ use crate::rest::rest_cache_handler::RestCacheHandler;
 use crate::task::Task;
 use crate::wsi_handler::WsiHandler;
 use assyst_common::config::CONFIG;
+use assyst_common::metrics_handler::MetricsHandler;
 use assyst_common::pipe::CACHE_PIPE_PATH;
-use assyst_common::prometheus::Prometheus;
 use assyst_database::DatabaseHandler;
 use std::sync::{Arc, Mutex};
 use tokio::sync::RwLock;
@@ -31,8 +31,8 @@ pub struct Assyst {
     pub http_client: Arc<HttpClient>,
     /// List of the current patrons to Assyst.
     pub patrons: Arc<Mutex<Vec<Patron>>>,
-    /// Prometheus handler for graph metrics.
-    pub prometheus: Arc<Prometheus>,
+    /// Metrics handler for Prometheus, rate trackers etc.
+    pub metrics_handler: Arc<MetricsHandler>,
     /// The reqwest client, used to issue general HTTP requests
     pub reqwest_client: reqwest::Client,
     /// Tasks are functions which are called on an interval.
@@ -56,7 +56,7 @@ impl Assyst {
             database_handler: database_handler.clone(),
             http_client: http_client.clone(),
             patrons: patrons.clone(),
-            prometheus: Arc::new(Prometheus::new(database_handler.clone())?),
+            metrics_handler: Arc::new(MetricsHandler::new(database_handler.clone())?),
             reqwest_client: reqwest::Client::new(),
             tasks: Mutex::new(vec![]),
             shard_count,

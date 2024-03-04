@@ -11,6 +11,8 @@ use crate::gateway_handler::message_parser::error::{ErrorSeverity, GetErrorSever
 use crate::gateway_handler::message_parser::parser::parse_message_into_command;
 use crate::ThreadSafeAssyst;
 
+use super::after_command_execution_success;
+
 /// Handle a [MessageCreate] event received from the Discord gateway.
 ///
 /// This function passes the message to the command parser, which then attempts to convert the
@@ -56,9 +58,9 @@ pub async fn handle(assyst: ThreadSafeAssyst, MessageCreate(message): MessageCre
                         },
                     },
                 }
+            } else {
+                after_command_execution_success(ctxt, result.command);
             }
-
-            assyst.prometheus.add_command();
         },
         Ok(None) => { /* command not found */ },
         Err(error) => {

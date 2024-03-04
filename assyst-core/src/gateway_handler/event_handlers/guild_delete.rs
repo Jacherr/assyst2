@@ -17,6 +17,6 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: GuildDelete) {
 
     if should_handle {
         info!("Removed from guild {}", id);
-        assyst.prometheus.dec_guilds();
+        assyst.metrics_handler.dec_guilds();
     }
 }

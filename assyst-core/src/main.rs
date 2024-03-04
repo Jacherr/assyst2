@@ -110,7 +110,7 @@ async fn main() {
     assyst_webserver::run(
         assyst.database_handler.clone(),
         assyst.http_client.clone(),
-        assyst.prometheus.clone(),
+        assyst.metrics_handler.clone(),
     )
     .await;
 
@@ -140,7 +140,7 @@ async fn main() {
             if let Some(parsed_event) = parsed_event {
                 let try_incoming_event: Result<IncomingEvent, _> = parsed_event.try_into();
                 if let Ok(incoming_event) = try_incoming_event {
-                    assyst.prometheus.add_event();
+                    assyst.metrics_handler.add_event();
                     let assyst_c = assyst.clone();
                     spawn(async move { handle_raw_event(assyst_c.clone(), incoming_event).await });
                 }

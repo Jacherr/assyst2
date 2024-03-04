@@ -10,7 +10,7 @@ lazy_static! {
 }
 
 pub async fn post_top_gg_stats(assyst: ThreadSafeAssyst) -> anyhow::Result<()> {
-    let guild_count = assyst.prometheus.guilds.get();
+    let guild_count = assyst.metrics_handler.guilds.get();
     let shard_count = assyst.shard_count;
 
     assyst
