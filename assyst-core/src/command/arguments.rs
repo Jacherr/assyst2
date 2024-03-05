@@ -128,6 +128,13 @@ macro_rules! cmp_arg {
         $(
             pub struct $label<const N: DesiredCmpTy>(DesiredCmpTy);
 
+            impl<const N: DesiredCmpTy> Deref for $label<N> {
+                type Target = DesiredCmpTy;
+                fn deref(&self) -> &Self::Target {
+                    &self.0
+                }
+            }
+
             impl<const N: DesiredCmpTy> ParseArgument for $label<N> {
                 async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
                     let value = DesiredCmpTy::parse(ctxt).await?;
@@ -158,6 +165,23 @@ impl<const A: DesiredCmpTy, const B: DesiredCmpTy> ParseArgument for Ranged<A, B
             Ok(Self(value))
         } else { 
             Err(TagParseError::RangeError(value, A, B))
+        }
+    }
+}
+
+pub const TRUE_CONDS: &[&str] = &["true", "yes", "1"];
+pub const FALSE_CONDS: &[&str] = &["true", "yes", "1"];
+
+impl ParseArgument for bool {
+    async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
+        let word = ctxt.next_word()?.to_lowercase();
+
+        if TRUE_CONDS.contains(&&*word) {
+            Ok(true)
+        } else if FALSE_CONDS.contains(&&*word) {
+            Ok(false) 
+        } else {
+            Err(TagParseError::ParseBoolError)
         }
     }
 }

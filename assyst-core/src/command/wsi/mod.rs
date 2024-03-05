@@ -3,65 +3,8 @@ use std::time::Duration;
 use anyhow::Context;
 use assyst_proc_macro::command;
 
-use super::arguments::{Image, Ranged, Removable, Rest, Word};
+use super::arguments::{Ge, Image, Ranged, Removable, Rest, Word};
 use crate::command::{Availability, Category, CommandCtxt};
-
-#[command(
-    description = "add a caption to an image",
-    cooldown = Duration::from_secs(2),
-    access = Availability::Public,
-    category = Category::Wsi,
-    usage = "[image] [caption]",
-    examples = ["https://link.to.my/image.png hello there"],
-    send_processing = true
-)]
-pub async fn caption(ctxt: CommandCtxt<'_>, source: Image, text: Rest) -> anyhow::Result<()> {
-    let result = ctxt
-        .wsi_handler()
-        .caption(source.0, text.0, ctxt.data.author.id.get())
-        .await?;
-
-    ctxt.reply(result).await?;
-
-    Ok(())
-}
-
-#[command(
-    description = "resize an image based on scale or WxH (default 2x)",
-    cooldown = Duration::from_secs(2),
-    access = Availability::Public,
-    category = Category::Wsi,
-    usage = "[image] <scale>",
-    examples = ["https://link.to.my/image.png", "https://link.to.my/image.png 128x128", "https://link.to.my/image.png 2"],
-    send_processing = true
-)]
-pub async fn resize(ctxt: CommandCtxt<'_>, source: Image, size: Option<Word>) -> anyhow::Result<()> {
-    let result = if let Some(ref i_size) = size
-        && i_size.0.contains('x')
-        && let Some((width, height)) = i_size.0.split_once('x')
-    {
-        let width = width.parse::<u32>().context("Invalid width.")?;
-        let height = height.parse::<u32>().context("Invalid height.")?;
-
-        ctxt.wsi_handler()
-            .resize_absolute(source.0, width, height, ctxt.data.author.id.get())
-            .await?
-    } else if let Some(i_size) = size {
-        let scale = i_size.0.parse::<f32>().context("Invalid scale.")?;
-
-        ctxt.wsi_handler()
-            .resize_scale(source.0, scale, ctxt.data.author.id.get())
-            .await?
-    } else {
-        ctxt.wsi_handler()
-            .resize_scale(source.0, 2.0, ctxt.data.author.id.get())
-            .await?
-    };
-
-    ctxt.reply(result).await?;
-
-    Ok(())
-}
 
 #[command(
     description = "ah shit, here we go again",
@@ -133,6 +76,26 @@ pub async fn blur(_ctxt: CommandCtxt<'_>, _source: Image, _power: Option<f64>) -
 )]
 pub async fn burntext(_ctxt: CommandCtxt<'_>, _source: Rest) -> anyhow::Result<()> {
     anyhow::bail!("todo")
+}
+
+#[command(
+    description = "add a caption to an image",
+    cooldown = Duration::from_secs(2),
+    access = Availability::Public,
+    category = Category::Wsi,
+    usage = "[image] [caption]",
+    examples = ["https://link.to.my/image.png hello there"],
+    send_processing = true
+)]
+pub async fn caption(ctxt: CommandCtxt<'_>, source: Image, text: Rest) -> anyhow::Result<()> {
+    let result = ctxt
+        .wsi_handler()
+        .caption(source.0, text.0, ctxt.data.author.id.get())
+        .await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
 }
 
 #[command(
@@ -390,5 +353,357 @@ pub async fn jpeg(_ctxt: CommandCtxt<'_>, _source: Image) -> anyhow::Result<()> 
     send_processing = true
 )]
 pub async fn magik(_ctxt: CommandCtxt<'_>, _source: Image) -> anyhow::Result<()> {
+    anyhow::bail!("todo")
+}
+
+#[command(
+    description = "create funny meme",
+    cooldown = Duration::from_secs(4),
+    access = Availability::Public,
+    category = Category::Wsi,
+    usage = "[image] [text separated by |]",
+    examples = ["312715611413413889 this is|this is an otter"],
+    send_processing = true
+)]
+pub async fn meme(_ctxt: CommandCtxt<'_>, _source: Image, _content: Rest) -> anyhow::Result<()> {
+    anyhow::bail!("todo")
+}
+
+#[command(
+    description = "apply a neon effect to an image",
+    cooldown = Duration::from_secs(4),
+    access = Availability::Public,
+    category = Category::Wsi,
+    usage = "[image] <power>",
+    examples = ["312715611413413889", "312715611413413889 5"],
+    send_processing = true
+)]
+pub async fn neon(_ctxt: CommandCtxt<'_>, _source: Image, _amount: Option<u64>) -> anyhow::Result<()> {
+    anyhow::bail!("todo")
+}
+
+#[command(
+    description = "prints an image forever",
+    cooldown = Duration::from_secs(4),
+    access = Availability::Public,
+    category = Category::Wsi,
+    usage = "[image]",
+    examples = ["312715611413413889"],
+    send_processing = true
+)]
+pub async fn printer(_ctxt: CommandCtxt<'_>, _source: Image) -> anyhow::Result<()> {
+    anyhow::bail!("todo")
+}
+
+#[command(
+    description = "apply motivational text to an image",
+    cooldown = Duration::from_secs(4),
+    access = Availability::Public,
+    category = Category::Wsi,
+    usage = "[image] [text separated by |]",
+    examples = ["https://my.cool/png.png big text|small text"],
+    send_processing = true
+)]
+pub async fn motivate(_ctxt: CommandCtxt<'_>, _source: Image, _content: Rest) -> anyhow::Result<()> {
+    anyhow::bail!("todo")
+}
+
+#[command(
+    description = "overlay an image onto another image",
+    cooldown = Duration::from_secs(4),
+    access = Availability::Public,
+    category = Category::Wsi,
+    usage = "[image] [text separated by |]",
+    examples = ["312715611413413889 finland"],
+    send_processing = true
+)]
+pub async fn overlay(_ctxt: CommandCtxt<'_>, _source: Image, _overlay: Word) -> anyhow::Result<()> {
+    anyhow::bail!("todo")
+}
+
+#[command(
+    description = "overlay (any) image onto another image",
+    cooldown = Duration::from_secs(4),
+    access = Availability::Public,
+    category = Category::Wsi,
+    usage = "[image] [image]",
+    examples = ["312715611413413889 504698587221852172"],
+    send_processing = true
+)]
+pub async fn overlay2(_ctxt: CommandCtxt<'_>, _source: Image, _overlay: Image) -> anyhow::Result<()> {
+    anyhow::bail!("todo")
+}
+
+#[command(
+    description = "paint an image",
+    cooldown = Duration::from_secs(4),
+    access = Availability::Public,
+    category = Category::Wsi,
+    usage = "[image]",
+    examples = ["312715611413413889"],
+    send_processing = true
+)]
+pub async fn paint(_ctxt: CommandCtxt<'_>, _source: Image) -> anyhow::Result<()> {
+    anyhow::bail!("todo")
+}
+
+#[command(
+    description = "pixelate an image",
+    cooldown = Duration::from_secs(4),
+    access = Availability::Public,
+    category = Category::Wsi,
+    usage = "[image]",
+    examples = ["312715611413413889", "312715611413413889 4"],
+    send_processing = true
+)]
+pub async fn pixelate(_ctxt: CommandCtxt<'_>, _source: Image, _pixels: Ge<0>) -> anyhow::Result<()> {
+    anyhow::bail!("todo")
+}
+
+#[command(
+    description = "rainbow-ify an image",
+    cooldown = Duration::from_secs(4),
+    access = Availability::Public,
+    category = Category::Wsi,
+    usage = "[image]",
+    examples = ["312715611413413889"],
+    send_processing = true
+)]
+pub async fn rainbow(_ctxt: CommandCtxt<'_>, _source: Image) -> anyhow::Result<()> {
+    anyhow::bail!("todo")
+}
+
+#[command(
+    description = "resize an image based on scale or WxH (default 2x)",
+    cooldown = Duration::from_secs(2),
+    access = Availability::Public,
+    category = Category::Wsi,
+    usage = "[image] <scale>",
+    examples = ["https://link.to.my/image.png", "https://link.to.my/image.png 128x128", "https://link.to.my/image.png 2"],
+    send_processing = true
+)]
+pub async fn resize(ctxt: CommandCtxt<'_>, source: Image, size: Option<Word>) -> anyhow::Result<()> {
+    let result = if let Some(ref i_size) = size
+        && i_size.0.contains('x')
+        && let Some((width, height)) = i_size.0.split_once('x')
+    {
+        let width = width.parse::<u32>().context("Invalid width.")?;
+        let height = height.parse::<u32>().context("Invalid height.")?;
+
+        ctxt.wsi_handler()
+            .resize_absolute(source.0, width, height, ctxt.data.author.id.get())
+            .await?
+    } else if let Some(i_size) = size {
+        let scale = i_size.0.parse::<f32>().context("Invalid scale.")?;
+
+        ctxt.wsi_handler()
+            .resize_scale(source.0, scale, ctxt.data.author.id.get())
+            .await?
+    } else {
+        ctxt.wsi_handler()
+            .resize_scale(source.0, 2.0, ctxt.data.author.id.get())
+            .await?
+    };
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "reverse a gif",
+    cooldown = Duration::from_secs(4),
+    access = Availability::Public,
+    category = Category::Wsi,
+    usage = "[image]",
+    examples = ["https://my.cool/gif.gif"],
+    send_processing = true
+)]
+pub async fn reverse(_ctxt: CommandCtxt<'_>, _source: Image) -> anyhow::Result<()> {
+    anyhow::bail!("todo")
+}
+
+#[command(
+    description = "rotate an image",
+    cooldown = Duration::from_secs(4),
+    access = Availability::Public,
+    category = Category::Wsi,
+    usage = "[image]",
+    examples = ["312715611413413889 45"],
+    send_processing = true
+)]
+pub async fn rotate(_ctxt: CommandCtxt<'_>, _source: Image, _deg: Option<f64>) -> anyhow::Result<()> {
+    anyhow::bail!("todo")
+}
+
+#[command(
+    description = "configure whether a GIF will loop",
+    cooldown = Duration::from_secs(4),
+    access = Availability::Public,
+    category = Category::Wsi,
+    usage = "[image]",
+    examples = ["https://my.cool/gif.gif false"],
+    send_processing = true
+)]
+pub async fn setloop(_ctxt: CommandCtxt<'_>, _source: Image, _loop: bool) -> anyhow::Result<()> {
+    anyhow::bail!("todo")
+}
+
+#[command(
+    description = "add siren audio over an image",
+    cooldown = Duration::from_secs(4),
+    access = Availability::Public,
+    category = Category::Wsi,
+    usage = "[image]",
+    examples = ["312715611413413889"],
+    send_processing = true
+)]
+pub async fn siren(_ctxt: CommandCtxt<'_>, _source: Image) -> anyhow::Result<()> {
+    anyhow::bail!("todo")
+}
+
+#[command(
+    description = "add speechbubble over an image",
+    aliases = ["bubble", "speech"],
+    cooldown = Duration::from_secs(4),
+    access = Availability::Public,
+    category = Category::Wsi,
+    usage = "[image]",
+    examples = ["312715611413413889"],
+    send_processing = true
+)]
+pub async fn speechbubble(_ctxt: CommandCtxt<'_>, _source: Image) -> anyhow::Result<()> {
+    anyhow::bail!("todo")
+}
+
+#[command(
+    description = "spin an image",
+    cooldown = Duration::from_secs(4),
+    access = Availability::Public,
+    category = Category::Wsi,
+    usage = "[image]",
+    examples = ["312715611413413889"],
+    send_processing = true
+)]
+pub async fn spin(_ctxt: CommandCtxt<'_>, _source: Image) -> anyhow::Result<()> {
+    anyhow::bail!("todo")
+}
+
+// post yo money spread
+#[command(
+    description = "pixel-spread an image",
+    cooldown = Duration::from_secs(4),
+    access = Availability::Public,
+    category = Category::Wsi,
+    usage = "[image]",
+    examples = ["312715611413413889"],
+    send_processing = true
+)]
+pub async fn spread(_ctxt: CommandCtxt<'_>, _source: Image) -> anyhow::Result<()> {
+    anyhow::bail!("todo")
+}
+
+#[command(
+    description = "swirl an image",
+    cooldown = Duration::from_secs(4),
+    access = Availability::Public,
+    category = Category::Wsi,
+    usage = "[image]",
+    examples = ["312715611413413889"],
+    send_processing = true
+)]
+pub async fn swirl(_ctxt: CommandCtxt<'_>, _source: Image) -> anyhow::Result<()> {
+    anyhow::bail!("todo")
+}
+
+#[command(
+    description = "remove a caption from an image",
+    cooldown = Duration::from_secs(4),
+    access = Availability::Public,
+    category = Category::Wsi,
+    usage = "[image] <amount>",
+    examples = ["312715611413413889 75", "312715611413413889 20%"],
+    send_processing = true
+)]
+pub async fn uncaption(_ctxt: CommandCtxt<'_>, _source: Image, _amount: Word) -> anyhow::Result<()> {
+    anyhow::bail!("todo")
+}
+
+#[command(
+    description = "add minecraft music over an image",
+    cooldown = Duration::from_secs(4),
+    access = Availability::Public,
+    category = Category::Wsi,
+    usage = "[image]",
+    examples = ["312715611413413889"],
+    send_processing = true
+)]
+pub async fn sweden(_ctxt: CommandCtxt<'_>, _source: Image) -> anyhow::Result<()> {
+    anyhow::bail!("todo")
+}
+
+#[command(
+    description = "convert a video to a gif",
+    aliases = ["vid2gif", "v2g", "togif"],
+    cooldown = Duration::from_secs(4),
+    access = Availability::Public,
+    category = Category::Wsi,
+    usage = "[image]",
+    examples = ["https://my.cool/mp4.mp4"],
+    send_processing = true
+)]
+pub async fn videotogif(_ctxt: CommandCtxt<'_>, _source: Image) -> anyhow::Result<()> {
+    anyhow::bail!("todo")
+}
+
+#[command(
+    description = "create a wall out of an image",
+    cooldown = Duration::from_secs(4),
+    access = Availability::Public,
+    category = Category::Wsi,
+    usage = "[image]",
+    examples = ["312715611413413889"],
+    send_processing = true
+)]
+pub async fn wall(_ctxt: CommandCtxt<'_>, _source: Image) -> anyhow::Result<()> {
+    anyhow::bail!("todo")
+}
+
+#[command(
+    description = "create a wave out of an image",
+    cooldown = Duration::from_secs(4),
+    access = Availability::Public,
+    category = Category::Wsi,
+    usage = "[image]",
+    examples = ["312715611413413889"],
+    send_processing = true
+)]
+pub async fn wave(_ctxt: CommandCtxt<'_>, _source: Image) -> anyhow::Result<()> {
+    anyhow::bail!("todo")
+}
+
+#[command(
+    description = "suck an image into a wormhole",
+    cooldown = Duration::from_secs(4),
+    access = Availability::Public,
+    category = Category::Wsi,
+    usage = "[image]",
+    examples = ["312715611413413889"],
+    send_processing = true
+)]
+pub async fn wormhole(_ctxt: CommandCtxt<'_>, _source: Image) -> anyhow::Result<()> {
+    anyhow::bail!("todo")
+}
+
+#[command(
+    description = "zoom into an image",
+    cooldown = Duration::from_secs(4),
+    access = Availability::Public,
+    category = Category::Wsi,
+    usage = "[image]",
+    examples = ["312715611413413889"],
+    send_processing = true
+)]
+pub async fn zoom(_ctxt: CommandCtxt<'_>, _source: Image) -> anyhow::Result<()> {
     anyhow::bail!("todo")
 }

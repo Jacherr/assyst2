@@ -66,6 +66,7 @@ pub enum TagParseError {
     ComparisonError(DesiredCmpTy, DesiredCmpTy, String),
     // given, min, max
     RangeError(DesiredCmpTy, DesiredCmpTy, DesiredCmpTy),
+    ParseBoolError,
 }
 
 impl GetErrorSeverity for TagParseError {
@@ -123,6 +124,7 @@ impl Display for TagParseError {
             TagParseError::RangeError(given, min, max) => {
                 write!(f, "expected a value between {min}-{max}, got {given}")
             },
+            TagParseError::ParseBoolError => f.write_str("a boolean argument was expected but none were found"),
         }
     }
 }
