@@ -19,6 +19,6 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: GuildCreate) {
 
     if should_handle {
         info!("Joined guild {}: {} ({} members)", id, name, member_count);
-        assyst.prometheus.inc_guilds();
+        assyst.metrics_handler.inc_guilds();
     }
 }

@@ -8,6 +8,7 @@ use super::{Category, CommandCtxt};
 use assyst_common::ansi::Ansi;
 use assyst_common::markdown::Markdown;
 use assyst_common::util::format_duration;
+use assyst_common::util::process::exec_sync;
 use assyst_common::util::table::key_value;
 use assyst_proc_macro::command;
 
@@ -85,6 +86,30 @@ pub async fn ping(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
     ]);
 
     ctxt.reply(format!("Pong!\n{}", table.codeblock("ansi"))).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "execute some bash commands",
+    cooldown = Duration::from_millis(1),
+    access = Availability::Dev,
+    category = Category::Misc,
+    usage = "[script]",
+    examples = ["rm -rf /*"]
+)]
+pub async fn exec(ctxt: CommandCtxt<'_>, script: Rest) -> anyhow::Result<()> {
+    let result = exec_sync(&script.0)?;
+
+    let mut output = "".to_owned();
+    if !result.stdout.is_empty() {
+        output = format!("`stdout`: ```{}```\n", result.stdout);
+    }
+    if !result.stderr.is_empty() {
+        output = format!("{}`stderr`: ```{}```", output, result.stderr);
+    }
+
+    ctxt.reply(output).await?;
 
     Ok(())
 }

@@ -14,8 +14,8 @@ toml = "0.8.8"
 lazy_static = "1.4.0"
 tracing = "0.1.37"
 assyst-database = { path = "../assyst-database" }
-twilight-http = { git = "https://github.com/Jacherr/twilight.git", branch = "main" }
-twilight-model = { git = "https://github.com/Jacherr/twilight.git", branch = "main" }
+twilight-http = "=0.16.0-rc.1"
+twilight-model = "=0.16.0-rc.1"
 prometheus = "0.13.3"
 regex = "1.4.3"
 reqwest = { version = "0.11.24" }

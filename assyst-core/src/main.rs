@@ -64,18 +64,12 @@ async fn main() {
                     if id == 0 {
                         err!("Failed to trigger panic webhook: Panic webhook ID is 0");
                     } else {
-                        let webhook = assyst
+                        let _ = assyst
                             .http_client
                             .execute_webhook(Id::<WebhookMarker>::new(id), &token)
-                            .content(&msg);
-
-                        if let Ok(w) = webhook {
-                            let _ = w
-                                .await
-                                .inspect_err(|e| err!("Failed to trigger panic webhook: {}", e.to_string()));
-                        } else if let Err(e) = webhook {
-                            err!("Failed to trigger panic webhook: {}", e.to_string());
-                        }
+                            .content(&msg)
+                            .await
+                            .inspect_err(|e| err!("Failed to trigger panic webhook: {}", e.to_string()));
                     }
                 });
             }
@@ -110,7 +104,7 @@ async fn main() {
     assyst_webserver::run(
         assyst.database_handler.clone(),
         assyst.http_client.clone(),
-        assyst.prometheus.clone(),
+        assyst.metrics_handler.clone(),
     )
     .await;
 
@@ -140,7 +134,7 @@ async fn main() {
             if let Some(parsed_event) = parsed_event {
                 let try_incoming_event: Result<IncomingEvent, _> = parsed_event.try_into();
                 if let Ok(incoming_event) = try_incoming_event {
-                    assyst.prometheus.add_event();
+                    assyst.metrics_handler.add_event();
                     let assyst_c = assyst.clone();
                     spawn(async move { handle_raw_event(assyst_c.clone(), incoming_event).await });
                 }

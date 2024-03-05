@@ -30,7 +30,6 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: Ready) {
             .http_client
             .create_message(channel)
             .content("Dev shard is READY!")
-            .unwrap()
             .await
             .unwrap();
     }
@@ -38,7 +37,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: Ready) {
     match assyst.persistent_cache_handler.handle_ready_event(event).await {
         Ok(num) => {
             info!("Adding {num} guilds to prometheus metrics from READY event");
-            assyst.prometheus.add_guilds(num);
+            assyst.metrics_handler.add_guilds(num);
         },
         Err(e) => {
             err!("assyst-cache failed to handle READY event: {}", e.to_string());

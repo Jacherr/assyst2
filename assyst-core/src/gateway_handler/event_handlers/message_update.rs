@@ -16,6 +16,8 @@ use crate::gateway_handler::message_parser::parser::parse_message_into_command;
 use crate::replies::ReplyState;
 use crate::ThreadSafeAssyst;
 
+use super::after_command_execution_success;
+
 /// Handle a [MessageUpdate] event sent from the Discord gateway.
 ///
 /// Message updates are used to check the following:
@@ -66,9 +68,9 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: MessageUpdate) {
                                 },
                             },
                         }
+                    } else {
+                        after_command_execution_success(ctxt, result.command);
                     }
-
-                    assyst.prometheus.add_command();
                 },
                 Ok(None) | Err(ParseError::PreParseFail(PreParseError::MessageNotPrefixed(_))) => {
                     if let Some(reply) = assyst.replies.remove(message.id.get())

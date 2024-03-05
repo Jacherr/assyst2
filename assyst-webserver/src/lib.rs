@@ -1,6 +1,6 @@
 use assyst_common::config::config::LoggingWebhook;
 use assyst_common::config::CONFIG;
-use assyst_common::prometheus::Prometheus;
+use assyst_common::metrics_handler::MetricsHandler;
 use assyst_common::{err, BOT_ID};
 use assyst_database::model::free_tier_2_requests::FreeTier2Requests;
 use assyst_database::model::user_votes::UserVotes;
@@ -64,12 +64,12 @@ pub struct TopGgWebhookBody {
 struct RouteState {
     pub database: Arc<RwLock<DatabaseHandler>>,
     pub http_client: Arc<HttpClient>,
-    pub prometheus: Arc<Prometheus>,
+    pub metrics_handler: Arc<MetricsHandler>,
 }
 
 #[axum::debug_handler]
 async fn prometheus_metrics(State(route_state): State<RouteState>) -> String {
-    route_state.prometheus.update().await;
+    route_state.metrics_handler.update().await;
 
     let encoder = TextEncoder::new();
     let family = prometheus::gather();
@@ -149,7 +149,6 @@ async fn top_gg_webhook(
             .http_client
             .execute_webhook(Id::<WebhookMarker>::new(id), &token)
             .content(&message)
-            .unwrap()
             .await;
     };
 
@@ -157,7 +156,11 @@ async fn top_gg_webhook(
 }
 
 /// Starts the webserver, providing bot list webhooking and prometheus services.
-pub async fn run(database: Arc<RwLock<DatabaseHandler>>, http_client: Arc<HttpClient>, prometheus: Arc<Prometheus>) {
+pub async fn run(
+    database: Arc<RwLock<DatabaseHandler>>,
+    http_client: Arc<HttpClient>,
+    metrics_handler: Arc<MetricsHandler>,
+) {
     let router = Router::new()
         .route("/", get(|| async { Redirect::permanent("https://jacher.io/assyst") }))
         .route("/topgg", get(|| async { Redirect::permanent(&TOP_GG_VOTE_URL) }))
@@ -166,7 +169,7 @@ pub async fn run(database: Arc<RwLock<DatabaseHandler>>, http_client: Arc<HttpCl
         .with_state(RouteState {
             database,
             http_client,
-            prometheus,
+            metrics_handler,
         });
 
     spawn(async move {

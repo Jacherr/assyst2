@@ -1,5 +1,6 @@
 pub mod filer;
 pub mod patreon;
+pub mod r34;
 pub mod rest_cache_handler;
 pub mod top_gg;
 

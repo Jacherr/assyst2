@@ -51,6 +51,7 @@ pub mod group;
 pub mod messagebuilder;
 pub mod misc;
 pub mod registry;
+pub mod services;
 pub mod source;
 pub mod wsi;
 
@@ -99,6 +100,7 @@ pub enum Category {
     Makesweet,
     Wsi,
     Misc,
+    Services,
     None(String),
 }
 
@@ -112,6 +114,7 @@ impl Display for Category {
                 Self::Makesweet => "makesweet",
                 Self::Wsi => "wsi",
                 Self::Misc => "misc",
+                Self::Services => "services",
                 Self::None(t) => &**t,
             }
         )

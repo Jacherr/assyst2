@@ -71,7 +71,7 @@ async fn main() -> anyhow::Result<()> {
         }
     }
 
-    let mut shards = twilight_gateway::stream::create_recommended(&client, config, |_, b| b.build())
+    let mut shards = twilight_gateway::create_recommended(&client, config, |_, b| b.build())
         .await?
         .collect::<Vec<_>>();
 
