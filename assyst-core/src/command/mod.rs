@@ -34,6 +34,7 @@ use std::time::{Duration, Instant};
 use super::gateway_handler::reply as gateway_reply;
 use crate::assyst::ThreadSafeAssyst;
 use crate::wsi_handler::WsiHandler;
+use assyst_common::config::CONFIG;
 use async_trait::async_trait;
 use twilight_model::channel::message::sticker::MessageSticker;
 use twilight_model::channel::message::Embed;
@@ -291,6 +292,31 @@ pub async fn check_metadata(
             ));
         };
     };
+
+    // command availability check
+    match metadata.access {
+        Availability::Dev => {
+            if !CONFIG.dev.admin_users.contains(&ctxt.data.author.id.get()) {
+                return Err(ExecutionError::MetadataCheck(MetadataCheckError::DevOnlyCommand));
+            }
+        },
+        Availability::ServerManagers => {
+            if let Some(guild_id) = ctxt.data.guild_id {
+                if !ctxt
+                    .assyst()
+                    .rest_cache_handler
+                    .user_is_guild_manager(guild_id, ctxt.data.author.id.get())
+                    .await
+                    .unwrap_or(false)
+                {
+                    return Err(ExecutionError::MetadataCheck(
+                        MetadataCheckError::GuildManagerOnlyCommand,
+                    ));
+                }
+            }
+        },
+        _ => {},
+    }
 
     // ratelimit check
     let id = ctxt.data.guild_id.unwrap_or(ctxt.data.author.id.get());

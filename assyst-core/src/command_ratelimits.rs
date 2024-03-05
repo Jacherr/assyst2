@@ -15,11 +15,6 @@ impl CommandRatelimits {
         )
     }
 
-    pub fn size(&self) -> u64 {
-        self.0.run_pending_tasks();
-        self.0.entry_count()
-    }
-
     pub fn insert(&self, id: u64, command_name: &'static str, value: Instant) {
         self.0.insert((id, command_name), value);
     }

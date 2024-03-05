@@ -17,6 +17,11 @@ pub enum ExecutionError {
 
 impl GetErrorSeverity for ExecutionError {
     fn get_severity(&self) -> ErrorSeverity {
+        // Simply ignore commands which are dev only
+        if let ExecutionError::MetadataCheck(MetadataCheckError::DevOnlyCommand) = self {
+            return ErrorSeverity::Low;
+        }
+
         // Even though tag parse errors can define themselves if they're high or low severity,
         // at the end of execution (here) we always want to report errors back if they got here,
         // so treat them as high severity
@@ -38,6 +43,8 @@ impl std::error::Error for ExecutionError {}
 pub enum MetadataCheckError {
     CommandOnCooldown(Duration),
     IllegalAgeRestrictedCommand,
+    DevOnlyCommand,
+    GuildManagerOnlyCommand,
 }
 impl Display for MetadataCheckError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -49,6 +56,10 @@ impl Display for MetadataCheckError {
             ),
             MetadataCheckError::IllegalAgeRestrictedCommand => {
                 f.write_str("This command is only available in age restricted channels.")
+            },
+            MetadataCheckError::DevOnlyCommand => f.write_str("This command is limited to the Assyst developers only."),
+            MetadataCheckError::GuildManagerOnlyCommand => {
+                f.write_str("This command is limited to server managers only.")
             },
         }
     }

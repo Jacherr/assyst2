@@ -4,8 +4,8 @@ use std::mem::size_of;
 use std::sync::Arc;
 use std::time::Duration;
 use twilight_http::Client as HttpClient;
-use twilight_model::guild::PremiumTier;
-use twilight_model::id::marker::{ChannelMarker, GuildMarker};
+use twilight_model::guild::{Permissions, PremiumTier};
+use twilight_model::id::marker::{ChannelMarker, GuildMarker, UserMarker};
 use twilight_model::id::Id;
 
 use super::{
@@ -23,19 +23,30 @@ fn default_cache<K: TCacheK, V: TCacheV>() -> Cache<K, V> {
         .build()
 }
 
+fn default_limited_cache<K: TCacheK, V: TCacheV>() -> Cache<K, V> {
+    Cache::builder()
+        .max_capacity(100)
+        .time_to_live(Duration::from_secs(60))
+        .build()
+}
+
 pub struct RestCacheHandler {
     http_client: Arc<HttpClient>,
     guild_upload_limits: Cache<u64, u64>,
     channel_nsfw_status: Cache<u64, bool>,
     guild_owners: Cache<u64, u64>,
+    guild_managers: Cache<(u64, u64), bool>,
 }
 impl RestCacheHandler {
     pub fn new(client: Arc<HttpClient>) -> RestCacheHandler {
         RestCacheHandler {
             http_client: client,
             guild_upload_limits: default_cache(),
-            channel_nsfw_status: default_cache(),
+            // reduced limits for this one because the nsfw status can easily change at any time
+            channel_nsfw_status: default_limited_cache(),
             guild_owners: default_cache(),
+            // same here, a user can easily be removed as a guild manager
+            guild_managers: default_limited_cache(),
         }
     }
 
@@ -44,10 +55,12 @@ impl RestCacheHandler {
         self.guild_upload_limits.run_pending_tasks();
         self.channel_nsfw_status.run_pending_tasks();
         self.guild_owners.run_pending_tasks();
+        self.guild_managers.run_pending_tasks();
 
         size += self.guild_upload_limits.entry_count() * size_of::<(u64, u64)>() as u64;
         size += self.channel_nsfw_status.entry_count() * size_of::<(u64, bool)>() as u64;
         size += self.guild_owners.entry_count() * size_of::<(u64, u64)>() as u64;
+        size += self.guild_managers.entry_count() * size_of::<((u64, u64), u64)>() as u64;
         size
     }
 
@@ -114,5 +127,49 @@ impl RestCacheHandler {
         self.guild_owners.insert(guild_id, owner);
 
         Ok(owner)
+    }
+
+    /// Checks if a user is a guild manager, i.e., owns the server, has Administrator, or has Manage
+    /// Server permissions.
+    pub async fn user_is_guild_manager(&self, guild_id: u64, user_id: u64) -> anyhow::Result<bool> {
+        if let Some(manager) = self.guild_managers.get(&(guild_id, user_id)) {
+            return Ok(manager);
+        }
+
+        // guild owner *or* manage server *or* admin
+        // get owner
+        let owner = self.get_guild_owner(guild_id).await?;
+
+        // figure out permissions of the user through bitwise operations
+        let member = self
+            .http_client
+            .guild_member(Id::<GuildMarker>::new(guild_id), Id::<UserMarker>::new(user_id))
+            .await?
+            .model()
+            .await
+            .unwrap();
+
+        let roles = self
+            .http_client
+            .roles(Id::<GuildMarker>::new(guild_id))
+            .await?
+            .models()
+            .await
+            .expect("Failed to deserialize body when fetching guild roles");
+
+        let member_roles = roles
+            .iter()
+            .filter(|r| member.roles.contains(&r.id))
+            .collect::<Vec<_>>();
+
+        let member_permissions = member_roles.iter().fold(0, |a, r| a | r.permissions.bits());
+        let member_is_manager = member_permissions & Permissions::ADMINISTRATOR.bits()
+            == Permissions::ADMINISTRATOR.bits()
+            || member_permissions & Permissions::MANAGE_GUILD.bits() == Permissions::MANAGE_GUILD.bits();
+
+        self.guild_managers
+            .insert((guild_id, user_id), owner == user_id || member_is_manager);
+
+        Ok(owner == user_id || member_is_manager)
     }
 }
