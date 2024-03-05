@@ -1,5 +1,6 @@
 use std::fmt::Display;
 use std::num::ParseIntError;
+use std::time::Duration;
 
 use assyst_common::util::ParseToMillisError;
 use twilight_model::channel::message::sticker::StickerFormatType;
@@ -11,6 +12,7 @@ use crate::gateway_handler::message_parser::error::{ErrorSeverity, GetErrorSever
 pub enum ExecutionError {
     Parse(TagParseError),
     Command(anyhow::Error),
+    MetadataCheck(MetadataCheckError),
 }
 
 impl GetErrorSeverity for ExecutionError {
@@ -26,10 +28,32 @@ impl Display for ExecutionError {
         match self {
             ExecutionError::Parse(p) => p.fmt(f),
             ExecutionError::Command(c) => c.fmt(f),
+            ExecutionError::MetadataCheck(m) => m.fmt(f),
         }
     }
 }
 impl std::error::Error for ExecutionError {}
+
+#[derive(Debug)]
+pub enum MetadataCheckError {
+    CommandOnCooldown(Duration),
+    IllegalAgeRestrictedCommand,
+}
+impl Display for MetadataCheckError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MetadataCheckError::CommandOnCooldown(time_left) => write!(
+                f,
+                "This command is on cooldown for {:.2} seconds.",
+                time_left.as_millis() as f64 / 1000.0
+            ),
+            MetadataCheckError::IllegalAgeRestrictedCommand => {
+                f.write_str("This command is only available in age restricted channels.")
+            },
+        }
+    }
+}
+impl std::error::Error for MetadataCheckError {}
 
 /// No arguments left
 pub struct ArgsExhausted;
@@ -57,7 +81,6 @@ pub enum TagParseError {
     NoImageInHistory,
     NoImageFound,
     MediaDownloadFail,
-    IllegalAgeRestrictedCommand,
     InvalidSubcommand,
 }
 
@@ -105,9 +128,6 @@ impl Display for TagParseError {
                 f.write_str("an image was expected as an argument, but no image could be found")
             },
             TagParseError::MediaDownloadFail => f.write_str("failed to download media content"),
-            TagParseError::IllegalAgeRestrictedCommand => {
-                f.write_str("this command is only available in age restricted channels")
-            },
             TagParseError::InvalidSubcommand => f.write_str("no subcommand found for given name"),
         }
     }

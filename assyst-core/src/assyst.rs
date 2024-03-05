@@ -1,3 +1,4 @@
+use crate::command_ratelimits::CommandRatelimits;
 use crate::persistent_cache_handler::PersistentCacheHandler;
 use crate::replies::Replies;
 use crate::rest::patreon::Patron;
@@ -41,6 +42,9 @@ pub struct Assyst {
     pub shard_count: u64,
     /// Cached command replies.
     pub replies: Replies,
+    /// All command ratelimits, in the format <(guild/user id, command name) => time command was
+    /// ran>
+    pub command_ratelimits: CommandRatelimits,
 }
 impl Assyst {
     pub async fn new() -> anyhow::Result<Assyst> {
@@ -63,6 +67,7 @@ impl Assyst {
             replies: Replies::new(),
             wsi_handler: WsiHandler::new(database_handler.clone(), patrons.clone()),
             rest_cache_handler: RestCacheHandler::new(http_client.clone()),
+            command_ratelimits: CommandRatelimits::new(),
         })
     }
 

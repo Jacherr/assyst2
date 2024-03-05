@@ -33,7 +33,6 @@ use std::time::{Duration, Instant};
 
 use super::gateway_handler::reply as gateway_reply;
 use crate::assyst::ThreadSafeAssyst;
-use crate::command::errors::TagParseError;
 use crate::wsi_handler::WsiHandler;
 use async_trait::async_trait;
 use twilight_model::channel::message::sticker::MessageSticker;
@@ -41,7 +40,7 @@ use twilight_model::channel::message::Embed;
 use twilight_model::channel::{Attachment, Message};
 use twilight_model::user::User;
 
-use self::errors::{ArgsExhausted, ExecutionError};
+use self::errors::{ArgsExhausted, ExecutionError, MetadataCheckError};
 use self::messagebuilder::MessageBuilder;
 use self::source::Source;
 
@@ -56,7 +55,7 @@ pub mod source;
 pub mod wsi;
 
 /// Defines who can use a command in a server.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Availability {
     /// Anyone can use this command, subject to blacklisting and whitelisting configuration.
     Public,
@@ -287,9 +286,28 @@ pub async fn check_metadata(
             .unwrap_or(false);
 
         if !channel_age_restricted {
-            return Err(ExecutionError::Parse(TagParseError::IllegalAgeRestrictedCommand));
+            return Err(ExecutionError::MetadataCheck(
+                MetadataCheckError::IllegalAgeRestrictedCommand,
+            ));
         };
     };
+
+    // ratelimit check
+    let id = ctxt.data.guild_id.unwrap_or(ctxt.data.author.id.get());
+    let last_command_invoked = ctxt.assyst().command_ratelimits.get(id, metadata.name);
+    if let Some(invocation_time) = last_command_invoked {
+        let elapsed = invocation_time.elapsed();
+        if elapsed < metadata.cooldown {
+            return Err(ExecutionError::MetadataCheck(MetadataCheckError::CommandOnCooldown(
+                metadata.cooldown - elapsed,
+            )));
+        }
+    }
+
+    // update/set new last invocation time
+    ctxt.assyst()
+        .command_ratelimits
+        .insert(id, metadata.name, Instant::now());
 
     if metadata.send_processing {
         if let Err(e) = ctxt.reply("Processing...").await {

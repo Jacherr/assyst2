@@ -72,22 +72,12 @@ impl Display for MetadataCheckInvalidated {
 pub enum ParseError {
     /// Failure with preprocessing of the message.
     PreParseFail(PreParseError),
-    /// Critical failure of the metadata evaluation.
-    MetadataCheckFatal(String),
-    /// Command metadata failed to valiate.
-    MetadataCheckInvalidated(MetadataCheckInvalidated),
 }
 impl Display for ParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::PreParseFail(message) => {
                 write!(f, "Pre-parse failed: {}", message)
-            },
-            Self::MetadataCheckFatal(message) => {
-                write!(f, "Metadata check failed: {}", message)
-            },
-            Self::MetadataCheckInvalidated(message) => {
-                write!(f, "Failed to validate command: {}", message)
             },
         }
     }
@@ -97,8 +87,6 @@ impl GetErrorSeverity for ParseError {
     fn get_severity(&self) -> ErrorSeverity {
         match self {
             ParseError::PreParseFail(e) => e.get_severity(),
-            ParseError::MetadataCheckFatal(_) => ErrorSeverity::High,
-            ParseError::MetadataCheckInvalidated(e) => e.get_severity(),
         }
     }
 }

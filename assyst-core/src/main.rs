@@ -22,6 +22,7 @@ use twilight_model::id::Id;
 
 mod assyst;
 mod command;
+mod command_ratelimits;
 mod downloader;
 mod gateway_handler;
 mod persistent_cache_handler;

@@ -1,7 +1,7 @@
 use assyst_common::ansi::Ansi;
 use assyst_common::config::CONFIG;
 use assyst_common::err;
-use tracing::info;
+use tracing::{error, info};
 use twilight_model::gateway::payload::incoming::Ready;
 use twilight_model::id::marker::ChannelMarker;
 use twilight_model::id::Id;
@@ -26,12 +26,12 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: Ready) {
 
     if event.guilds.iter().any(|x| x.id.get() == CONFIG.dev.dev_guild) && CONFIG.dev.dev_message {
         let channel = Id::<ChannelMarker>::new(CONFIG.dev.dev_channel);
-        assyst
+        let _ = assyst
             .http_client
             .create_message(channel)
             .content("Dev shard is READY!")
             .await
-            .unwrap();
+            .inspect_err(|e| error!("FAILED to send shard ready message: {}", e.to_string()));
     }
 
     match assyst.persistent_cache_handler.handle_ready_event(event).await {
