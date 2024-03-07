@@ -1,4 +1,5 @@
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
+use std::ops::Deref;
 
 use assyst_common::util::discord::get_avatar_url;
 use assyst_common::util::{parse_to_millis, regex};
@@ -19,12 +20,21 @@ pub trait ParseArgument: Sized {
     async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError>;
 }
 
-impl ParseArgument for u64 {
-    async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
-        let word = ctxt.next_word()?;
-        Ok(word.parse()?)
-    }
+// impl for number types
+macro_rules! ii_this {
+    ($($t:path)*) => {
+        $(
+            impl ParseArgument for $t {
+                async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
+                    let word = ctxt.next_word()?;
+                    Ok(word.parse()?)
+                }
+            }
+        )*
+    };
 }
+
+ii_this!(u8 i8 u16 i16 u32 i32 u64 i64 u128 i128 usize isize f64 f32);
 
 impl<T: ParseArgument> ParseArgument for Option<T> {
     async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
@@ -83,6 +93,120 @@ pub struct Rest(pub String);
 impl ParseArgument for Rest {
     async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
         Ok(Self(ctxt.rest()?.to_owned()))
+    }
+}
+
+#[derive(Debug)]
+pub struct Removable<T>(pub Option<T>);
+
+impl<T> Deref for Removable<T> {
+    type Target = Option<T>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+pub const NONE_STR: &str = "_"; // change if `_` is undesirable.
+impl<T> ParseArgument for Removable<T>
+where
+    T: ParseArgument,
+{
+    async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
+        let x = ctxt
+            .commit_if_ok(|mut f| async {
+                let word = f.next_word();
+
+                match word {
+                    Ok(w) if w == NONE_STR => Ok(((), f)),
+                    Ok(_) => Err(()),
+                    Err(_) => Ok(((), f)),
+                }
+            })
+            .await;
+
+        Ok(Self(match x {
+            Ok(()) => None,
+            Err(()) => Some(T::parse(ctxt).await?),
+        }))
+    }
+}
+
+pub type DesiredCmpTy = i128; // can hold every number type.
+pub trait Numeric: Display + Debug + Send {}
+
+impl<T> Numeric for T where T: Into<DesiredCmpTy> + Display + Debug + Clone + Send {}
+
+macro_rules! cmp_arg {
+    ($($label:ident $l:literal => $op:tt,)*) => {
+        $(
+            #[derive(Clone, Debug)]
+            pub struct $label<T: Numeric, const N: DesiredCmpTy>(T);
+
+            impl<T: Numeric, const N: DesiredCmpTy> ::std::ops::Deref for $label<T, N> {
+                type Target = T;
+                fn deref(&self) -> &Self::Target {
+                    &self.0
+                }
+            }
+
+            impl<T, const N: DesiredCmpTy> ParseArgument for $label<T, N>
+            where T: 'static + Numeric + ParseArgument + Clone + Into<DesiredCmpTy>
+            {
+                async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
+                    let value = T::parse(ctxt).await?;
+
+                    if Into::<DesiredCmpTy>::into(value.clone()) $op N {
+                        Ok(Self(value))
+                    } else {
+                        Err(TagParseError::ComparisonError(Box::new(value), N, $l))
+                    }
+                }
+            }
+        )*
+    };
+}
+
+cmp_arg!(
+    Gt "greater than" => >,
+    Ge "greater than or equal to" => >=,
+    Lt "less than" => <,
+    Le "less than or equal to" => <=,
+    Eq "equal to" => ==, // redundant, probably
+    Ne "not equal to" => !=,
+);
+
+#[derive(Debug)]
+pub struct Ranged<T: Numeric, const A: DesiredCmpTy, const B: DesiredCmpTy>(T);
+
+impl<T, const A: DesiredCmpTy, const B: DesiredCmpTy> ParseArgument for Ranged<T, A, B>
+where
+    T: 'static + Numeric + ParseArgument + Into<DesiredCmpTy> + Clone,
+{
+    async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
+        let value: T = T::parse(ctxt).await?;
+        let y = value.clone().into();
+
+        if A <= y && y <= B {
+            Ok(Self(value))
+        } else {
+            Err(TagParseError::RangeError(Box::new(value), A, B))
+        }
+    }
+}
+
+pub const TRUE_CONDS: &[&str] = &["true", "yes", "1"];
+pub const FALSE_CONDS: &[&str] = &["false", "no", "0"];
+
+impl ParseArgument for bool {
+    async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
+        let word = ctxt.next_word()?.to_lowercase();
+
+        if TRUE_CONDS.contains(&&*word) {
+            Ok(true)
+        } else if FALSE_CONDS.contains(&&*word) {
+            Ok(false)
+        } else {
+            Err(TagParseError::ParseBoolError)
+        }
     }
 }
 
