@@ -96,6 +96,7 @@ impl ParseArgument for Rest {
     }
 }
 
+/// An optional argument, but allows the value `_` to be represented as `None` to be more useful in positional arguments.
 #[derive(Debug)]
 pub struct Removable<T>(pub Option<T>);
 
@@ -113,6 +114,7 @@ where
     async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
         let x = ctxt
             .commit_if_ok(|mut f| async {
+                // if `word` is not `_`, then we should undo the parsing
                 let word = f.next_word();
 
                 match word {
@@ -124,7 +126,9 @@ where
             .await;
 
         Ok(Self(match x {
+            // it was `_`.
             Ok(()) => None,
+            // otherwise, try parsing a `T` instead.
             Err(()) => Some(T::parse(ctxt).await?),
         }))
     }
@@ -139,6 +143,7 @@ macro_rules! cmp_arg {
     ($($label:ident $l:literal => $op:tt,)*) => {
         $(
             #[derive(Clone, Debug)]
+            /// Represents an argument that is ensured to be 
             pub struct $label<T: Numeric, const N: DesiredCmpTy>(T);
 
             impl<T: Numeric, const N: DesiredCmpTy> ::std::ops::Deref for $label<T, N> {
@@ -165,6 +170,7 @@ macro_rules! cmp_arg {
     };
 }
 
+// stop myself from repeating the code six different times
 cmp_arg!(
     Gt "greater than" => >,
     Ge "greater than or equal to" => >=,
@@ -175,6 +181,7 @@ cmp_arg!(
 );
 
 #[derive(Debug)]
+/// Represents an argument that ensures the value is between `A` and `B`.
 pub struct Ranged<T: Numeric, const A: DesiredCmpTy, const B: DesiredCmpTy>(T);
 
 impl<T, const A: DesiredCmpTy, const B: DesiredCmpTy> ParseArgument for Ranged<T, A, B>
@@ -193,6 +200,7 @@ where
     }
 }
 
+// implementation for `bool` argument types, like in `setloop`
 pub const TRUE_CONDS: &[&str] = &["true", "yes", "1"];
 pub const FALSE_CONDS: &[&str] = &["false", "no", "0"];
 
