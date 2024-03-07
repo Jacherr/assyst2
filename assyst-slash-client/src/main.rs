@@ -9,11 +9,11 @@ use std::sync::Arc;
 
 use command::Cmd;
 use context::{Context, InnerContext};
-use futures_util::StreamExt;
 use response::ResponseBuilder;
 use serde::Deserialize;
-use twilight_gateway::stream::ShardEventStream;
-use twilight_gateway::{Event, Intents};
+use tokio::spawn;
+use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
+use twilight_gateway::{Event, EventTypeFlags, Intents, Shard, StreamExt};
 use twilight_http::Client;
 
 use twilight_model::application::command::CommandType;
@@ -71,29 +71,28 @@ async fn main() -> anyhow::Result<()> {
         }
     }
 
-    let mut shards = twilight_gateway::create_recommended(&client, config, |_, b| b.build())
+    let shards = twilight_gateway::create_recommended(&client, config, |_, b| b.build())
         .await?
         .collect::<Vec<_>>();
 
-    let mut st = ShardEventStream::new(shards.iter_mut());
+    let (tx, mut rx) = unbounded_channel::<Event>();
+    let mut tasks = vec![];
 
-    while let Some((_, e)) = st.next().await {
-        let e = match e {
-            Ok(e) => e,
-            Err(e) => {
-                println!("\x1b[1;31merror\x1b[0m: {e}");
-                if e.is_fatal() {
-                    break;
-                }
+    for shard in shards {
+        tasks.push(spawn(runner(shard, tx.clone())))
+    }
 
-                continue;
-            },
-        };
-
+    while let Some(e) = rx.recv().await {
         process(ctx.clone(), &cmds, e).await;
     }
 
     Ok(())
+}
+
+pub async fn runner(mut shard: Shard, tx: UnboundedSender<Event>) {
+    while let Some(Ok(item)) = shard.next_event(EventTypeFlags::all()).await {
+        tx.send(item).unwrap();
+    }
 }
 
 #[must_use]
