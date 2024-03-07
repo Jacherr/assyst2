@@ -1,4 +1,4 @@
-name: Cargo Build & Test
+name: Nightly Build/test
 
 on:
   push:
@@ -14,8 +14,6 @@ jobs:
     strategy:
       matrix:
         toolchain:
-          - stable
-          - beta
           - nightly
     steps:
       - uses: actions/checkout@v3
