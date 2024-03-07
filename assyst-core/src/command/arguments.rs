@@ -96,7 +96,8 @@ impl ParseArgument for Rest {
     }
 }
 
-/// An optional argument, but allows the value `_` to be represented as `None` to be more useful in positional arguments.
+/// An optional argument, but allows the value `_` to be represented as `None` to be more useful in
+/// positional arguments.
 #[derive(Debug)]
 pub struct Removable<T>(pub Option<T>);
 
@@ -143,7 +144,7 @@ macro_rules! cmp_arg {
     ($($label:ident $l:literal => $op:tt,)*) => {
         $(
             #[derive(Clone, Debug)]
-            /// Represents an argument that is ensured to be 
+            #[doc = concat!("Represents an argument that is ensured to be ", stringify!($l), " `N`.")]
             pub struct $label<T: Numeric, const N: DesiredCmpTy>(T);
 
             impl<T: Numeric, const N: DesiredCmpTy> ::std::ops::Deref for $label<T, N> {
