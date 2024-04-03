@@ -9,9 +9,7 @@ use tokio::sync::oneshot;
 use tracing::{info, warn};
 use twilight_model::gateway::payload::incoming::{GuildCreate, GuildDelete, Ready};
 
-/// Main cache handler for Assyst, except the database cache. Abstracts away the two main caches:
-/// assyst-cache (persistent across assyst-core restarts) and the local cache (emptied on
-/// assyst-core restarts).
+/// Handles communication with assyst-cache.
 pub struct PersistentCacheHandler {
     pub cache_tx: UnboundedSender<CacheJobSend>,
 }

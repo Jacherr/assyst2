@@ -23,30 +23,19 @@ fn default_cache<K: TCacheK, V: TCacheV>() -> Cache<K, V> {
         .build()
 }
 
-fn default_limited_cache<K: TCacheK, V: TCacheV>() -> Cache<K, V> {
-    Cache::builder()
-        .max_capacity(100)
-        .time_to_live(Duration::from_secs(60))
-        .build()
-}
-
 pub struct RestCacheHandler {
     http_client: Arc<HttpClient>,
     guild_upload_limits: Cache<u64, u64>,
     channel_nsfw_status: Cache<u64, bool>,
     guild_owners: Cache<u64, u64>,
-    guild_managers: Cache<(u64, u64), bool>,
 }
 impl RestCacheHandler {
     pub fn new(client: Arc<HttpClient>) -> RestCacheHandler {
         RestCacheHandler {
             http_client: client,
             guild_upload_limits: default_cache(),
-            // reduced limits for this one because the nsfw status can easily change at any time
-            channel_nsfw_status: default_limited_cache(),
+            channel_nsfw_status: default_cache(),
             guild_owners: default_cache(),
-            // same here, a user can easily be removed as a guild manager
-            guild_managers: default_limited_cache(),
         }
     }
 
@@ -55,13 +44,23 @@ impl RestCacheHandler {
         self.guild_upload_limits.run_pending_tasks();
         self.channel_nsfw_status.run_pending_tasks();
         self.guild_owners.run_pending_tasks();
-        self.guild_managers.run_pending_tasks();
 
         size += self.guild_upload_limits.entry_count() * size_of::<(u64, u64)>() as u64;
         size += self.channel_nsfw_status.entry_count() * size_of::<(u64, bool)>() as u64;
         size += self.guild_owners.entry_count() * size_of::<(u64, u64)>() as u64;
-        size += self.guild_managers.entry_count() * size_of::<((u64, u64), u64)>() as u64;
         size
+    }
+
+    pub fn set_guild_upload_limit_bytes(&self, guild_id: u64, tier: PremiumTier) {
+        let amount = match tier {
+            PremiumTier::None | PremiumTier::Tier1 => NORMAL_DISCORD_UPLOAD_LIMIT_BYTES,
+            PremiumTier::Tier2 => PREMIUM_TIER2_DISCORD_UPLOAD_LIMIT_BYTES,
+            PremiumTier::Tier3 => PREMIUM_TIER3_DISCORD_UPLOAD_LIMIT_BYTES,
+            PremiumTier::Other(_) => NORMAL_DISCORD_UPLOAD_LIMIT_BYTES,
+            _ => NORMAL_DISCORD_UPLOAD_LIMIT_BYTES,
+        };
+
+        self.guild_upload_limits.insert(guild_id, amount);
     }
 
     pub async fn get_guild_upload_limit_bytes(&self, guild_id: u64) -> anyhow::Result<u64> {
@@ -91,6 +90,10 @@ impl RestCacheHandler {
         Ok(amount)
     }
 
+    pub fn update_channel_age_restricted_status(&self, channel_id: u64, status: bool) {
+        self.channel_nsfw_status.insert(channel_id, status);
+    }
+
     pub async fn channel_is_age_restricted(&self, channel_id: u64) -> anyhow::Result<bool> {
         if let Some(nsfw) = self.channel_nsfw_status.get(&channel_id) {
             return Ok(nsfw);
@@ -108,6 +111,10 @@ impl RestCacheHandler {
         self.channel_nsfw_status.insert(channel_id, nsfw);
 
         Ok(nsfw)
+    }
+
+    pub fn set_guild_owner(&self, guild_id: u64, owner_id: u64) {
+        self.guild_owners.insert(guild_id, owner_id);
     }
 
     pub async fn get_guild_owner(&self, guild_id: u64) -> anyhow::Result<u64> {
@@ -132,10 +139,6 @@ impl RestCacheHandler {
     /// Checks if a user is a guild manager, i.e., owns the server, has Administrator, or has Manage
     /// Server permissions.
     pub async fn user_is_guild_manager(&self, guild_id: u64, user_id: u64) -> anyhow::Result<bool> {
-        if let Some(manager) = self.guild_managers.get(&(guild_id, user_id)) {
-            return Ok(manager);
-        }
-
         // guild owner *or* manage server *or* admin
         // get owner
         let owner = self.get_guild_owner(guild_id).await?;
@@ -166,9 +169,6 @@ impl RestCacheHandler {
         let member_is_manager = member_permissions & Permissions::ADMINISTRATOR.bits()
             == Permissions::ADMINISTRATOR.bits()
             || member_permissions & Permissions::MANAGE_GUILD.bits() == Permissions::MANAGE_GUILD.bits();
-
-        self.guild_managers
-            .insert((guild_id, user_id), owner == user_id || member_is_manager);
 
         Ok(owner == user_id || member_is_manager)
     }
