@@ -16,16 +16,19 @@ macro_rules! declare_commands {
 }
 
 declare_commands!(
-    misc::remind_command,
     misc::enlarge_command,
-    misc::ping_command,
-    misc::url_command,
     misc::help::help_command,
+    misc::ping_command,
+    misc::remind_command,
     misc::stats::stats_command,
-    wsi::caption_command,
-    wsi::resize_command,
     misc::tag::tag_command,
-    services::r34_command
+    misc::url_command,
+    services::r34_command,
+    wsi::ahshit_command,
+    wsi::aprilfools_command,
+    wsi::bloom_command,
+    wsi::caption_command,
+    wsi::resize_command
 );
 
 static COMMANDS: OnceLock<HashMap<&'static str, TCommand>> = OnceLock::new();

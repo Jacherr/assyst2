@@ -3,8 +3,69 @@ use std::time::Duration;
 use anyhow::Context;
 use assyst_proc_macro::command;
 
-use super::arguments::{Image, Rest, Word};
+use super::arguments::{Image, Integer, Rest, Word};
 use crate::command::{Availability, Category, CommandCtxt};
+
+#[command(
+    description = "ah shit here we go again",
+    cooldown = Duration::from_secs(2),
+    access = Availability::Public,
+    category = Category::Wsi,
+    usage = "[image]",
+    examples = ["https://link.to.my/image.png"],
+    send_processing = true
+)]
+pub async fn ahshit(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
+    let result = ctxt.wsi_handler().ahshit(source.0, ctxt.data.author.id.get()).await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "april fools!!!!",
+    cooldown = Duration::from_secs(2),
+    access = Availability::Public,
+    category = Category::Wsi,
+    usage = "[image]",
+    examples = ["https://link.to.my/image.png"],
+    send_processing = true
+)]
+pub async fn aprilfools(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
+    let result = ctxt
+        .wsi_handler()
+        .aprilfools(source.0, ctxt.data.author.id.get())
+        .await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "bloom an image",
+    cooldown = Duration::from_secs(2),
+    access = Availability::Public,
+    category = Category::Wsi,
+    usage = "[image] <radius>",
+    examples = ["https://link.to.my/image.png"],
+    send_processing = true
+)]
+pub async fn bloom(ctxt: CommandCtxt<'_>, source: Image, radius: Option<Integer>) -> anyhow::Result<()> {
+    let result = ctxt
+        .wsi_handler()
+        .bloom(
+            source.0,
+            radius.map(|x| x.0).unwrap_or(5) as usize,
+            ctxt.data.author.id.get(),
+        )
+        .await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
 
 #[command(
     description = "add a caption to an image",

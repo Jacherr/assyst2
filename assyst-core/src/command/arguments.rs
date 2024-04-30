@@ -76,6 +76,30 @@ impl ParseArgument for Word {
     }
 }
 
+/// An integer (u128) argument.
+#[derive(Debug)]
+pub struct Integer(pub u128);
+
+impl ParseArgument for Integer {
+    async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
+        let word = ctxt.next_word()?.to_owned();
+
+        Ok(Self(word.parse()?))
+    }
+}
+
+/// A float (f64) argument.
+#[derive(Debug)]
+pub struct Float(pub f64);
+
+impl ParseArgument for Float {
+    async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
+        let word = ctxt.next_word()?.to_owned();
+
+        Ok(Self(word.parse()?))
+    }
+}
+
 /// The rest of a message as an argument. This should be the last argument if used.
 #[derive(Debug)]
 pub struct Rest(pub String);

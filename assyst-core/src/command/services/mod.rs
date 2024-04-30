@@ -21,8 +21,9 @@ use crate::rest::r34::get_random_r34;
 )]
 pub async fn r34(ctxt: CommandCtxt<'_>, tags: Rest) -> anyhow::Result<()> {
     let result = get_random_r34(ctxt.assyst().clone(), &tags.0).await?;
+    let reply = format!("{} (Score: {})", result.file_url, result.score);
 
-    ctxt.reply(result.file_url).await?;
+    ctxt.reply(reply).await?;
 
     Ok(())
 }

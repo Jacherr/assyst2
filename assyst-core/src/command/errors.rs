@@ -1,5 +1,5 @@
 use std::fmt::Display;
-use std::num::ParseIntError;
+use std::num::{ParseFloatError, ParseIntError};
 use std::time::Duration;
 
 use assyst_common::util::ParseToMillisError;
@@ -73,6 +73,7 @@ pub struct ArgsExhausted;
 pub enum TagParseError {
     ArgsExhausted,
     ParseIntError(ParseIntError),
+    ParseFloatError(ParseFloatError),
     ParseToMillisError(ParseToMillisError),
     // NB: boxed to reduce size -- twilight errors are very large (100+b), which would cause the size of this enum to
     // explode
@@ -118,9 +119,10 @@ impl Display for TagParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             TagParseError::ArgsExhausted => f.write_str("an argument is required but none were found"),
-            TagParseError::ParseIntError(err) => write!(f, "failed to parse an argument as a number: {err}"),
+            TagParseError::ParseIntError(err) => write!(f, "failed to parse an argument as a whole number: {err}"),
+            TagParseError::ParseFloatError(err) => write!(f, "failed to parse an argument as a decimal number: {err}"),
             TagParseError::ParseToMillisError(err) => write!(f, "failed to parse an argument as time: {err}"),
-            TagParseError::TwilightHttp(_) => f.write_str("failed to send a request to discord"),
+            TagParseError::TwilightHttp(err) => write!(f, "failed to send a request to discord: {err}"),
             TagParseError::TwilightDeserialize(_) => f.write_str("failed to parse a response from discord"),
             TagParseError::DownloadError(_) => f.write_str("failed to download media"),
             TagParseError::UnsupportedSticker(sticker) => write!(f, "an unsupported sticker was found: {sticker:?}"),
@@ -177,5 +179,10 @@ impl From<ArgsExhausted> for TagParseError {
 impl From<ParseIntError> for TagParseError {
     fn from(value: ParseIntError) -> Self {
         Self::ParseIntError(value)
+    }
+}
+impl From<ParseFloatError> for TagParseError {
+    fn from(value: ParseFloatError) -> Self {
+        Self::ParseFloatError(value)
     }
 }

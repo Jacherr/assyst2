@@ -151,17 +151,21 @@ pub async fn help(ctxt: CommandCtxt<'_>, labels: Vec<Word>) -> anyhow::Result<()
 
         msg += &format!(
             "\nUse {} for more information on a command.\n\n",
-            "-help [command]".codestring()
+            format!("{}help [command]", ctxt.data.calling_prefix).codestring()
         );
 
         msg += &format!(
             "{} | {} | {}",
-            "Invite".url("<https://jacher.io/assyst>", Some("Invite link for Assyst.")),
-            "Support Server".url(
+            "Invite"
+                .codestring()
+                .url("<https://jacher.io/assyst>", Some("Invite link for Assyst.")),
+            "Support Server".codestring().url(
                 "<https://discord.gg/brmtnpxbtg>",
                 Some("Invite link for the Assyst Support Discord Server.")
             ),
-            "Vote".url("<https://vote.jacher.io/topgg>", Some("top.gg vote link for Assyst."))
+            "Vote"
+                .codestring()
+                .url("<https://vote.jacher.io/topgg>", Some("top.gg vote link for Assyst."))
         );
 
         ctxt.reply(msg).await?;
