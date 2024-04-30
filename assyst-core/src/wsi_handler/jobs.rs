@@ -1,5 +1,7 @@
 use shared::fifo::{FifoData, FifoSend};
-use shared::query_params::{BloomQueryParams, CaptionQueryParams, NoneQuery, ResizeMethod, ResizeQueryParams};
+use shared::query_params::{
+    BloomQueryParams, BlurQueryParams, CaptionQueryParams, NoneQuery, ResizeMethod, ResizeQueryParams,
+};
 
 use super::WsiHandler;
 
@@ -27,6 +29,12 @@ impl WsiHandler {
                 sharpness: 85,
             },
         ));
+
+        self.run_job(job, user_id).await
+    }
+
+    pub async fn blur(&self, media: Vec<u8>, power: f32, user_id: u64) -> WsiResult {
+        let job = FifoSend::Blur(FifoData::new(media, BlurQueryParams { power }));
 
         self.run_job(job, user_id).await
     }

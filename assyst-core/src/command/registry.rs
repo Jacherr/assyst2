@@ -23,10 +23,12 @@ declare_commands!(
     misc::stats::stats_command,
     misc::tag::tag_command,
     misc::url_command,
+    services::burntext_command,
     services::r34_command,
     wsi::ahshit_command,
     wsi::aprilfools_command,
     wsi::bloom_command,
+    wsi::blur_command,
     wsi::caption_command,
     wsi::resize_command
 );

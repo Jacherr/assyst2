@@ -3,7 +3,7 @@ use std::time::Duration;
 use anyhow::Context;
 use assyst_proc_macro::command;
 
-use super::arguments::{Image, Integer, Rest, Word};
+use super::arguments::{Image, Rest, Word};
 use crate::command::{Availability, Category, CommandCtxt};
 
 #[command(
@@ -52,14 +52,30 @@ pub async fn aprilfools(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<
     examples = ["https://link.to.my/image.png"],
     send_processing = true
 )]
-pub async fn bloom(ctxt: CommandCtxt<'_>, source: Image, radius: Option<Integer>) -> anyhow::Result<()> {
+pub async fn bloom(ctxt: CommandCtxt<'_>, source: Image, radius: Option<u64>) -> anyhow::Result<()> {
     let result = ctxt
         .wsi_handler()
-        .bloom(
-            source.0,
-            radius.map(|x| x.0).unwrap_or(5) as usize,
-            ctxt.data.author.id.get(),
-        )
+        .bloom(source.0, radius.unwrap_or(5) as usize, ctxt.data.author.id.get())
+        .await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "blur an image",
+    cooldown = Duration::from_secs(2),
+    access = Availability::Public,
+    category = Category::Wsi,
+    usage = "[image] <radius>",
+    examples = ["https://link.to.my/image.png"],
+    send_processing = true
+)]
+pub async fn blur(ctxt: CommandCtxt<'_>, source: Image, strength: Option<f32>) -> anyhow::Result<()> {
+    let result = ctxt
+        .wsi_handler()
+        .blur(source.0, strength.unwrap_or(1.0), ctxt.data.author.id.get())
         .await?;
 
     ctxt.reply(result).await?;

@@ -23,6 +23,9 @@ fn default_cache<K: TCacheK, V: TCacheV>() -> Cache<K, V> {
         .build()
 }
 
+// FIXME: Out-of-date cache may become an issue, so we need to listen to more events
+// to make sure these caches stay up-to-date
+/// Rest cache handler for any common data structures accessed from Discord.
 pub struct RestCacheHandler {
     http_client: Arc<HttpClient>,
     guild_upload_limits: Cache<u64, u64>,

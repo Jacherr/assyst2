@@ -6,7 +6,26 @@ use super::arguments::Rest;
 use super::CommandCtxt;
 
 use crate::command::{Availability, Category};
+use crate::rest::cooltext::burn_text;
 use crate::rest::r34::get_random_r34;
+
+#[command(
+    aliases = ["firetext"],
+    description = "make some burning text",
+    access = Availability::Public,
+    cooldown = Duration::from_secs(2),
+    category = Category::Services,
+    usage = "[text]",
+    examples = ["yep im burning"],
+    send_processing = true
+)]
+pub async fn burntext(ctxt: CommandCtxt<'_>, text: Rest) -> anyhow::Result<()> {
+    let result = burn_text(&text.0).await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
 
 #[command(
     name = "rule34",

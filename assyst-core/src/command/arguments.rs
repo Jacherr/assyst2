@@ -26,6 +26,20 @@ impl ParseArgument for u64 {
     }
 }
 
+impl ParseArgument for f64 {
+    async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
+        let word = ctxt.next_word()?;
+        Ok(word.parse()?)
+    }
+}
+
+impl ParseArgument for f32 {
+    async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
+        let word = ctxt.next_word()?;
+        Ok(word.parse()?)
+    }
+}
+
 impl<T: ParseArgument> ParseArgument for Option<T> {
     async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
         // TODO: should we be using commit_if_ok to undo failed parsers?
@@ -73,30 +87,6 @@ pub struct Word(pub String);
 impl ParseArgument for Word {
     async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
         Ok(Self(ctxt.next_word()?.to_owned()))
-    }
-}
-
-/// An integer (u128) argument.
-#[derive(Debug)]
-pub struct Integer(pub u128);
-
-impl ParseArgument for Integer {
-    async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
-        let word = ctxt.next_word()?.to_owned();
-
-        Ok(Self(word.parse()?))
-    }
-}
-
-/// A float (f64) argument.
-#[derive(Debug)]
-pub struct Float(pub f64);
-
-impl ParseArgument for Float {
-    async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
-        let word = ctxt.next_word()?.to_owned();
-
-        Ok(Self(word.parse()?))
     }
 }
 

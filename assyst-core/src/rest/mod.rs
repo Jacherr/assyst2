@@ -1,3 +1,4 @@
+pub mod cooltext;
 pub mod filer;
 pub mod patreon;
 pub mod r34;
