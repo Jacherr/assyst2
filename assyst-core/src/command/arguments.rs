@@ -113,7 +113,7 @@ impl ParseArgument for Rest {
 pub struct ImageUrl(String);
 
 impl ImageUrl {
-    async fn from_mention(mut ctxt: CommandCtxt<'_>) -> Result<(Self, CommandCtxt<'_>), TagParseError> {
+    async fn from_mention(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
         let word = ctxt.next_word()?;
 
         let user_id = regex::USER_MENTION
@@ -129,14 +129,14 @@ impl ImageUrl {
 
         let user = ctxt.assyst().http_client.user(Id::new(user_id)).await?.model().await?;
 
-        Ok((Self(get_avatar_url(&user)), ctxt))
+        Ok(Self(get_avatar_url(&user)))
     }
 
-    async fn from_url_argument(mut ctxt: CommandCtxt<'_>) -> Result<(Self, CommandCtxt<'_>), TagParseError> {
+    async fn from_url_argument(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
         let word = ctxt.next_word()?;
 
         if regex::URL.is_match(word) {
-            Ok((Self(word.to_owned()), ctxt))
+            Ok(Self(word.to_owned()))
         } else {
             Err(TagParseError::NoUrl)
         }
@@ -147,21 +147,21 @@ impl ImageUrl {
         Ok(Self(attachment.url.clone()))
     }
 
-    async fn from_attachment(ctxt: CommandCtxt<'_>) -> Result<(Self, CommandCtxt<'_>), TagParseError> {
-        Self::attachment(ctxt.data.attachment).map(|a| (a, ctxt))
+    async fn from_attachment(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
+        Self::attachment(ctxt.data.attachment)
     }
 
-    async fn from_reply(mut ctxt: CommandCtxt<'_>) -> Result<(Self, CommandCtxt<'_>), TagParseError> {
-        let reply = ctxt.data.referenced_message.ok_or(TagParseError::NoReply)?; // TODO: not args exhausted
+    async fn from_reply(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
+        let reply = ctxt.data.referenced_message.ok_or(TagParseError::NoReply)?;
 
         if let Some(attachment) = reply.attachments.first() {
-            return Ok((Self(attachment.url.clone()), ctxt));
+            return Ok(Self(attachment.url.clone()));
         }
 
         macro_rules! handle {
             ($v:expr) => {
                 match $v {
-                    Ok(v) => return Ok((v, ctxt)),
+                    Ok(v) => return Ok(v),
                     Err(err) if err.get_severity() == ErrorSeverity::High => return Err(err),
                     _ => {},
                 }
@@ -170,7 +170,7 @@ impl ImageUrl {
 
         handle!(Self::sticker(reply.sticker_items.first()));
         handle!(Self::embed(reply.embeds.first()));
-        handle!(Self::emoji(&mut ctxt, &reply.content).await);
+        handle!(Self::emoji(ctxt, &reply.content).await);
 
         Err(TagParseError::NoReply)
     }
@@ -231,9 +231,9 @@ impl ImageUrl {
         }
     }
 
-    async fn from_emoji(mut ctxt: CommandCtxt<'_>) -> Result<(Self, CommandCtxt<'_>), TagParseError> {
+    async fn from_emoji(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
         let word = ctxt.next_word()?;
-        Self::emoji(&mut ctxt, word).await.map(|e| (e, ctxt))
+        Self::emoji(ctxt, word).await
     }
 
     fn sticker(sticker: Option<&MessageSticker>) -> Result<Self, TagParseError> {
@@ -244,11 +244,11 @@ impl ImageUrl {
         }
     }
 
-    async fn from_sticker(ctxt: CommandCtxt<'_>) -> Result<(Self, CommandCtxt<'_>), TagParseError> {
-        Self::sticker(ctxt.data.sticker).map(|v| (v, ctxt))
+    async fn from_sticker(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
+        Self::sticker(ctxt.data.sticker)
     }
 
-    async fn from_channel_history(ctxt: CommandCtxt<'_>) -> Result<(Self, CommandCtxt<'_>), TagParseError> {
+    async fn from_channel_history(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
         let messages = ctxt
             .assyst()
             .http_client
@@ -262,7 +262,7 @@ impl ImageUrl {
                 // Ignore any error, even high severity ones, since not doing that would mean
                 // we bail when we see a "random" malformed message in a channel
                 if let Ok(v) = $v {
-                    return Ok((v, ctxt));
+                    return Ok(v);
                 }
             };
         }

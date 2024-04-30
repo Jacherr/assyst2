@@ -27,7 +27,6 @@
 //!   which does the mapping mentioned above.
 
 use std::fmt::Display;
-use std::future::Future;
 use std::str::SplitAsciiWhitespace;
 use std::time::{Duration, Instant};
 
@@ -247,16 +246,12 @@ impl<'a> CommandCtxt<'a> {
 
     /// Calls the function with a fork of this context (allowing some arbitrary mutations)
     /// and only actually applies the changes made to the fork if it returns `Ok`.
-    // Due to a bug in the rust compiler, the fork is passed to the closure by value and should be
-    // returned by value (instead of just passing it by `&mut`)
-    // https://github.com/rust-lang/rust/issues/70263
-    pub async fn commit_if_ok<F, Fut, T, E>(&mut self, f: F) -> Result<T, E>
+    pub async fn commit_if_ok<F, T, E>(&mut self, f: F) -> Result<T, E>
     where
-        Fut: Future<Output = Result<(T, CommandCtxt<'a>), E>>,
-        F: FnOnce(CommandCtxt<'a>) -> Fut,
+        F: async FnOnce(&mut CommandCtxt<'a>) -> Result<T, E>,
     {
-        let fork: CommandCtxt<'a> = self.fork();
-        let (res, fork) = f(fork).await?;
+        let mut fork: CommandCtxt<'a> = self.fork();
+        let res = f(&mut fork).await?;
         *self = fork;
         Ok(res)
     }
