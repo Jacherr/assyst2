@@ -30,5 +30,11 @@ pub async fn handle_raw_event(context: ThreadSafeAssyst, event: IncomingEvent) {
         IncomingEvent::GuildDelete(event) => {
             event_handlers::guild_delete::handle(context, event).await;
         },
+        IncomingEvent::GuildUpdate(event) => {
+            event_handlers::guild_update::handle(context, event);
+        },
+        IncomingEvent::ChannelUpdate(event) => {
+            event_handlers::channel_update::handle(context, event);
+        },
     }
 }

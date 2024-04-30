@@ -32,7 +32,7 @@ pub async fn remind(_ctxt: CommandCtxt<'_>, _when: Time, _text: Rest) -> anyhow:
 
 #[command(
     description = "enlarges an image", 
-    aliases = ["e"], 
+    aliases = ["e", "repost", "reupload"], 
     cooldown = Duration::from_secs(2),
     access = Availability::Public,
     category = Category::Misc,
