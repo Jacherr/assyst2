@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use assyst_common::util::discord::get_avatar_url;
+use assyst_common::util::discord::{get_avatar_url, id_from_mention};
 use assyst_common::util::{parse_to_millis, regex};
 use serde::Deserialize;
 use twilight_model::channel::message::sticker::{MessageSticker, StickerFormatType};
@@ -106,12 +106,7 @@ impl ImageUrl {
     async fn from_mention(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
         let word = ctxt.next_word()?;
 
-        let user_id = regex::USER_MENTION
-            .captures(word)
-            .and_then(|user_id_capture| user_id_capture.get(1))
-            .map(|id| id.as_str())
-            .and_then(|id| id.parse::<u64>().ok())
-            .ok_or(TagParseError::NoMention)?;
+        let user_id = id_from_mention(word).ok_or(TagParseError::NoMention)?;
 
         if user_id == 0 {
             return Err(TagParseError::NoMention);

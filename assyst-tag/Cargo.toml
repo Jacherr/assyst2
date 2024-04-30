@@ -6,3 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+rand = "0.8"
+anyhow = "1.0"
+assyst-common = { path = "../assyst-common" }
+bytes = "1.0.1"
+either = "1.9.0"
+memchr = "2.6.4"

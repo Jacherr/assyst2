@@ -62,7 +62,7 @@ pub struct TopGgWebhookBody {
 
 #[derive(Clone)]
 struct RouteState {
-    pub database: Arc<RwLock<DatabaseHandler>>,
+    pub database: Arc<DatabaseHandler>,
     pub http_client: Arc<HttpClient>,
     pub metrics_handler: Arc<MetricsHandler>,
 }
@@ -87,7 +87,7 @@ async fn top_gg_webhook(
         .inspect_err(|e| err!("Failed to parse user id {}: {}", body.user, e.to_string()))?;
 
     FreeTier2Requests::new(user_id)
-        .change_free_tier_2_requests(&*route_state.database.read().await, FREE_TIER_2_REQUESTS_ON_VOTE as i64)
+        .change_free_tier_2_requests(&route_state.database, FREE_TIER_2_REQUESTS_ON_VOTE as i64)
         .await
         .inspect_err(|e| {
             err!(
@@ -113,7 +113,7 @@ async fn top_gg_webhook(
         })?;
 
     UserVotes::increment_user_votes(
-        &*route_state.database.read().await,
+        &route_state.database,
         user_id,
         &user.name,
         &user.discriminator.to_string(),
@@ -127,7 +127,7 @@ async fn top_gg_webhook(
         )
     })?;
 
-    let voter = UserVotes::get_user_votes(&*route_state.database.read().await, user_id)
+    let voter = UserVotes::get_user_votes(&route_state.database, user_id)
         .await
         .inspect_err(|e| {
             err!(
@@ -156,11 +156,7 @@ async fn top_gg_webhook(
 }
 
 /// Starts the webserver, providing bot list webhooking and prometheus services.
-pub async fn run(
-    database: Arc<RwLock<DatabaseHandler>>,
-    http_client: Arc<HttpClient>,
-    metrics_handler: Arc<MetricsHandler>,
-) {
+pub async fn run(database: Arc<DatabaseHandler>, http_client: Arc<HttpClient>, metrics_handler: Arc<MetricsHandler>) {
     let router = Router::new()
         .route("/", get(|| async { Redirect::permanent("https://jacher.io/assyst") }))
         .route("/topgg", get(|| async { Redirect::permanent(&TOP_GG_VOTE_URL) }))

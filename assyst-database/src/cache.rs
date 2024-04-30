@@ -32,7 +32,7 @@ impl DatabaseCache {
         self.prefixes.get(&guild_id)
     }
 
-    pub fn set_prefix(&mut self, guild_id: u64, prefix: Prefix) {
+    pub fn set_prefix(&self, guild_id: u64, prefix: Prefix) {
         self.prefixes.insert(guild_id, prefix);
     }
 

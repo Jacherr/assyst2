@@ -3,6 +3,7 @@
 pub mod ansi;
 pub mod cache;
 pub mod config;
+pub mod eval;
 pub mod macros;
 pub mod markdown;
 pub mod metrics_handler;
