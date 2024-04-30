@@ -8,8 +8,7 @@ static R34_URL: &'static str = "https://api.rule34.xxx/index.php?tags=";
 #[derive(Deserialize, Clone)]
 pub struct R34Result {
     pub file_url: String,
-    #[serde(rename = "score")]
-    pub _score: i32,
+    pub score: i32,
 }
 
 pub async fn get_random_r34(assyst: ThreadSafeAssyst, tags: &str) -> anyhow::Result<R34Result> {
