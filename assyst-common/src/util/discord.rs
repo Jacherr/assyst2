@@ -53,3 +53,7 @@ pub fn id_from_mention(word: &str) -> Option<u64> {
         .and_then(|id| Some(id.as_str()))
         .and_then(|id| id.parse::<u64>().ok())
 }
+
+pub fn format_tag(user: &User) -> String {
+    format!("{}#{}", user.name, user.discriminator)
+}

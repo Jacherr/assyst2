@@ -16,6 +16,7 @@ pub struct AssystConfig {
 pub struct Urls {
     pub proxy: Vec<String>,
     pub filer: String,
+    pub eval: String,
     pub wsi: String,
 }
 

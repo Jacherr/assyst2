@@ -23,18 +23,11 @@ pub async fn handle(assyst: ThreadSafeAssyst, MessageCreate(message): MessageCre
     match parse_message_into_command(assyst.clone(), &message, processing_time_start).await {
         Ok(Some(result)) => {
             let data = CommandData {
-                message_id: message.id.get(),
                 source: Source::Gateway,
                 assyst: &assyst,
-                attachment: message.attachments.first(),
-                referenced_message: message.referenced_message.as_deref(),
-                sticker: message.sticker_items.first(),
-                channel_id: message.channel_id.get(),
-                embed: message.embeds.first(),
                 execution_timings: result.execution_timings,
-                author: &message.author,
                 calling_prefix: result.calling_prefix,
-                guild_id: message.guild_id.map(|x| x.get()),
+                message: &message,
             };
             let ctxt = CommandCtxt::new(result.args, &data);
 

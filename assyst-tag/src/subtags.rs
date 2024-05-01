@@ -1,4 +1,3 @@
-use core::fmt;
 use std::num::{ParseFloatError, ParseIntError};
 
 use crate::errors::{err, err_res, wrap_anyhow, ErrorKind, TResult};
@@ -381,12 +380,11 @@ pub fn pi(_: &mut Parser<'_>, _: ()) -> TResult<String> {
     Ok(std::f64::consts::PI.to_string())
 }
 
-// TODO: test that it works with one arg
-pub fn max(parser: &mut Parser<'_>, (initial, Rest(args)): (i64, Rest<i64>)) -> TResult<String> {
+pub fn max(_: &mut Parser<'_>, (initial, Rest(args)): (i64, Rest<i64>)) -> TResult<String> {
     Ok(args.iter().fold(initial, |p, &c| p.max(c)).to_string())
 }
 
-pub fn min(parser: &mut Parser<'_>, (initial, Rest(args)): (i64, Rest<i64>)) -> TResult<String> {
+pub fn min(_: &mut Parser<'_>, (initial, Rest(args)): (i64, Rest<i64>)) -> TResult<String> {
     Ok(args.iter().fold(initial, |p, &c| p.min(c)).to_string())
 }
 
@@ -395,7 +393,7 @@ pub fn choose(parser: &mut Parser<'_>, Atleast(Rest(args)): Atleast<1, String>) 
     Ok(args.get(idx).cloned().expect("0..len should always be inbounds"))
 }
 
-pub fn length(parser: &mut Parser<'_>, arg: String) -> TResult<String> {
+pub fn length(_: &mut Parser<'_>, arg: String) -> TResult<String> {
     Ok(arg.len().to_string())
 }
 
@@ -600,7 +598,7 @@ pub fn idof(_: &mut Parser<'_>, mention: Mention) -> TResult<String> {
     Ok(mention.0.to_string())
 }
 
-pub fn tag(parser: &mut Parser<'_>, name: String, Rest(args): Rest<String>) -> TResult<String> {
+pub fn tag(parser: &mut Parser<'_>, (name, Rest(args)): (String, Rest<String>)) -> TResult<String> {
     if parser.depth() >= MAX_DEPTH {
         return err_res(ErrorKind::DepthLimit { span: parser.span() });
     }

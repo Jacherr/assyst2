@@ -184,21 +184,10 @@ pub type TCommand = &'static (dyn Command + Send + Sync);
 pub struct CommandData<'a> {
     /// The source of this command invocation
     pub source: Source,
-    pub message_id: u64,
-    pub channel_id: u64,
-    /// `None` in a DM
-    pub guild_id: Option<u64>,
-    /// `None` in a slash command
-    pub attachment: Option<&'a Attachment>,
-    /// `None` in a slash command
-    pub sticker: Option<&'a MessageSticker>,
-    pub embed: Option<&'a Embed>,
     pub assyst: &'a ThreadSafeAssyst,
-    /// `None` in a slash command, otherwise set if the message is a reply
-    pub referenced_message: Option<&'a Message>,
     pub execution_timings: ExecutionTimings,
     pub calling_prefix: String,
-    pub author: &'a User,
+    pub message: &'a Message,
 }
 
 #[derive(Clone)]
@@ -277,7 +266,7 @@ pub async fn check_metadata(
         let channel_age_restricted = ctxt
             .assyst()
             .rest_cache_handler
-            .channel_is_age_restricted(ctxt.data.channel_id)
+            .channel_is_age_restricted(ctxt.data.message.channel_id.get())
             .await
             .unwrap_or(false);
 
@@ -291,16 +280,16 @@ pub async fn check_metadata(
     // command availability check
     match metadata.access {
         Availability::Dev => {
-            if !CONFIG.dev.admin_users.contains(&ctxt.data.author.id.get()) {
+            if !CONFIG.dev.admin_users.contains(&ctxt.data.message.author.id.get()) {
                 return Err(ExecutionError::MetadataCheck(MetadataCheckError::DevOnlyCommand));
             }
         },
         Availability::ServerManagers => {
-            if let Some(guild_id) = ctxt.data.guild_id {
+            if let Some(guild_id) = ctxt.data.message.guild_id {
                 if !ctxt
                     .assyst()
                     .rest_cache_handler
-                    .user_is_guild_manager(guild_id, ctxt.data.author.id.get())
+                    .user_is_guild_manager(guild_id.get(), ctxt.data.message.author.id.get())
                     .await
                     .unwrap_or(false)
                 {
@@ -314,7 +303,11 @@ pub async fn check_metadata(
     }
 
     // ratelimit check
-    let id = ctxt.data.guild_id.unwrap_or(ctxt.data.author.id.get());
+    let id = ctxt
+        .data
+        .message
+        .guild_id
+        .map_or_else(|| ctxt.data.message.author.id.get(), |id| id.get());
     let last_command_invoked = ctxt.assyst().command_ratelimits.get(id, metadata.name);
     if let Some(invocation_time) = last_command_invoked {
         let elapsed = invocation_time.elapsed();
