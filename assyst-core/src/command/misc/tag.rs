@@ -175,7 +175,8 @@ define_commandgroup! {
     name: tag,
     access: Availability::Public,
     category: Category::Misc,
-    description: "tags",
+    aliases: ["t"],
+    description: "assyst's tag system (documentation: https://jacher.io/tags)",
     usage: "<create>",
     commands: [
         "create" => create
