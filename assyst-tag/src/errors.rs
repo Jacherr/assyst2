@@ -1,7 +1,6 @@
 use std::borrow::Cow;
 use std::fmt::Arguments;
 use std::ops::Range;
-use std::string::FromUtf8Error;
 
 use assyst_common::ansi::Ansi;
 use memchr::memmem::rfind;
@@ -21,8 +20,6 @@ pub fn err_res<T>(kind: ErrorKind) -> TResult<T> {
 
 #[derive(Debug)]
 pub enum ErrorKind {
-    // TODO: can this actually happen? this most likely indicates a bug in the parser if it happens
-    FromInvalidUtf8(Option<Range<usize>>, FromUtf8Error),
     /// Iteration limit exceeded
     IterLimit {
         /// Position at which the limit was exceeded
@@ -385,15 +382,6 @@ pub fn format_error(src: &str, err: Error) -> String {
             span,
             err: ParseError::Other(other),
         } => simple_span_diag(&mut db, format_args!("{other}"), Some(span)),
-        ErrorKind::FromInvalidUtf8(span, err) => {
-            db.message = Some("string contained invalid utf-8 bytes".into());
-            db.kind = DiagnosticKind::Error;
-            db.span_notes.push(Note {
-                kind: NoteKind::Error,
-                message: err.to_string().into(),
-                span,
-            });
-        },
         ErrorKind::IterLimit { pos } => {
             db.message = Some("tag iteration limit exceeded".into());
             db.span_notes.push(Note {

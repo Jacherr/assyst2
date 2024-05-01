@@ -1,11 +1,12 @@
 use crate::context::Context;
-use crate::errors::{err, err_res, BytePos, ErrorKind, TResult};
+use crate::errors::{err_res, BytePos, ErrorKind, TResult};
 use crate::subtags;
 use assyst_common::util::filetype::Type;
 use rand::prelude::ThreadRng;
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::ops::Range;
+use std::string::FromUtf8Error;
 
 /// Constants and helper functions for tag parser limits
 pub mod limits {
@@ -251,7 +252,7 @@ impl<'a> Parser<'a> {
                 self.idx += 1;
             }
 
-            return String::from_utf8(output).map_err(|er| err(ErrorKind::FromInvalidUtf8(None, er)));
+            return String::from_utf8(output).map_err(|err| self.unreachable_invalid_utf8(err));
         }
 
         while self.idx < self.input.len() {
@@ -350,7 +351,14 @@ impl<'a> Parser<'a> {
             }
         }
 
-        String::from_utf8(output).map_err(|er| err(ErrorKind::FromInvalidUtf8(None, er)))
+        String::from_utf8(output).map_err(|err| self.unreachable_invalid_utf8(err))
+    }
+
+    #[cold]
+    fn unreachable_invalid_utf8(&self, err: FromUtf8Error) -> ! {
+        // this should not be possible -- be as useful as possible for debugging purposes when it does
+        // happen
+        panic!("tag ended up with invalid utf-8: {err:?}\ntag source: {:?}", self.input)
     }
 
     /// Parses a single "segment" of the input
