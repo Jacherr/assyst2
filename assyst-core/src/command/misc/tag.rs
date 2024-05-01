@@ -6,6 +6,7 @@ use assyst_common::util::discord::{format_tag, get_avatar_url};
 use assyst_common::util::string_from_likely_utf8;
 use assyst_database::Tag;
 use assyst_proc_macro::command;
+use assyst_tag::parser::ParseMode;
 use assyst_tag::ParseResult;
 use tokio::runtime::Handle;
 use twilight_model::channel::Message;
@@ -52,7 +53,10 @@ pub async fn default(ctxt: CommandCtxt<'_>, Word(tag_name): Word, arguments: Vec
             assyst,
         };
 
-        (assyst_tag::parse(&tag.data, &arguments, tcx), tag)
+        (
+            assyst_tag::parse(&tag.data, &arguments, ParseMode::StopOnError, tcx),
+            tag,
+        )
     })
     .await
     .expect("Tag task panicked");

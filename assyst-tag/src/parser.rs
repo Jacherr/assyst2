@@ -5,8 +5,8 @@ use assyst_common::util::filetype::Type;
 use rand::prelude::ThreadRng;
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
+use std::error::Error as StdError;
 use std::ops::Range;
-use std::string::FromUtf8Error;
 
 /// Constants and helper functions for tag parser limits
 pub mod limits {
@@ -107,10 +107,23 @@ impl Counter {
     }
 }
 
+#[derive(Default, Copy, Clone, Debug)]
+pub enum ParseMode {
+    /// If an error occurs during tag parsing, e.g. `{foo: 42}`
+    /// where `foo` is not a valid tag, treat it as if it was written `{ignore: {foo:42}}`.
+    ///
+    /// NOTE: this still keeps certain errors.
+    IgnoreOnError,
+    /// Stop as soon as an error occurs and report it to the user
+    #[default]
+    StopOnError,
+}
+
 /// The tag parser
 pub struct Parser<'a> {
     /// The input string
     input: &'a [u8],
+    mode: ParseMode,
     /// Tag arguments, accessible through {arg} and {args}
     args: &'a [&'a str],
     /// Current index in the input string
@@ -129,7 +142,7 @@ pub struct Parser<'a> {
 
 /// Checks if a given byte is in the a..z A..Z range
 fn is_identifier(b: u8) -> bool {
-    b.is_ascii_alphabetic()
+    b.is_ascii_alphabetic() || b == b'_'
 }
 
 impl<'a> Parser<'a> {
@@ -147,6 +160,7 @@ impl<'a> Parser<'a> {
     pub fn from_parent_with_args(input: &'a [u8], other: &Self, args: &'a [&'a str]) -> Self {
         Self {
             input,
+            mode: other.mode,
             args,
             idx: 0,
             state: other.state.clone(),
@@ -158,11 +172,18 @@ impl<'a> Parser<'a> {
     }
 
     /// Creates a new parser
-    pub fn new(input: &'a [u8], args: &'a [&'a str], state: SharedState<'a>, cx: &'a dyn Context) -> Self {
+    pub fn new(
+        input: &'a [u8],
+        args: &'a [&'a str],
+        state: SharedState<'a>,
+        mode: ParseMode,
+        cx: &'a dyn Context,
+    ) -> Self {
         Self {
             input,
             args,
             cx,
+            mode,
             idx: 0,
             state,
             rng: rand::thread_rng(),
@@ -267,6 +288,8 @@ impl<'a> Parser<'a> {
                     // skipping whitespace seems sensible and also improves errors
                     self.skip_whitespace();
 
+                    let is_meta_tag = self.eat(b"!");
+
                     // get subtag name, i.e. `range` in {range:1|10}
                     let (name, name_span) = {
                         let before_idx = self.idx;
@@ -275,16 +298,36 @@ impl<'a> Parser<'a> {
                         (name, before_idx..after_idx)
                     };
 
+                    if is_meta_tag && name == "ignore_parse_errors" {
+                        self.mode = ParseMode::IgnoreOnError;
+                        self.expect_closing_brace()?;
+                        continue;
+                    }
+
                     // if we're now at the end of the input, tag abruptly stopped without a `}`
                     if self.idx == self.input.len() {
-                        return err_res(ErrorKind::MissingClosingBrace {
-                            expected_position: self.idx,
-                            tag_start: self.last_tag_start_pos(),
-                        });
+                        match self.mode {
+                            ParseMode::IgnoreOnError => {
+                                output.extend(&self.input[self.span()]);
+                                continue;
+                            },
+                            ParseMode::StopOnError => {
+                                return err_res(ErrorKind::MissingClosingBrace {
+                                    expected_position: self.idx,
+                                    tag_start: self.last_tag_start_pos(),
+                                });
+                            },
+                        }
                     }
 
                     if name.is_empty() {
-                        return err_res(ErrorKind::EmptySubtag { span: self.span() });
+                        match self.mode {
+                            ParseMode::IgnoreOnError => {
+                                self.recover_parse_error(&mut output)?;
+                                continue;
+                            },
+                            ParseMode::StopOnError => return err_res(ErrorKind::EmptySubtag { span: self.span() }),
+                        }
                     }
 
                     // lazy tags need to be evaluated before the args are parsed
@@ -307,14 +350,32 @@ impl<'a> Parser<'a> {
                     // reject code like {eval!}, where the `!` should have been `}`
                     let closing_brace = self.idx;
                     if !self.eat(b"}") {
-                        return err_res(ErrorKind::MissingClosingBrace {
-                            expected_position: closing_brace,
-                            tag_start: self.last_tag_start_pos(),
-                        });
+                        match self.mode {
+                            ParseMode::IgnoreOnError => {
+                                self.recover_parse_error(&mut output)?;
+                                continue;
+                            },
+                            ParseMode::StopOnError => {
+                                return err_res(ErrorKind::MissingClosingBrace {
+                                    expected_position: closing_brace,
+                                    tag_start: self.last_tag_start_pos(),
+                                });
+                            },
+                        }
                     }
 
                     let result = if side_effects {
-                        self.handle_tag(name, name_span, args)?
+                        match (self.handle_tag(name, name_span, args), self.mode) {
+                            (Ok(res), _) => res,
+                            (Err(err), ParseMode::IgnoreOnError) if let ErrorKind::UnknownSubtag { .. } = *err.kind => {
+                                // we allow recovering only from unknown subtags specifically
+
+                                std::str::from_utf8(&self.input[self.span()])
+                                    .unwrap_or_else(|err| self.unreachable_invalid_utf8(err))
+                                    .to_owned()
+                            },
+                            (Err(err), _) => return Err(err),
+                        }
                     } else {
                         String::new()
                     };
@@ -352,10 +413,33 @@ impl<'a> Parser<'a> {
 
     #[cold]
     #[track_caller]
-    fn unreachable_invalid_utf8(&self, err: FromUtf8Error) -> ! {
-        // this should not be possible -- be as useful as possible for debugging purposes when it does
-        // happen
+    fn unreachable_invalid_utf8(&self, err: impl StdError) -> ! {
+        // this should not be possible and indicates a bug in the parser -- be as useful as possible for
+        // debugging purposes when it does happen
         panic!("tag ended up with invalid utf-8: {err:?}\ntag source: {:?}", self.input)
+    }
+
+    /// Recovers a parse error by skipping to the `}` and writing it into the buffer.
+    /// You should only call this when in `ParseMode::IgnoreOnError`
+    fn recover_parse_error(&mut self, output: &mut Vec<u8>) -> TResult<()> {
+        output.extend(&self.input[self.span()]);
+        let out = self.parse_segment(false)?;
+        output.append(&mut out.into_bytes());
+
+        if self.eat(b"}") {
+            output.push(b'}');
+        }
+        Ok(())
+    }
+
+    fn expect_closing_brace(&mut self) -> TResult<()> {
+        if !self.eat(b"}") {
+            return err_res(ErrorKind::MissingClosingBrace {
+                expected_position: self.idx,
+                tag_start: self.last_tag_start_pos(),
+            });
+        }
+        Ok(())
     }
 
     /// Parses a single "segment" of the input
