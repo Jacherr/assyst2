@@ -18,7 +18,7 @@ pub mod limits {
     pub const MAX_VARIABLE_VALUE_LENGTH: usize = MAX_STRING_LENGTH;
     pub const MAX_ITERATIONS: u32 = 500;
     pub const MAX_DEPTH: u32 = 15;
-    pub const MAX_STRING_LENGTH: usize = 25000;
+    pub const MAX_STRING_LENGTH: usize = 256_000;
 
     pub fn try_increment(field_cell: &Cell<u32>, limit: u32) -> bool {
         let field = field_cell.get();
@@ -296,11 +296,9 @@ impl<'a> Parser<'a> {
 
                     let mut args = Vec::new();
 
-                    let mut had_separator = false;
                     while let Some(b'|' | b':') = self.input.get(self.idx) {
                         // skip `|:`
                         self.idx += 1;
-                        had_separator = true;
 
                         // recursively parse segment
                         args.push(self.parse_segment(side_effects)?);
@@ -308,14 +306,12 @@ impl<'a> Parser<'a> {
 
                     // reject code like {eval!}, where the `!` should have been `}`
                     let closing_brace = self.idx;
-                    if !self.eat(b"}") && !had_separator {
+                    if !self.eat(b"}") {
                         return err_res(ErrorKind::MissingClosingBrace {
                             expected_position: closing_brace,
                             tag_start: self.last_tag_start_pos(),
                         });
                     }
-
-                    self.idx += 1;
 
                     let result = if side_effects {
                         self.handle_tag(name, name_span, args)?
@@ -355,6 +351,7 @@ impl<'a> Parser<'a> {
     }
 
     #[cold]
+    #[track_caller]
     fn unreachable_invalid_utf8(&self, err: FromUtf8Error) -> ! {
         // this should not be possible -- be as useful as possible for debugging purposes when it does
         // happen
@@ -462,6 +459,10 @@ impl<'a> Parser<'a> {
 
     pub fn pos(&self) -> BytePos {
         self.idx
+    }
+
+    pub fn eof(&self) -> bool {
+        self.idx >= self.input.len()
     }
 
     /// Only call this within a tag context.

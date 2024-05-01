@@ -1,4 +1,5 @@
 #![warn(rust_2018_idioms)]
+#![feature(round_char_boundary)]
 
 use assyst_common::util::filetype::Type;
 pub use context::{Context, NopContext};
@@ -40,31 +41,37 @@ pub fn parse_with_parent(input: &str, parent: &Parser<'_>, side_effects: bool) -
 
 #[cfg(test)]
 mod tests {
+    use crate::errors::ErrorKind;
+
     use super::*;
 
-    #[test]
-    fn parse_test() {
-        // let input = "{if: {argslen} |>=| 1| {avatar:{idof:{args}}} | {avatar}}?size=4096";
-        // {foo
-        // {foo bar
-        // {}
-        // a {} b
-        // a { b
-        // a {
-        // { testing stuff
-        // {
-        // { hello sdfsdfsdfsd fsdf sdh fsdh sdfj f}
-        let input = "{set:a|{range:1|3}}
-        {if:{get:a}|=|1|one|2|two|3|three}";
-        dbg!(input.len());
-        let segment = parse(input, &["a"], NopContext);
-        match segment {
-            Ok(r) => println!("{r:?}"),
-            Err(e) => println!("{}\n\n", errors::format_error(input, dbg!(e))),
-        }
-        // match segment {
-        //     Ok(r) => println!("{r:?}"),
-        //     Err(e) => println!("Error: {:?}", e),
-        // }
+    macro_rules! test {
+        ($( $name:ident: $input:expr => $result:pat ),+ $(,)?) => {
+            $(
+            #[test]
+                fn $name() {
+                    let input = $input;
+                    let res = parse(input, &[], NopContext);
+                    assert!(matches!(res.as_ref().map_err(|err| &*err.kind).map(|ok| &*ok.output), $result));
+                    if let Err(err) = res {
+
+                        // try formatting it to find any potential panic bugs
+                        errors::format_error(input, err);
+                    }
+                }
+            )*
+        };
     }
+
+    test!(
+        crash1: "zzzz@z{z" => Err(ErrorKind::MissingClosingBrace { .. }),
+        crash2: "{if|z|~|\u{7}|gs|I---s{args|" => Err(ErrorKind::MissingClosingBrace{..}),
+        crash3: "{a:a" => Err(ErrorKind::MissingClosingBrace{..}),
+        crash4: "{note:::::JJJJ:::::::::::)[x{||z\0\0{z|||{i:||||{\u{7}Ƅ" => Err(ErrorKind::MissingClosingBrace { .. }),
+        crash5: "{max}Ӱ______________________________" => Err(ErrorKind::ArgParseError { .. }),
+        crash6: "{args}ӌs" => Ok("ӌs"),
+        iter_limit: &"{max:0}".repeat(501) => Err(ErrorKind::IterLimit{..}),
+        if_then_works: "{if:{argslen}|=|0|ok|wrong}" => Ok("ok"),
+        if_else_works: "{if:{argslen}|=|1|wrong|ok}" => Ok("ok"),
+    );
 }

@@ -18,7 +18,7 @@ pub fn err_res<T>(kind: ErrorKind) -> TResult<T> {
     Err(err(kind))
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ErrorKind {
     /// Iteration limit exceeded
     IterLimit {
@@ -105,7 +105,7 @@ pub enum ErrorKind {
     },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Error {
     // inner error is boxed because we want to keep the size of `Result<_, Error>` small with respect to the common
     // case that is `Ok`
@@ -257,6 +257,16 @@ impl<'buf> DiagnosticBuilder<'buf> {
 }
 
 pub fn format_error(src: &str, err: Error) -> String {
+    fn char_index_to_span(src: &str, index: usize) -> Range<usize> {
+        let lo = src.floor_char_boundary(index);
+        if let Some(c) = src[lo..].chars().next() {
+            lo..lo + c.len_utf8()
+        } else {
+            // Out of bounds -- create a span that is one byte wide
+            lo..lo + 1
+        }
+    }
+
     if let ErrorKind::Nested { source, error } = *err.kind {
         return format_error(&source, error);
     }
@@ -349,12 +359,9 @@ pub fn format_error(src: &str, err: Error) -> String {
             db.span_notes.push(Note {
                 kind: NoteKind::Error,
                 message: format!("{er}").into(),
-                // TODO: use the span of the exact argument
-                // TODO1.5: what if we had a multi-source view, pointing to the user argument as well as the actual tag
-                // source? TODO2: be more elaborate and show a help... "this arg was expected to be a
-                // number" TODO3: unrelated but what if we had `{disable_source_in_errors}`
                 span: Some(span),
             });
+            // TODO: be more elaborate and show a help... "this arg was expected to be a number"
         },
         ErrorKind::ArgParseError {
             span,
@@ -387,7 +394,7 @@ pub fn format_error(src: &str, err: Error) -> String {
             db.span_notes.push(Note {
                 kind: NoteKind::Error,
                 message: "ran out of iteration time while processing this token".into(),
-                span: Some(pos..pos),
+                span: Some(char_index_to_span(src, pos)),
             });
         },
         ErrorKind::MissingClosingBrace {
@@ -398,11 +405,12 @@ pub fn format_error(src: &str, err: Error) -> String {
             db.span_notes.push(Note {
                 kind: NoteKind::Error,
                 message: "expected a closing brace here".into(),
-                span: Some(expected_position..expected_position + 1),
+                span: Some(char_index_to_span(src, expected_position)),
             });
             db.span_notes.push(Note {
                 kind: NoteKind::Help,
                 message: "tag parsing begins here".into(),
+                // does not need boundary flooring/ceiling normalization because `}` is always 1 byte
                 span: Some(tag_start..tag_start + 1),
             });
         },

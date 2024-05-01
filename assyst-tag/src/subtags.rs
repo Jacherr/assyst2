@@ -39,7 +39,7 @@ pub struct ParseSuccess<T> {
     pub args_consumed: usize,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ParseError {
     MissingArgument,
     // TODO: display required amount
