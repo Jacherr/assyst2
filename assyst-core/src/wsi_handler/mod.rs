@@ -17,7 +17,6 @@ use tokio::net::TcpStream;
 use tokio::spawn;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver, UnboundedSender};
 use tokio::sync::oneshot::{self, Sender};
-use tokio::sync::RwLock;
 use tokio::time::sleep;
 use tracing::info;
 
@@ -27,12 +26,12 @@ static CONNECTED: AtomicBool = AtomicBool::new(false);
 pub type WsiSender = (Sender<JobResult>, FifoSend, usize);
 
 pub struct WsiHandler {
-    database_handler: Arc<RwLock<DatabaseHandler>>,
+    database_handler: Arc<DatabaseHandler>,
     patrons: Arc<Mutex<Vec<Patron>>>,
     pub wsi_tx: UnboundedSender<WsiSender>,
 }
 impl WsiHandler {
-    pub fn new(database_handler: Arc<RwLock<DatabaseHandler>>, patrons: Arc<Mutex<Vec<Patron>>>) -> WsiHandler {
+    pub fn new(database_handler: Arc<DatabaseHandler>, patrons: Arc<Mutex<Vec<Patron>>>) -> WsiHandler {
         let (tx, rx) = unbounded_channel::<WsiSender>();
         Self::listen(rx, &CONFIG.urls.wsi);
         WsiHandler {
@@ -170,12 +169,11 @@ impl WsiHandler {
             return Ok(p.tier as usize);
         }
 
-        let user_tier1 =
-            FreeTier2Requests::get_user_free_tier_2_requests(&*self.database_handler.read().await, user_id).await?;
+        let user_tier1 = FreeTier2Requests::get_user_free_tier_2_requests(&*self.database_handler, user_id).await?;
 
         if user_tier1.count > 0 {
             user_tier1
-                .change_free_tier_2_requests(&*self.database_handler.read().await, -1)
+                .change_free_tier_2_requests(&*self.database_handler, -1)
                 .await?;
             Ok(2)
         } else {

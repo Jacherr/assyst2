@@ -1,13 +1,15 @@
 use std::fmt::Display;
 
-use assyst_common::util::discord::get_avatar_url;
+use assyst_common::util::discord::{get_avatar_url, id_from_mention};
 use assyst_common::util::{parse_to_millis, regex};
 use serde::Deserialize;
 use twilight_model::channel::message::sticker::{MessageSticker, StickerFormatType};
 use twilight_model::channel::message::Embed;
 use twilight_model::channel::Attachment;
+use twilight_model::id::marker::ChannelMarker;
 use twilight_model::id::Id;
 
+use crate::assyst::Assyst;
 use crate::downloader::{self, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES};
 use crate::gateway_handler::message_parser::error::{ErrorSeverity, GetErrorSeverity};
 
@@ -100,18 +102,13 @@ impl ParseArgument for Rest {
     }
 }
 
-pub struct ImageUrl(String);
+pub struct ImageUrl(pub String);
 
 impl ImageUrl {
     async fn from_mention(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
         let word = ctxt.next_word()?;
 
-        let user_id = regex::USER_MENTION
-            .captures(word)
-            .and_then(|user_id_capture| user_id_capture.get(1))
-            .map(|id| id.as_str())
-            .and_then(|id| id.parse::<u64>().ok())
-            .ok_or(TagParseError::NoMention)?;
+        let user_id = id_from_mention(word).ok_or(TagParseError::NoMention)?;
 
         if user_id == 0 {
             return Err(TagParseError::NoMention);
@@ -138,11 +135,16 @@ impl ImageUrl {
     }
 
     async fn from_attachment(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
-        Self::attachment(ctxt.data.attachment)
+        Self::attachment(ctxt.data.message.attachments.first())
     }
 
     async fn from_reply(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
-        let reply = ctxt.data.referenced_message.ok_or(TagParseError::NoReply)?;
+        let reply = ctxt
+            .data
+            .message
+            .referenced_message
+            .as_deref()
+            .ok_or(TagParseError::NoReply)?;
 
         if let Some(attachment) = reply.attachments.first() {
             return Ok(Self(attachment.url.clone()));
@@ -235,17 +237,16 @@ impl ImageUrl {
     }
 
     async fn from_sticker(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
-        Self::sticker(ctxt.data.sticker)
+        Self::sticker(ctxt.data.message.sticker_items.first())
     }
 
-    async fn from_channel_history(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
-        let messages = ctxt
-            .assyst()
-            .http_client
-            .channel_messages(Id::new(ctxt.data.channel_id))
-            .await?
-            .models()
-            .await?;
+    // Defined separately without a CommandCtxt because it is also used elsewhere where we don't have
+    // one (and this also doesn't need it)
+    pub async fn from_channel_history(
+        assyst: &Assyst,
+        channel_id: Id<ChannelMarker>,
+    ) -> Result<ImageUrl, TagParseError> {
+        let messages = assyst.http_client.channel_messages(channel_id).await?.models().await?;
 
         macro_rules! handle {
             ($v:expr) => {
@@ -293,7 +294,7 @@ impl ParseArgument for ImageUrl {
             handle!(ctxt.commit_if_ok(ImageUrl::from_reply).await);
             handle!(ctxt.commit_if_ok(ImageUrl::from_emoji).await);
             handle!(ctxt.commit_if_ok(ImageUrl::from_sticker).await);
-            handle!(ctxt.commit_if_ok(ImageUrl::from_channel_history).await);
+            handle!(ImageUrl::from_channel_history(ctxt.assyst(), ctxt.data.message.channel_id).await);
             Err(TagParseError::NoImageFound)
         }
 

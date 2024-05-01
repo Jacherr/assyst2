@@ -63,7 +63,7 @@ pub async fn parse_prefix(
         "".to_owned()
     } else {
         let guild_id = message.guild_id.unwrap().get();
-        let guild_prefix = Prefix::get(&mut *assyst.database_handler.write().await, guild_id).await;
+        let guild_prefix = Prefix::get(&assyst.database_handler, guild_id).await;
         match guild_prefix {
             // found prefix in db/cache
             Ok(Some(p)) => p.prefix.clone(),
@@ -74,7 +74,7 @@ pub async fn parse_prefix(
                 };
 
                 default_prefix
-                    .set(&mut *assyst.database_handler.write().await, guild_id)
+                    .set(&assyst.database_handler, guild_id)
                     .await
                     .map_err(|e| PreParseError::Failure(format!("failed to set default prefix: {e}")))?;
 
@@ -96,7 +96,7 @@ pub async fn parse_prefix(
 
 /// Checks if a user is globally blacklisted from the bot.
 pub async fn user_globally_blacklisted(assyst: ThreadSafeAssyst, id: u64) -> Result<bool, PreParseError> {
-    let blacklisted = GlobalBlacklist::is_blacklisted(&*assyst.database_handler.read().await, id).await;
+    let blacklisted = GlobalBlacklist::is_blacklisted(&assyst.database_handler, id).await;
     match blacklisted {
         Ok(x) => Ok(x),
         Err(error) => Err(PreParseError::Failure(format!(

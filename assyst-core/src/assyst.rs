@@ -10,7 +10,6 @@ use assyst_common::metrics_handler::MetricsHandler;
 use assyst_common::pipe::CACHE_PIPE_PATH;
 use assyst_database::DatabaseHandler;
 use std::sync::{Arc, Mutex};
-use tokio::sync::RwLock;
 use twilight_http::Client as HttpClient;
 
 pub type ThreadSafeAssyst = Arc<Assyst>;
@@ -22,7 +21,7 @@ pub struct Assyst {
     /// Handler for the persistent assyst-cache.
     pub persistent_cache_handler: PersistentCacheHandler,
     /// Handler for the Assyst database. RwLocked to allow concurrent reads.
-    pub database_handler: Arc<RwLock<DatabaseHandler>>,
+    pub database_handler: Arc<DatabaseHandler>,
     /// Handler for WSI.
     pub wsi_handler: WsiHandler,
     /// Handler for the REST cache.
@@ -50,9 +49,8 @@ impl Assyst {
     pub async fn new() -> anyhow::Result<Assyst> {
         let http_client = Arc::new(HttpClient::new(CONFIG.authentication.discord_token.clone()));
         let shard_count = http_client.gateway().authed().await?.model().await?.shards as u64;
-        let database_handler = Arc::new(RwLock::new(
-            DatabaseHandler::new(CONFIG.database.to_url(), CONFIG.database.to_url_safe()).await?,
-        ));
+        let database_handler =
+            Arc::new(DatabaseHandler::new(CONFIG.database.to_url(), CONFIG.database.to_url_safe()).await?);
         let patrons = Arc::new(Mutex::new(vec![]));
 
         Ok(Assyst {

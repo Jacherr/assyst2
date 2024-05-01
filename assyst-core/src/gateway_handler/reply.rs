@@ -29,10 +29,10 @@ async fn get_filer_url(
     let filer_formatted;
 
     if data.len() > NORMAL_DISCORD_UPLOAD_LIMIT_BYTES as usize {
-        let guild_upload_limit = if let Some(guild_id) = ctxt.data.guild_id {
+        let guild_upload_limit = if let Some(guild_id) = ctxt.data.message.guild_id {
             ctxt.assyst()
                 .rest_cache_handler
-                .get_guild_upload_limit_bytes(guild_id)
+                .get_guild_upload_limit_bytes(guild_id.get())
                 .await?
         } else {
             NORMAL_DISCORD_UPLOAD_LIMIT_BYTES
@@ -64,7 +64,7 @@ pub async fn edit(ctxt: &CommandCtxt<'_>, builder: MessageBuilder, reply: ReplyI
         .data
         .assyst
         .http_client
-        .update_message(Id::new(ctxt.data.channel_id), Id::new(reply.message_id))
+        .update_message(ctxt.data.message.channel_id, Id::new(reply.message_id))
         .allowed_mentions(Some(&allowed_mentions));
 
     let mut content_clone = builder.content.clone();
@@ -106,7 +106,7 @@ async fn create_message(ctxt: &CommandCtxt<'_>, builder: MessageBuilder) -> anyh
         .data
         .assyst
         .http_client
-        .create_message(Id::new(ctxt.data.channel_id))
+        .create_message(ctxt.data.message.channel_id)
         .allowed_mentions(Some(&allowed_mentions));
 
     let mut content_clone = builder.content.clone();
@@ -139,7 +139,7 @@ async fn create_message(ctxt: &CommandCtxt<'_>, builder: MessageBuilder) -> anyh
 
     let reply = message.await?.model().await?;
     ctxt.data.assyst.replies.insert(
-        ctxt.data.message_id,
+        ctxt.data.message.id.get(),
         Reply {
             state: ReplyState::InUse(ReplyInUse {
                 message_id: reply.id.get(),
@@ -157,7 +157,7 @@ pub async fn reply(ctxt: &CommandCtxt<'_>, builder: MessageBuilder) -> anyhow::R
         .data
         .assyst
         .replies
-        .get(ctxt.data.message_id)
+        .get(ctxt.data.message.id.get())
         .and_then(|r| r.in_use());
 
     if let Some(reply_in_use) = reply_in_use {

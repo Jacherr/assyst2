@@ -90,3 +90,16 @@ pub fn format_duration(duration: &Duration) -> String {
         format!("{micros:.2}μs")
     }
 }
+
+/// Like [`String::from_utf8_lossy`], but takes an owned `Vec<u8>` and is
+/// able to reuse the vec's allocation if the bytes are valid UTF-8.
+///
+/// It is much more efficient for valid UTF-8, but will be
+/// much worse than `String::from_utf8` for invalid UTF-8, so
+/// only use it if valid UTF-8 is likely!
+pub fn string_from_likely_utf8(bytes: Vec<u8>) -> String {
+    String::from_utf8(bytes).unwrap_or_else(|err| {
+        // Unlucky, data was invalid UTF-8, so try again but use lossy decoding this time.
+        String::from_utf8_lossy(err.as_bytes()).into_owned()
+    })
+}

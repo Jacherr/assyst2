@@ -5,7 +5,6 @@ use prometheus::{register_int_counter, register_int_gauge, register_int_gauge_ve
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use tokio::sync::RwLock;
 use tracing::info;
 
 /// Handler for general metrics, including rate trackers, Prometheus metrics, etc.
@@ -18,10 +17,10 @@ pub struct MetricsHandler {
     pub commands: IntCounter,
     pub total_commands_rate_tracker: Mutex<RateTracker>,
     pub individual_commands_rate_trackers: Mutex<HashMap<&'static str /* command name */, RateTracker>>,
-    pub database_handler: Arc<RwLock<DatabaseHandler>>,
+    pub database_handler: Arc<DatabaseHandler>,
 }
 impl MetricsHandler {
-    pub fn new(database_handler: Arc<RwLock<DatabaseHandler>>) -> anyhow::Result<MetricsHandler> {
+    pub fn new(database_handler: Arc<DatabaseHandler>) -> anyhow::Result<MetricsHandler> {
         Ok(MetricsHandler {
             cache_sizes: register_int_gauge_vec!("cache_sizes", "Cache sizes", &["cache"])?,
             memory_usage: register_int_gauge_vec!("memory_usage", "Memory usage in MB", &["process"])?,
@@ -43,7 +42,7 @@ impl MetricsHandler {
     pub async fn update(&self) {
         info!("Collecting prometheus metrics");
 
-        let database_cache_reader = self.database_handler.read().await;
+        let database_cache_reader = &self.database_handler;
         let prefixes_cache_size = database_cache_reader.cache.get_prefixes_cache_size();
         self.update_cache_size("prefixes", prefixes_cache_size);
 

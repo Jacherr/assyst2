@@ -41,6 +41,7 @@ macro_rules! define_commandgroup {
                 $subcommand:literal => $commandfn:expr
             ),*
         ]
+        $(,default: $default:expr)?
     ) => {
         paste::paste! {
             #[allow(non_camel_case_types)]
@@ -79,7 +80,18 @@ macro_rules! define_commandgroup {
                 }
 
                 async fn execute(&self, ctxt: CommandCtxt<'_>) -> Result<(), crate::command::ExecutionError> {
-                    crate::command::group::execute_subcommand(ctxt, Self::SUBCOMMANDS).await
+                    #![allow(unreachable_code)]
+                    match crate::command::group::execute_subcommand(ctxt.fork(), Self::SUBCOMMANDS).await {
+                        Ok(res) => Ok(res),
+                        Err(crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::InvalidSubcommand)) => {
+                            // No subcommand was found, call either the default if provided, or error out
+                            $(
+                                return [<$default _command>].execute(ctxt).await;
+                            )?
+                            return Err(crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::InvalidSubcommand));
+                        },
+                        Err(err) => Err(err)
+                    }
                 }
             }
         }
@@ -100,9 +112,6 @@ pub async fn execute_subcommand(
 
     let command =
         find_subcommand(subcommand, commands).ok_or(ExecutionError::Parse(TagParseError::InvalidSubcommand))?;
-
-    // TODO: subcommands might want to be commands themselves, e.g. `-t <tagname>` does not have a valid
-    // subcommand, but still needs to be handled
 
     command.execute(ctxt).await
 }
