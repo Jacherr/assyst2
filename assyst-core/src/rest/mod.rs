@@ -5,6 +5,7 @@ pub mod patreon;
 pub mod r34;
 pub mod rest_cache_handler;
 pub mod top_gg;
+pub mod web_media_download;
 
 pub static NORMAL_DISCORD_UPLOAD_LIMIT_BYTES: u64 = 25_000_000;
 pub static PREMIUM_TIER2_DISCORD_UPLOAD_LIMIT_BYTES: u64 = 50_000_000;

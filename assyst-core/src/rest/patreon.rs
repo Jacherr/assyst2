@@ -134,7 +134,7 @@ pub struct Pagination {
 pub struct Patron {
     pub user_id: u64,
     pub tier: PatronTier,
-    pub admin: bool,
+    pub _admin: bool,
 }
 
 /// I am not proud of this code, but at the same time, I am not proud of Patreon for making such a
@@ -185,7 +185,7 @@ pub async fn get_patrons(assyst: ThreadSafeAssyst) -> Result<Vec<Patron>, Error>
             patrons.push(Patron {
                 user_id: *d,
                 tier,
-                admin: false,
+                _admin: false,
             });
         };
     }
@@ -194,7 +194,7 @@ pub async fn get_patrons(assyst: ThreadSafeAssyst) -> Result<Vec<Patron>, Error>
         patrons.push(Patron {
             user_id: *i,
             tier: PatronTier::Tier4,
-            admin: true,
+            _admin: true,
         })
     }
 

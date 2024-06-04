@@ -9,6 +9,7 @@ pub enum Type {
     WEBP,
     MP4,
     WEBM,
+    MP3,
 }
 impl Type {
     pub fn as_str(&self) -> &'static str {
@@ -19,6 +20,7 @@ impl Type {
             Type::WEBP => "webp",
             Type::MP4 => "mp4",
             Type::WEBM => "webm",
+            Type::MP3 => "mp3",
         }
     }
     pub fn as_mime(&self) -> &'static str {
@@ -29,6 +31,7 @@ impl Type {
             Type::WEBP => "image/webp",
             Type::MP4 => "video/mp4",
             Type::WEBM => "video/webm",
+            Type::MP3 => "audio/mpeg",
         }
     }
     pub fn is_video(&self) -> bool {
@@ -62,7 +65,8 @@ pub fn get_sig(buf: &[u8]) -> Option<Type> {
         [71, 73, 70, ..] => Some(Type::GIF),
         [255, 216, 255, ..] => Some(Type::JPEG),
         [137, 80, 78, 71, 13, 10, 26, 10, ..] => Some(Type::PNG),
-        [0x1A, 0x45, 0xDF, 0xA3] => Some(Type::WEBM),
+        [0x1A, 0x45, 0xDF, 0xA3, ..] => Some(Type::WEBM),
+        [0x49, 0x44, 0x33, ..] /* ID3 tagged */ | [0xff, 0xfb, ..] /* untagged */ => Some(Type::MP3),
         _ if check_webp(buf) => Some(Type::WEBP),
         _ if check_mp4(buf) => Some(Type::MP4),
         _ => None,

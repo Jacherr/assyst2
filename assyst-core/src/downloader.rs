@@ -95,7 +95,12 @@ where
 }
 
 /// Attempts to download a resource from a URL.
-pub async fn download_content(assyst: &Assyst, url: &str, limit: usize) -> Result<Vec<u8>, DownloadError> {
+pub async fn download_content(
+    assyst: &Assyst,
+    url: &str,
+    limit: usize,
+    untrusted: bool,
+) -> Result<Vec<u8>, DownloadError> {
     const WHITLISTED_DOMAINS: &[&str] = &[
         "tenor.com",
         "jacher.io",
@@ -108,6 +113,7 @@ pub async fn download_content(assyst: &Assyst, url: &str, limit: usize) -> Resul
         "notsobot.com",
         "twimg.com",
         "cdninstagram.com",
+        "imput.net",
     ];
 
     let config = &CONFIG;
@@ -118,7 +124,7 @@ pub async fn download_content(assyst: &Assyst, url: &str, limit: usize) -> Resul
 
     let is_whitelisted = WHITLISTED_DOMAINS.iter().any(|d| host.contains(d));
 
-    if !config.urls.proxy.is_empty() && !is_whitelisted {
+    if !config.urls.proxy.is_empty() && !is_whitelisted && untrusted {
         // First, try to download with proxy
         let stream = download_with_proxy(client, url, limit).await;
 

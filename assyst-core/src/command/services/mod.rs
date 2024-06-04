@@ -2,12 +2,13 @@ use std::time::Duration;
 
 use assyst_proc_macro::command;
 
-use super::arguments::Rest;
+use super::arguments::{Rest, Word};
 use super::CommandCtxt;
 
 use crate::command::{Availability, Category};
 use crate::rest::cooltext::burn_text;
 use crate::rest::r34::get_random_r34;
+use crate::rest::web_media_download::{download_web_media, WebDownloadOpts};
 
 #[command(
     aliases = ["firetext"],
@@ -43,6 +44,39 @@ pub async fn r34(ctxt: CommandCtxt<'_>, tags: Rest) -> anyhow::Result<()> {
     let reply = format!("{} (Score: {})", result.file_url, result.score);
 
     ctxt.reply(reply).await?;
+
+    Ok(())
+}
+
+#[command(
+    name = "download",
+    aliases = ["dl"],
+    description = "download media from a website",
+    access = Availability::Public,
+    cooldown = Duration::from_secs(2),
+    category = Category::Services,
+    usage = "[url] <audio|[quality]>",
+    examples = ["https://www.youtube.com/watch?v=dQw4w9WgXcQ", "https://www.youtube.com/watch?v=dQw4w9WgXcQ audio", "https://www.youtube.com/watch?v=dQw4w9WgXcQ 480"],
+    send_processing = true
+)]
+pub async fn download(ctxt: CommandCtxt<'_>, url: Word, opts_str: Option<Rest>) -> anyhow::Result<()> {
+    let mut opts = WebDownloadOpts::default();
+    if let Some(opts_str) = opts_str {
+        for opt in opts_str.0.split_whitespace() {
+            let trim = opt.trim();
+            if trim == "audio" {
+                opts.audio_only = Some(true);
+            } else if let Ok(i) = trim.parse::<u16>()
+                && opts.quality.is_none()
+            {
+                opts.quality = Some(i.to_string());
+            }
+        }
+    }
+
+    let result = download_web_media(ctxt.assyst().clone(), &url.0, opts).await?;
+
+    ctxt.reply(result).await?;
 
     Ok(())
 }

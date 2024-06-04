@@ -319,7 +319,8 @@ impl ParseArgument for Image {
     async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
         let ImageUrl(url) = ImageUrl::parse(ctxt).await?;
 
-        let data = downloader::download_content(ctxt.assyst(), &url, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES).await?;
+        let data =
+            downloader::download_content(ctxt.assyst(), &url, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES, true).await?;
         Ok(Image(data))
     }
 }

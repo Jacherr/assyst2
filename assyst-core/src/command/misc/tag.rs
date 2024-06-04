@@ -132,6 +132,7 @@ impl assyst_tag::Context for TagContext {
                 &self.assyst,
                 url,
                 ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES,
+                true,
             ))
             .map(string_from_likely_utf8)
             .map_err(Into::into)
