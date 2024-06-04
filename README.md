@@ -36,6 +36,10 @@ For more information on each crate, refer to the README.md file for the crate.
 
 Each binary is ran as an independent process on the same host machine. Each binary communicates through the use of Unix-like pipes, a.k.a., the [UnixStream](https://docs.rs/tokio/latest/tokio/net/struct.UnixStream.html) structure in [Tokio](https://crates.io/crates/tokio). For more information, please refer to the README.md file for the relevant crate.
 
+## Self-hosting
+
 While this repository can technically be self-hosted, the core image processing components are not open-source and as a result will not function. No support will be given for the self-hosting of this bot. However, if you would like to contribute, or need support with operating the bot, please send a message in the [Discord support server](https://discord.gg/brmtnpxbtg). All contributions, especially in the early stages in development, are greatly appreciated.
+
+## Acknowledgements
 
 Special thanks to [y21](https://github.com/y21) and [Mina](https://github.com/trueharuu) for their help in the development of this rewrite.

@@ -83,6 +83,12 @@ async fn main() {
         }));
     }
 
+    if CONFIG.dev.disable_patreon_synchronisation {
+        info!(
+            "Patreon synchronisation disabled in config.dev.disable_patreson_synchronisation, will only load admins as patrons"
+        );
+    }
+
     assyst
         .register_task(Task::new(
             assyst.clone(),
@@ -104,7 +110,7 @@ async fn main() {
             .await;
         info!("Registered top.gg stats POSTing task");
     } else {
-        info!("Bot list POSTing disabled in config: not registering task");
+        info!("Bot list POSTing disabled in config.dev.disable_bot_list_posting: not registering task");
     }
 
     info!("Starting assyst-webserver");

@@ -4,3 +4,4 @@ Cargo.lock
 config.toml
 **/*.rs.bk
 *.pdb
+.patreon_refresh

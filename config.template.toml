@@ -1,3 +1,9 @@
+######
+# NOTE: You MUST create a `.patreon_refresh` file with your patreon refresh token in it.
+# Even if you don't use Patreon, create the file and leave it blank
+# or Assyst will not start.
+######
+
 [urls]
 # Proxy URLs for untrusted requests. Leave blank for no proxying.
 proxy = []
@@ -59,6 +65,9 @@ disable_reminder_check = false
 # Use this to top the bot from POSTing its guild and shard counts to Top.gg. 
 # Useful for development instances.
 disable_bot_list_posting = false
+
+# Disables loading patrons from Patreon.
+disable_patreon_synchronisation = false
 
 # Whether to send the 'dev message' (see below)
 dev_message = false

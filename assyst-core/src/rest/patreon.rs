@@ -1,10 +1,11 @@
 use crate::assyst::ThreadSafeAssyst;
-use assyst_common::config::CONFIG;
-use reqwest::Error;
+use assyst_common::config::{CONFIG, PATREON_REFRESH_LOCATION};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+pub const REFRESH_ROUTE: &str = "https://www.patreon.com/api/oauth2/token";
 pub const ROUTE: &str = "https://api.patreon.com/api/oauth2/v2/campaigns/4568373/members?include=user,currently_entitled_tiers&fields%5Buser%5D=social_connections,full_name&fields%5Bmember%5D=is_follower,last_charge_date,last_charge_status,lifetime_support_cents,currently_entitled_amount_cents,patron_status&page%5Bsize%5D=10000";
+
 pub const TIER_4_AMOUNT: usize = 2000;
 pub const TIER_3_AMOUNT: usize = 1000;
 pub const TIER_2_AMOUNT: usize = 500;
@@ -137,13 +138,43 @@ pub struct Patron {
     pub _admin: bool,
 }
 
+#[derive(Deserialize, Debug)]
+pub struct PatronRefreshResponse {
+    access_token: String,
+    refresh_token: String,
+}
+
+async fn get_patreon_access_token(assyst: ThreadSafeAssyst) -> anyhow::Result<String> {
+    let response = assyst
+        .reqwest_client
+        .post(REFRESH_ROUTE)
+        .query(&vec![
+            &("refresh_token", &CONFIG.authentication.patreon_refresh),
+            &("client_secret", &CONFIG.authentication.patreon_client_secret),
+            &("client_id", &CONFIG.authentication.patreon_client_id),
+            &("grant_type", &"refresh_token".to_owned()),
+        ])
+        .send()
+        .await?
+        .json::<PatronRefreshResponse>()
+        .await?;
+
+    std::fs::write(PATREON_REFRESH_LOCATION, response.refresh_token.clone())?;
+
+    Ok(response.access_token.to_owned())
+}
+
 /// I am not proud of this code, but at the same time, I am not proud of Patreon for making such a
 /// terrible API
-pub async fn get_patrons(assyst: ThreadSafeAssyst) -> Result<Vec<Patron>, Error> {
+pub async fn get_patrons(assyst: ThreadSafeAssyst) -> anyhow::Result<Vec<Patron>> {
+    let mut patrons: Vec<Patron> = vec![];
+
+    let access_token = get_patreon_access_token(assyst.clone()).await?;
+
     let response = assyst
         .reqwest_client
         .get(ROUTE)
-        .header(reqwest::header::AUTHORIZATION, &CONFIG.authentication.patreon_token)
+        .header(reqwest::header::AUTHORIZATION, &format!("Bearer {access_token}"))
         .send()
         .await?
         .json::<Response>()
@@ -173,8 +204,6 @@ pub async fn get_patrons(assyst: ThreadSafeAssyst) -> Result<Vec<Patron>, Error>
             discord_connections.insert(id, d.parse::<u64>().unwrap());
         };
     }
-
-    let mut patrons: Vec<Patron> = vec![];
 
     for e in entitled_tiers {
         let patron_id = e.0;

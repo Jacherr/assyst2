@@ -23,7 +23,11 @@ pub struct Urls {
 #[derive(Deserialize)]
 pub struct Authentication {
     pub discord_token: String,
-    pub patreon_token: String,
+    // written to later
+    #[serde(default)]
+    pub patreon_refresh: String,
+    pub patreon_client_secret: String,
+    pub patreon_client_id: String,
     pub top_gg_token: String,
     pub top_gg_webhook_token: String,
     pub top_gg_webhook_port: u16,
@@ -90,6 +94,7 @@ pub struct DevAttributes {
     pub disable_bad_translator_channels: bool,
     pub disable_reminder_check: bool,
     pub disable_bot_list_posting: bool,
+    pub disable_patreon_synchronisation: bool,
     pub dev_guild: u64,
     pub dev_channel: u64,
     pub dev_message: bool,
