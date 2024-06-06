@@ -19,7 +19,7 @@ pub struct PreprocessResult {
     /// If the command was ran in the bot's DMs.
     pub is_in_dm: bool,
     /// Time taken to determine the prefix.
-    pub prefixing_determiner_time: Duration,
+    pub prefixing_determinism_time: Duration,
 }
 
 /// Returns `Some(prefix)` if the prefix is the mention of the bot, otherwise `None`
@@ -114,7 +114,7 @@ pub async fn user_globally_blacklisted(assyst: ThreadSafeAssyst, id: u64) -> Res
 /// - Checking if the author is blacklisted in the guild from running commands,
 /// - Checking that the message is not sent by a bot or a webhook,
 /// - Checking that the message starts with the correct prefix for the context, and returning any
-///   identified prefix.
+///   identified prefix,
 /// - Fetching all command restrictions for handling later once the command has been determined.
 pub async fn preprocess(assyst: ThreadSafeAssyst, message: &Message) -> Result<PreprocessResult, PreParseError> {
     // check author is not bot or webhook
@@ -158,6 +158,6 @@ pub async fn preprocess(assyst: ThreadSafeAssyst, message: &Message) -> Result<P
         prefix: parsed_prefix,
         guild_owner,
         is_in_dm,
-        prefixing_determiner_time: prefix_time,
+        prefixing_determinism_time: prefix_time,
     })
 }

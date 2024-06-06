@@ -20,8 +20,9 @@ use assyst_common::util::tracing_init;
 use assyst_common::{err, ok_or_break};
 use gateway_handler::handle_raw_event;
 use gateway_handler::incoming_event::IncomingEvent;
+use rest::web_media_download::get_web_download_api_urls;
 use tokio::spawn;
-use tracing::{info, trace};
+use tracing::{debug, info, trace};
 use twilight_gateway::EventTypeFlags;
 use twilight_model::id::marker::WebhookMarker;
 use twilight_model::id::Id;
@@ -112,6 +113,12 @@ async fn main() {
     } else {
         info!("Bot list POSTing disabled in config.dev.disable_bot_list_posting: not registering task");
     }
+
+    info!("Caching web download API URLs");
+    let web_download_urls = get_web_download_api_urls(assyst.clone()).await.unwrap();
+    info!("Got {} URLs to cache", web_download_urls.len());
+    debug!(?web_download_urls);
+    assyst.rest_cache_handler.set_web_download_urls(web_download_urls);
 
     info!("Starting assyst-webserver");
     assyst_webserver::run(

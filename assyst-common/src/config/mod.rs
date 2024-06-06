@@ -13,7 +13,7 @@ lazy_static! {
     pub static ref CONFIG: AssystConfig = {
         let toml = std::fs::read_to_string(CONFIG_LOCATION).unwrap();
         let mut config = from_str::<AssystConfig>(&toml).unwrap();
-        let patreon_refresh = std::fs::read_to_string(PATREON_REFRESH_LOCATION).unwrap();
+        let patreon_refresh = std::fs::read_to_string(PATREON_REFRESH_LOCATION).unwrap_or(String::new());
         config.authentication.patreon_refresh = patreon_refresh;
         info!("Loaded config file {}", CONFIG_LOCATION);
         config

@@ -9,7 +9,7 @@ use futures_util::{Stream, StreamExt};
 use human_bytes::human_bytes;
 use reqwest::{Client, StatusCode, Url};
 
-pub const ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES: usize = 100_000_000;
+pub const ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES: usize = 250_000_000;
 static PROXY_NUM: AtomicUsize = AtomicUsize::new(0);
 
 #[derive(Debug)]

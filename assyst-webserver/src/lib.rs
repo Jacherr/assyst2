@@ -16,7 +16,6 @@ use serde::Deserialize;
 use std::sync::Arc;
 use tokio::net::TcpListener;
 use tokio::spawn;
-use tokio::sync::RwLock;
 use twilight_http::Client as HttpClient;
 use twilight_model::id::marker::{UserMarker, WebhookMarker};
 use twilight_model::id::Id;

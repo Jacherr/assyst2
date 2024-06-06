@@ -1,5 +1,6 @@
 use std::time::Duration;
 
+use assyst_common::util::format_duration;
 use assyst_proc_macro::command;
 
 use super::arguments::{Rest, Word};
@@ -76,7 +77,14 @@ pub async fn download(ctxt: CommandCtxt<'_>, url: Word, opts_str: Option<Rest>) 
 
     let result = download_web_media(ctxt.assyst().clone(), &url.0, opts).await?;
 
-    ctxt.reply(result).await?;
+    ctxt.reply((
+        result,
+        &format!(
+            "Took {}",
+            format_duration(&ctxt.data.execution_timings.processing_time_start.elapsed())
+        )[..],
+    ))
+    .await?;
 
     Ok(())
 }

@@ -1,7 +1,7 @@
 use moka::sync::Cache;
 use std::hash::Hash;
 use std::mem::size_of;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 use std::time::Duration;
 use twilight_http::Client as HttpClient;
 use twilight_model::guild::{Permissions, PremiumTier};
@@ -31,6 +31,7 @@ pub struct RestCacheHandler {
     guild_upload_limits: Cache<u64, u64>,
     channel_nsfw_status: Cache<u64, bool>,
     guild_owners: Cache<u64, u64>,
+    web_download_urls: OnceLock<Vec<String>>,
 }
 impl RestCacheHandler {
     pub fn new(client: Arc<HttpClient>) -> RestCacheHandler {
@@ -39,6 +40,7 @@ impl RestCacheHandler {
             guild_upload_limits: default_cache(),
             channel_nsfw_status: default_cache(),
             guild_owners: default_cache(),
+            web_download_urls: OnceLock::new(),
         }
     }
 
@@ -51,6 +53,12 @@ impl RestCacheHandler {
         size += self.guild_upload_limits.entry_count() * size_of::<(u64, u64)>() as u64;
         size += self.channel_nsfw_status.entry_count() * size_of::<(u64, bool)>() as u64;
         size += self.guild_owners.entry_count() * size_of::<(u64, u64)>() as u64;
+        size += self
+            .web_download_urls
+            .get()
+            .unwrap_or(&vec![])
+            .iter()
+            .fold(0, |acc, x| acc + x.as_bytes().len()) as u64;
         size
     }
 
@@ -174,5 +182,15 @@ impl RestCacheHandler {
             || member_permissions & Permissions::MANAGE_GUILD.bits() == Permissions::MANAGE_GUILD.bits();
 
         Ok(owner == user_id || member_is_manager)
+    }
+
+    pub fn set_web_download_urls(&self, urls: Vec<String>) {
+        self.web_download_urls
+            .set(urls)
+            .expect("failed to set web download urls");
+    }
+
+    pub fn get_web_download_urls(&self) -> &[String] {
+        self.web_download_urls.get().expect("failed to get web download urls")
     }
 }

@@ -1,7 +1,7 @@
 ######
-# NOTE: You MUST create a `.patreon_refresh` file with your patreon refresh token in it.
-# Even if you don't use Patreon, create the file and leave it blank
-# or Assyst will not start.
+# NOTE: If using Patreon, you must create a `.patreon_refresh` file at the project root (i.e., same directory as this file).
+# This file should have you Patreon refresh token in it as a raw string.
+# If not using Patreon, you can safely exclude this file. However, you should also set `dev.disable_patreon_synchronisation` to true.
 ######
 
 [urls]

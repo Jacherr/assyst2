@@ -78,7 +78,7 @@ pub async fn parse_message_into_command(
         execution_timings: ExecutionTimings {
             processing_time_start,
             parse_total: parse_start.elapsed(),
-            prefix_determiner: preprocess.prefixing_determiner_time,
+            prefix_determiner: preprocess.prefixing_determinism_time,
             metadata_check_start: Instant::now(),
             preprocess_total: preprocess_time,
         },

@@ -66,7 +66,9 @@ pub fn parse_to_millis(input: &str) -> Result<u64, ParseToMillisError> {
 
 /// Initialises tracing logging.
 pub fn tracing_init() {
-    let filter = EnvFilter::from_default_env().add_directive("twilight_gateway=info".parse().unwrap());
+    let filter = EnvFilter::from_default_env()
+        .add_directive("twilight_gateway=info".parse().unwrap())
+        .add_directive("hyper=info".parse().unwrap());
     let description = "[year]-[month]-[day] [hour]:[minute]:[second]";
 
     tracing_subscriber::fmt()

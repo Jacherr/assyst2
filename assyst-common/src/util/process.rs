@@ -21,7 +21,7 @@ pub fn get_host_memory_usage() -> Option<usize> {
     output.ok().and_then(|x| x.stdout.trim().parse::<usize>().ok())
 }
 
-/// Gets the memory usage in bytes of all 'relevant'' processes.
+/// Gets the memory usage in bytes of all 'relevant' processes.
 pub fn get_processes_mem_usage() -> Vec<(&'static str, usize)> {
     let mut memory_usages: Vec<(&str, usize)> = vec![];
 
