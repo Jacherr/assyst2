@@ -23,15 +23,17 @@ fn default_cache<K: TCacheK, V: TCacheV>() -> Cache<K, V> {
         .build()
 }
 
-// FIXME: Out-of-date cache may become an issue, so we need to listen to more events
-// to make sure these caches stay up-to-date
-/// Rest cache handler for any common data structures accessed from Discord.
+/// Rest cache handler for any common data structures loaded from a network resource.
 pub struct RestCacheHandler {
     http_client: Arc<HttpClient>,
+    /// Guild ID -> Limit in BYTES
     guild_upload_limits: Cache<u64, u64>,
+    /// Guild ID -> true/false
     channel_nsfw_status: Cache<u64, bool>,
+    /// Guild ID -> User ID
     guild_owners: Cache<u64, u64>,
-    web_download_urls: OnceLock<Vec<String>>,
+    /// List of all download URLs.
+    web_download_urls: Cache<String, ()>,
 }
 impl RestCacheHandler {
     pub fn new(client: Arc<HttpClient>) -> RestCacheHandler {
@@ -40,7 +42,7 @@ impl RestCacheHandler {
             guild_upload_limits: default_cache(),
             channel_nsfw_status: default_cache(),
             guild_owners: default_cache(),
-            web_download_urls: OnceLock::new(),
+            web_download_urls: default_cache(),
         }
     }
 
@@ -55,10 +57,8 @@ impl RestCacheHandler {
         size += self.guild_owners.entry_count() * size_of::<(u64, u64)>() as u64;
         size += self
             .web_download_urls
-            .get()
-            .unwrap_or(&vec![])
             .iter()
-            .fold(0, |acc, x| acc + x.as_bytes().len()) as u64;
+            .fold(0, |acc, x| acc + x.0.as_bytes().len()) as u64;
         size
     }
 
@@ -185,12 +185,12 @@ impl RestCacheHandler {
     }
 
     pub fn set_web_download_urls(&self, urls: Vec<String>) {
-        self.web_download_urls
-            .set(urls)
-            .expect("failed to set web download urls");
+        for url in urls {
+            self.web_download_urls.insert(url, ());
+        }
     }
 
-    pub fn get_web_download_urls(&self) -> &[String] {
-        self.web_download_urls.get().expect("failed to get web download urls")
+    pub fn get_web_download_urls(&self) -> Vec<Arc<String>> {
+        self.web_download_urls.iter().map(|x| x.0).collect::<Vec<_>>()
     }
 }

@@ -8,6 +8,8 @@
 
 ![Discord](https://img.shields.io/discord/1099115731301449758?color=7289DA)
 ![GitHub](https://img.shields.io/github/license/jacherr/assyst2)
+[![Discord Bots](https://top.gg/api/widget/servers/571661221854707713.svg?noavatar=true)](https://top.gg/bot/571661221854707713)
+[![Discord Bots](https://top.gg/api/widget/status/571661221854707713.svg?noavatar=true)](https://top.gg/bot/571661221854707713)
 
 </div>
 

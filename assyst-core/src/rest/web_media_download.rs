@@ -1,4 +1,5 @@
 use std::cell::LazyCell;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use anyhow::bail;
@@ -10,7 +11,7 @@ use reqwest::StatusCode;
 use serde::Deserialize;
 use serde_json::{from_str, json};
 use tokio::time::timeout;
-use tracing::{debug, info};
+use tracing::debug;
 
 use crate::assyst::ThreadSafeAssyst;
 use crate::downloader::{download_content, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES};
@@ -19,6 +20,7 @@ pub const INSTANCES_ROUTE: &str = "https://instances.hyper.lol/instances.json";
 
 pub const TEST_URL: &str = "https://www.youtube.com/watch?v=sbvp3kuU2ak";
 pub const TEST_URL_TIMEOUT: LazyCell<Duration> = LazyCell::new(|| Duration::from_secs(10));
+pub const TEST_SCORE_THRESHOLD: f32 = 90.0;
 
 #[derive(Default)]
 pub struct WebDownloadOpts {
@@ -94,7 +96,7 @@ pub async fn get_web_download_api_urls(assyst: ThreadSafeAssyst) -> anyhow::Resu
     let test_urls = json
         .iter()
         .map(|entry: &InstancesQueryResult| {
-            if entry.protocol == "https" && entry.score >= 99.9 {
+            if entry.protocol == "https" && entry.score >= TEST_SCORE_THRESHOLD {
                 format!("https://{}/api/json", entry.api)
             } else if entry.api == "api.cobalt.tools" {
                 format!("https://{}/api/json", entry.api)
@@ -139,9 +141,9 @@ pub async fn download_web_media(assyst: ThreadSafeAssyst, url: &str, opts: WebDo
     let encoded_url = urlencoding::encode(url).to_string();
 
     let urls = if let Some(api_url) = opts.api_url_override {
-        vec![api_url]
+        vec![Arc::new(api_url)]
     } else {
-        let mut urls = Vec::from(assyst.rest_cache_handler.get_web_download_urls());
+        let mut urls = assyst.rest_cache_handler.get_web_download_urls();
         urls.shuffle(&mut thread_rng());
         urls
     };
@@ -150,11 +152,11 @@ pub async fn download_web_media(assyst: ThreadSafeAssyst, url: &str, opts: WebDo
     let mut err: String = String::new();
 
     for route in urls {
-        info!("trying url: {route}");
+        debug!("trying url: {route}");
 
         let res = assyst
             .reqwest_client
-            .post(route)
+            .post((*route).clone())
             .header("accept", "application/json")
             .header("User-Agent", "Assyst Discord Bot (https://github.com/jacherr/assyst2)")
             .json(&json!({
@@ -196,6 +198,9 @@ pub async fn download_web_media(assyst: ThreadSafeAssyst, url: &str, opts: WebDo
                                             .to_owned()
                                     } else if e.contains("i couldn't connect to the service api.") {
                                         e = "The web downloader could not connect to the service API. Please try again later.".to_owned()
+                                    } else if e.contains("couldn't get this youtube video because it requires sign in")
+                                    {
+                                        e = "YouTube has blocked video downloading. Please try again later.".to_owned()
                                     } else if e.contains("i couldn't find anything about this link") {
                                         breakable = true;
                                     }
