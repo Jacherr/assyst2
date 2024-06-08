@@ -5,7 +5,9 @@ use assyst_common::err;
 use tracing::info;
 
 /// Synchronises Assyst with an updated list of patrons.
-pub async fn get_patrons(assyst: ThreadSafeAssyst) {
+pub async fn get_premium_users(assyst: ThreadSafeAssyst) {
+    let mut premium_users: Vec<Patron> = vec![];
+
     if !CONFIG.dev.disable_patreon_synchronisation {
         info!("Synchronising patron list");
 
@@ -18,20 +20,20 @@ pub async fn get_patrons(assyst: ThreadSafeAssyst) {
             },
         };
 
-        assyst.update_patron_list(patrons.clone()).await;
+        premium_users.extend(patrons.into_iter());
 
-        info!("Synchronised patrons: total {}", patrons.len());
-    } else {
-        let mut patrons: Vec<Patron> = vec![];
-
-        for i in CONFIG.dev.admin_users.iter() {
-            patrons.push(Patron {
-                user_id: *i,
-                tier: PatronTier::Tier4,
-                _admin: true,
-            })
-        }
-
-        assyst.update_patron_list(patrons.clone()).await;
+        info!("Synchronised patrons from Patreon: total {}", premium_users.len());
     }
+
+    // todo: load premium users via entitlements once twilight supports this
+
+    for i in CONFIG.dev.admin_users.iter() {
+        premium_users.push(Patron {
+            user_id: *i,
+            tier: PatronTier::Tier4,
+            _admin: true,
+        })
+    }
+
+    assyst.update_premium_user_list(premium_users.clone());
 }

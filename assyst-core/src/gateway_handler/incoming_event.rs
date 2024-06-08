@@ -5,14 +5,14 @@ use twilight_model::gateway::payload::incoming::{
 
 #[derive(Debug)]
 pub enum IncomingEvent {
-    MessageCreate(Box<MessageCreate>), // this struct is huge.
-    MessageUpdate(MessageUpdate),
-    MessageDelete(MessageDelete),
-    GuildCreate(Box<GuildCreate>), // same problem
+    ChannelUpdate(ChannelUpdate),
+    GuildCreate(Box<GuildCreate>), // this struct is huge.
     GuildDelete(GuildDelete),
     GuildUpdate(GuildUpdate),
+    MessageCreate(Box<MessageCreate>), // same problem
+    MessageDelete(MessageDelete),
+    MessageUpdate(MessageUpdate),
     ShardReady(Ready),
-    ChannelUpdate(ChannelUpdate),
 }
 impl TryFrom<GatewayEvent> for IncomingEvent {
     type Error = ();

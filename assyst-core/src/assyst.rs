@@ -29,8 +29,8 @@ pub struct Assyst {
     /// HTTP client for Discord. Handles all HTTP requests to Discord, storing stateful information
     /// about current ratelimits.
     pub http_client: Arc<HttpClient>,
-    /// List of the current patrons to Assyst.
-    pub patrons: Arc<Mutex<Vec<Patron>>>,
+    /// List of the current premim users of Assyst.
+    pub premium_users: Arc<Mutex<Vec<Patron>>>,
     /// Metrics handler for Prometheus, rate trackers etc.
     pub metrics_handler: Arc<MetricsHandler>,
     /// The reqwest client, used to issue general HTTP requests
@@ -51,30 +51,30 @@ impl Assyst {
         let shard_count = http_client.gateway().authed().await?.model().await?.shards as u64;
         let database_handler =
             Arc::new(DatabaseHandler::new(CONFIG.database.to_url(), CONFIG.database.to_url_safe()).await?);
-        let patrons = Arc::new(Mutex::new(vec![]));
+        let premium_users = Arc::new(Mutex::new(vec![]));
 
         Ok(Assyst {
             persistent_cache_handler: PersistentCacheHandler::new(CACHE_PIPE_PATH),
             database_handler: database_handler.clone(),
             http_client: http_client.clone(),
-            patrons: patrons.clone(),
+            premium_users: premium_users.clone(),
             metrics_handler: Arc::new(MetricsHandler::new(database_handler.clone())?),
             reqwest_client: reqwest::Client::new(),
             tasks: Mutex::new(vec![]),
             shard_count,
             replies: Replies::new(),
-            wsi_handler: WsiHandler::new(database_handler.clone(), patrons.clone()),
+            wsi_handler: WsiHandler::new(database_handler.clone(), premium_users.clone()),
             rest_cache_handler: RestCacheHandler::new(http_client.clone()),
             command_ratelimits: CommandRatelimits::new(),
         })
     }
 
-    /// Register a new Task to Assyst.
-    pub async fn register_task(&self, task: Task) {
+    /// Register a new `Task` to Assyst.
+    pub fn register_task(&self, task: Task) {
         self.tasks.lock().unwrap().push(task);
     }
 
-    pub async fn update_patron_list(&self, patrons: Vec<Patron>) {
-        *self.patrons.lock().unwrap() = patrons;
+    pub fn update_premium_user_list(&self, patrons: Vec<Patron>) {
+        *self.premium_users.lock().unwrap() = patrons;
     }
 }

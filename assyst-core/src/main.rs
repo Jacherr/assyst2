@@ -10,7 +10,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use crate::assyst::{Assyst, ThreadSafeAssyst};
-use crate::task::tasks::get_patrons::get_patrons;
+use crate::task::tasks::get_premium_users::get_premium_users;
 use crate::task::tasks::top_gg_stats::post_top_gg_stats;
 use crate::task::Task;
 use assyst_common::config::config::LoggingWebhook;
@@ -21,6 +21,7 @@ use assyst_common::{err, ok_or_break};
 use gateway_handler::handle_raw_event;
 use gateway_handler::incoming_event::IncomingEvent;
 use rest::web_media_download::get_web_download_api_urls;
+use task::tasks::reminders::handle_reminders;
 use tokio::spawn;
 use tracing::{debug, info, trace};
 use twilight_gateway::EventTypeFlags;
@@ -90,28 +91,35 @@ async fn main() {
         );
     }
 
-    assyst
-        .register_task(Task::new(
-            assyst.clone(),
-            // 10 mins
-            Duration::from_secs(60 * 10),
-            function_task_callback!(get_patrons),
-        ))
-        .await;
+    assyst.register_task(Task::new(
+        assyst.clone(),
+        // 10 mins
+        Duration::from_secs(60 * 10),
+        function_task_callback!(get_premium_users),
+    ));
     info!("Registered patreon synchronisation task");
 
     if !CONFIG.dev.disable_bot_list_posting {
-        assyst
-            .register_task(Task::new(
-                assyst.clone(),
-                // 10 mins
-                Duration::from_secs(60 * 10),
-                function_task_callback!(post_top_gg_stats),
-            ))
-            .await;
+        assyst.register_task(Task::new(
+            assyst.clone(),
+            // 10 mins
+            Duration::from_secs(60 * 10),
+            function_task_callback!(post_top_gg_stats),
+        ));
         info!("Registered top.gg stats POSTing task");
     } else {
         info!("Bot list POSTing disabled in config.dev.disable_bot_list_posting: not registering task");
+    }
+
+    if !CONFIG.dev.disable_reminder_check {
+        assyst.register_task(Task::new(
+            assyst.clone(),
+            Duration::from_millis(crate::task::tasks::reminders::FETCH_INTERVAL as u64),
+            function_task_callback!(handle_reminders),
+        ));
+        info!("Registered reminder check task");
+    } else {
+        info!("Reminder processing disabled in config.dev.disable_reminder_check: not registering task");
     }
 
     info!("Caching web download API URLs");

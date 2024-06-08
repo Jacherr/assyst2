@@ -45,6 +45,13 @@ vote = { token = "", id = 0 }
 # Whether to use the webhooks on vote, panic, and error.
 enable_webhooks = true
 
+# Entitlements are the subscriptions for the app within Discord. You can probably leave these zeroed and the system will ignore them.
+[entitlements]
+tier_1_entitlement_id = 0
+tier_2_entitlement_id = 0
+tier_3_entitlement_id = 0
+tier_4_entitlement_id = 0
+
 [dev]
 # These Discord user IDs have full control of the bot, including developer-only commands.
 # Also grants max-tier premium access.

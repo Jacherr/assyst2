@@ -27,17 +27,17 @@ pub type WsiSender = (Sender<JobResult>, FifoSend, usize);
 
 pub struct WsiHandler {
     database_handler: Arc<DatabaseHandler>,
-    patrons: Arc<Mutex<Vec<Patron>>>,
+    premium_users: Arc<Mutex<Vec<Patron>>>,
     pub wsi_tx: UnboundedSender<WsiSender>,
 }
 impl WsiHandler {
-    pub fn new(database_handler: Arc<DatabaseHandler>, patrons: Arc<Mutex<Vec<Patron>>>) -> WsiHandler {
+    pub fn new(database_handler: Arc<DatabaseHandler>, premium_users: Arc<Mutex<Vec<Patron>>>) -> WsiHandler {
         let (tx, rx) = unbounded_channel::<WsiSender>();
         Self::listen(rx, &CONFIG.urls.wsi);
         WsiHandler {
             wsi_tx: tx,
             database_handler,
-            patrons,
+            premium_users,
         }
     }
 
@@ -163,16 +163,16 @@ impl WsiHandler {
     /// and are not a patron!
     pub async fn get_request_tier(&self, user_id: u64) -> Result<usize, anyhow::Error> {
         if let Some(p) = {
-            let patrons = self.patrons.lock().unwrap();
-            patrons.iter().find(|i| i.user_id == user_id).cloned()
+            let premium_users = self.premium_users.lock().unwrap();
+            premium_users.iter().find(|i| i.user_id == user_id).cloned()
         } {
             return Ok(p.tier as usize);
         }
 
-        let user_tier1 = FreeTier2Requests::get_user_free_tier_2_requests(&*self.database_handler, user_id).await?;
+        let user_tier2 = FreeTier2Requests::get_user_free_tier_2_requests(&*self.database_handler, user_id).await?;
 
-        if user_tier1.count > 0 {
-            user_tier1
+        if user_tier2.count > 0 {
+            user_tier2
                 .change_free_tier_2_requests(&*self.database_handler, -1)
                 .await?;
             Ok(2)

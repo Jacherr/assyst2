@@ -219,14 +219,6 @@ pub async fn get_patrons(assyst: ThreadSafeAssyst) -> anyhow::Result<Vec<Patron>
         };
     }
 
-    for i in CONFIG.dev.admin_users.iter() {
-        patrons.push(Patron {
-            user_id: *i,
-            tier: PatronTier::Tier4,
-            _admin: true,
-        })
-    }
-
     Ok(patrons)
 }
 
