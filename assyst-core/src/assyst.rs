@@ -10,7 +10,10 @@ use assyst_common::metrics_handler::MetricsHandler;
 use assyst_common::pipe::CACHE_PIPE_PATH;
 use assyst_database::DatabaseHandler;
 use std::sync::{Arc, Mutex};
+use twilight_http::client::InteractionClient;
 use twilight_http::Client as HttpClient;
+use twilight_model::id::marker::ApplicationMarker;
+use twilight_model::id::Id;
 
 pub type ThreadSafeAssyst = Arc<Assyst>;
 
@@ -29,6 +32,8 @@ pub struct Assyst {
     /// HTTP client for Discord. Handles all HTTP requests to Discord, storing stateful information
     /// about current ratelimits.
     pub http_client: Arc<HttpClient>,
+    /// Interaction client for handling Discord interations (i.e., slash commands).
+    pub application_id: Id<ApplicationMarker>,
     /// List of the current premim users of Assyst.
     pub premium_users: Arc<Mutex<Vec<Patron>>>,
     /// Metrics handler for Prometheus, rate trackers etc.
@@ -52,11 +57,13 @@ impl Assyst {
         let database_handler =
             Arc::new(DatabaseHandler::new(CONFIG.database.to_url(), CONFIG.database.to_url_safe()).await?);
         let premium_users = Arc::new(Mutex::new(vec![]));
+        let current_application = http_client.current_user_application().await?.model().await?;
 
         Ok(Assyst {
             persistent_cache_handler: PersistentCacheHandler::new(CACHE_PIPE_PATH),
             database_handler: database_handler.clone(),
             http_client: http_client.clone(),
+            application_id: current_application.id,
             premium_users: premium_users.clone(),
             metrics_handler: Arc::new(MetricsHandler::new(database_handler.clone())?),
             reqwest_client: reqwest::Client::new(),
@@ -76,5 +83,9 @@ impl Assyst {
 
     pub fn update_premium_user_list(&self, patrons: Vec<Patron>) {
         *self.premium_users.lock().unwrap() = patrons;
+    }
+
+    pub fn interaction_client(&self) -> InteractionClient {
+        self.http_client.interaction(self.application_id)
     }
 }

@@ -18,6 +18,7 @@ use assyst_common::config::CONFIG;
 use assyst_common::pipe::{Pipe, GATEWAY_PIPE_PATH};
 use assyst_common::util::tracing_init;
 use assyst_common::{err, ok_or_break};
+use command::registry::register_interaction_commands;
 use gateway_handler::handle_raw_event;
 use gateway_handler::incoming_event::IncomingEvent;
 use rest::web_media_download::get_web_download_api_urls;
@@ -136,41 +137,49 @@ async fn main() {
     )
     .await;
 
-    info!("Connecting to assyst-gateway pipe at {}", GATEWAY_PIPE_PATH);
-    loop {
-        let mut gateway_pipe = Pipe::poll_connect(GATEWAY_PIPE_PATH, None).await.unwrap();
-        info!("Connected to assyst-gateway pipe at {}", GATEWAY_PIPE_PATH);
+    info!("Registering interaction commands");
+    register_interaction_commands(assyst.clone()).await.unwrap();
 
+    spawn(async move {
+        info!("Connecting to assyst-gateway pipe at {}", GATEWAY_PIPE_PATH);
         loop {
-            // break if read fails because it means broken pipe
-            // we need to re-poll the pipe to get a new connection
-            let event = ok_or_break!(gateway_pipe.read_string().await);
-            trace!("got event: {}", event);
+            let mut gateway_pipe = Pipe::poll_connect(GATEWAY_PIPE_PATH, None).await.unwrap();
+            info!("Connected to assyst-gateway pipe at {}", GATEWAY_PIPE_PATH);
 
-            let parsed_event = twilight_gateway::parse(
-                event,
-                EventTypeFlags::GUILD_CREATE
-                    | EventTypeFlags::GUILD_DELETE
-                    | EventTypeFlags::MESSAGE_CREATE
-                    | EventTypeFlags::MESSAGE_DELETE
-                    | EventTypeFlags::MESSAGE_UPDATE
-                    | EventTypeFlags::READY,
-            )
-            .ok()
-            .flatten();
+            loop {
+                // break if read fails because it means broken pipe
+                // we need to re-poll the pipe to get a new connection
+                let event = ok_or_break!(gateway_pipe.read_string().await);
+                trace!("got event: {}", event);
 
-            if let Some(parsed_event) = parsed_event {
-                let try_incoming_event: Result<IncomingEvent, _> = parsed_event.try_into();
-                if let Ok(incoming_event) = try_incoming_event {
-                    assyst.metrics_handler.add_event();
-                    let assyst_c = assyst.clone();
-                    spawn(async move { handle_raw_event(assyst_c.clone(), incoming_event).await });
+                let parsed_event = twilight_gateway::parse(
+                    event,
+                    EventTypeFlags::GUILD_CREATE
+                        | EventTypeFlags::GUILD_DELETE
+                        | EventTypeFlags::MESSAGE_CREATE
+                        | EventTypeFlags::MESSAGE_DELETE
+                        | EventTypeFlags::MESSAGE_UPDATE
+                        | EventTypeFlags::READY,
+                )
+                .ok()
+                .flatten();
+
+                if let Some(parsed_event) = parsed_event {
+                    let try_incoming_event: Result<IncomingEvent, _> = parsed_event.try_into();
+                    if let Ok(incoming_event) = try_incoming_event {
+                        assyst.metrics_handler.add_event();
+                        let assyst_c = assyst.clone();
+                        spawn(async move { handle_raw_event(assyst_c.clone(), incoming_event).await });
+                    }
                 }
             }
-        }
 
-        err!("Connection to assyst-gateway lost, attempting reconnection");
-    }
+            err!("Connection to assyst-gateway lost, attempting reconnection");
+        }
+    });
+
+    // todo: connect to slash client
+    loop {}
 }
 
 #[cfg(test)]

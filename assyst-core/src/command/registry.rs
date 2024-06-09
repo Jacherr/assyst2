@@ -2,7 +2,9 @@ use std::collections::HashMap;
 use std::sync::OnceLock;
 
 use tracing::info;
+use twilight_model::application::command::Command as InteractionCommand;
 
+use crate::assyst::ThreadSafeAssyst;
 use crate::command::CommandMetadata;
 
 use super::{misc, services, wsi, TCommand};
@@ -57,4 +59,30 @@ pub fn get_or_init_commands() -> &'static HashMap<&'static str, TCommand> {
 /// Finds a command by its name.
 pub fn find_command_by_name(name: &str) -> Option<TCommand> {
     get_or_init_commands().get(name).copied()
+}
+
+pub async fn register_interaction_commands(assyst: ThreadSafeAssyst) -> anyhow::Result<Vec<InteractionCommand>> {
+    // todo: dont register aliases
+    let commands = get_or_init_commands()
+        .iter()
+        .map(|x| {
+            let mut interaction_command = x.1.as_interaction_command();
+            interaction_command.name = if interaction_command.name.is_empty() {
+                "".to_owned()
+            } else {
+                x.0.to_owned().to_owned()
+            };
+            interaction_command
+        })
+        .filter(|y| !y.name.is_empty())
+        .collect::<Vec<_>>();
+
+    let response = assyst
+        .interaction_client()
+        .set_global_commands(&commands)
+        .await?
+        .model()
+        .await?;
+
+    Ok(response)
 }

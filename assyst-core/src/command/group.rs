@@ -79,6 +79,31 @@ macro_rules! define_commandgroup {
                     crate::command::group::find_subcommand(sub, Self::SUBCOMMANDS)
                 }
 
+                fn as_interaction_command(&self) -> twilight_model::application::command::Command {
+                    let meta = self.metadata();
+
+                    twilight_model::application::command::Command {
+                        application_id: None,
+                        default_member_permissions: None,
+                        description: meta.description.to_owned(),
+                        description_localizations: None,
+                        // TODO: set based on if dms are allowed
+                        // TODO: update to `contexts` once this is required
+                        // (see https://discord.com/developers/docs/interactions/application-commands#create-global-application-command)
+                        dm_permission: Some(false),
+                        guild_id: None,
+                        id: None,
+                        kind: twilight_model::application::command::CommandType::ChatInput,
+                        // todo: handle properly
+                        name: "".to_owned(),
+                        name_localizations: None,
+                        nsfw: Some(meta.age_restricted),
+                        // TODO: set options properly
+                        options: vec![],
+                        version: twilight_model::id::Id::new(1),
+                    }
+                }
+
                 async fn execute(&self, ctxt: CommandCtxt<'_>) -> Result<(), crate::command::ExecutionError> {
                     #![allow(unreachable_code)]
                     match crate::command::group::execute_subcommand(ctxt.fork(), Self::SUBCOMMANDS).await {

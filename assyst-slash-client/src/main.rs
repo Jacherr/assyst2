@@ -7,6 +7,7 @@
 )]
 use std::sync::Arc;
 
+use assyst_common::config::CONFIG;
 use command::Cmd;
 use context::{Context, InnerContext};
 use response::ResponseBuilder;
@@ -32,15 +33,12 @@ pub mod utils;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let cfg_file = std::fs::read_to_string("Config.toml").expect("missing Config.toml");
-    let cfg: Cfg = toml::from_str(&cfg_file).expect("error parsing TOML");
-
-    let client = Arc::new(Client::new(cfg.token.clone()));
-    let config = twilight_gateway::Config::new(cfg.token.clone(), Intents::empty());
+    let client = Arc::new(Client::new(CONFIG.authentication.discord_token.clone()));
+    let config = twilight_gateway::Config::new(CONFIG.authentication.discord_token.clone(), Intents::empty());
     let application_id = client.current_user_application().await?.model().await?.id;
     let interactions = client.interaction(application_id);
 
-    let ctx = Context::new(client.clone(), application_id, cfg);
+    let ctx = Context::new(client.clone(), application_id, ());
 
     let cmds = vec![ping(&ctx)];
 
@@ -63,10 +61,10 @@ async fn main() -> anyhow::Result<()> {
             .collect::<Vec<_>>()
             .join(", ");
         if let Some(g) = k {
-            interactions.set_guild_commands(g, c).await?;
+            interactions.set_guild_commands(g, &[]).await.unwrap();
             println!("\x1b[1;32mRegister\x1b[0m Guild [\x1b[33m{g}\x1b[0m] with [{names}]");
         } else {
-            interactions.set_global_commands(c).await?;
+            interactions.set_global_commands(c).await.unwrap();
             println!("\x1b[1;32mRegister\x1b[0m global commands with [{names}]");
         }
     }
@@ -96,12 +94,12 @@ pub async fn runner(mut shard: Shard, tx: UnboundedSender<Event>) {
 }
 
 #[must_use]
-pub fn ping(ctx: &Context<Cfg>) -> Cmd<Cfg> {
+pub fn ping(ctx: &Context<()>) -> Cmd<()> {
     Cmd::new(Box::new(ctx.clone()))
         .name("test")
         .chat_input()
         .description("waow")
-        .guild_id(ctx.data.guild_id)
+        .guild_id(1099115731301449758)
         .respond_with(|ctx| {
             Box::pin(async move {
                 ctx.respond(ResponseBuilder::channel_message_with_source().content("ok!"))

@@ -79,6 +79,7 @@ impl Display for Availability {
     }
 }
 
+#[derive(Debug)]
 pub struct CommandMetadata {
     pub name: &'static str,
     pub aliases: &'static [&'static str],
@@ -93,7 +94,7 @@ pub struct CommandMetadata {
     pub age_restricted: bool,
 }
 
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum Category {
     Fun,
     Makesweet,
@@ -155,6 +156,9 @@ pub trait Command {
     /// Tries to find a subcommand given a name, provided that `self` is a command group
     fn subcommand(&self, s: &str) -> Option<TCommand>;
 
+    /// Creates an interaction command for subitting for Discord on startup
+    fn as_interaction_command(&self) -> twilight_model::application::command::Command;
+
     /// Parses arguments and executes the command.
     async fn execute(&self, ctxt: CommandCtxt<'_>) -> Result<(), ExecutionError>;
 }
@@ -208,6 +212,8 @@ impl<'a> CommandCtxt<'a> {
         let builder = builder.into();
         match self.data.source {
             Source::Gateway => gateway_reply::reply(self, builder).await,
+            // TODO: reply properly
+            Source::Interaction => todo!(),
         }
     }
 
@@ -323,7 +329,7 @@ pub async fn check_metadata(
         .command_ratelimits
         .insert(id, metadata.name, Instant::now());
 
-    if metadata.send_processing {
+    if metadata.send_processing && ctxt.data.source == Source::Gateway {
         if let Err(e) = ctxt.reply("Processing...").await {
             return Err(ExecutionError::Command(e));
         }
