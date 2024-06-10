@@ -35,6 +35,7 @@ use crate::assyst::ThreadSafeAssyst;
 use crate::wsi_handler::WsiHandler;
 use assyst_common::config::CONFIG;
 use async_trait::async_trait;
+use twilight_model::application::command::CommandOption;
 use twilight_model::channel::message::sticker::MessageSticker;
 use twilight_model::channel::message::Embed;
 use twilight_model::channel::{Attachment, Message};
@@ -90,8 +91,14 @@ pub struct CommandMetadata {
     pub examples: &'static [&'static str],
     pub usage: &'static str,
     /// Whether to send a "Processing..." reply when the command starts executing
+    /// or to send a prelim response to an interaction (a.k.a., Assyst is thinking...)
     pub send_processing: bool,
     pub age_restricted: bool,
+}
+
+#[derive(Debug)]
+pub struct CommandInteractionInfo {
+    pub command_options: Vec<CommandOption>,
 }
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
@@ -158,6 +165,9 @@ pub trait Command {
 
     /// Creates an interaction command for subitting for Discord on startup
     fn as_interaction_command(&self) -> twilight_model::application::command::Command;
+
+    /// Loads all interaction-specific info for sending to Discord
+    fn interaction_info(&self) -> CommandInteractionInfo;
 
     /// Parses arguments and executes the command.
     async fn execute(&self, ctxt: CommandCtxt<'_>) -> Result<(), ExecutionError>;

@@ -3,11 +3,13 @@ use std::fmt::Display;
 use assyst_common::util::discord::{get_avatar_url, id_from_mention};
 use assyst_common::util::{parse_to_millis, regex};
 use serde::Deserialize;
+use twilight_model::application::command::CommandOption;
 use twilight_model::channel::message::sticker::{MessageSticker, StickerFormatType};
 use twilight_model::channel::message::Embed;
 use twilight_model::channel::Attachment;
 use twilight_model::id::marker::ChannelMarker;
 use twilight_model::id::Id;
+use twilight_util::builder::command::{AttachmentBuilder, IntegerBuilder, NumberBuilder, StringBuilder};
 
 use crate::assyst::Assyst;
 use crate::downloader::{self, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES};
@@ -19,12 +21,17 @@ use super::CommandCtxt;
 pub trait ParseArgument: Sized {
     /// Parses `Self`, given a command.
     async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError>;
+    fn as_command_option(name: &str) -> CommandOption;
 }
 
 impl ParseArgument for u64 {
     async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
         let word = ctxt.next_word()?;
         Ok(word.parse()?)
+    }
+
+    fn as_command_option(name: &str) -> CommandOption {
+        IntegerBuilder::new(name, "integer option").required(true).build()
     }
 }
 
@@ -33,12 +40,20 @@ impl ParseArgument for f64 {
         let word = ctxt.next_word()?;
         Ok(word.parse()?)
     }
+
+    fn as_command_option(name: &str) -> CommandOption {
+        NumberBuilder::new(name, "number option").required(true).build()
+    }
 }
 
 impl ParseArgument for f32 {
     async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
         let word = ctxt.next_word()?;
         Ok(word.parse()?)
+    }
+
+    fn as_command_option(name: &str) -> CommandOption {
+        NumberBuilder::new(name, "number option").required(true).build()
     }
 }
 
@@ -51,19 +66,29 @@ impl<T: ParseArgument> ParseArgument for Option<T> {
             _ => Ok(None),
         }
     }
+
+    fn as_command_option(name: &str) -> CommandOption {
+        let mut option = T::as_command_option(name);
+        option.required = Some(false);
+        option
+    }
 }
 
-impl<T: ParseArgument> ParseArgument for Vec<T> {
+impl ParseArgument for Vec<Word> {
     async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
         let mut items = Vec::new();
 
         // `Option<T>`'s parser takes care of recovering from low severity errors
         // and any `Err`s returned are fatal, so we can just use `?`
-        while let Some(value) = <Option<T>>::parse(ctxt).await? {
+        while let Some(value) = <Option<Word>>::parse(ctxt).await? {
             items.push(value)
         }
 
         Ok(items)
+    }
+
+    fn as_command_option(name: &str) -> CommandOption {
+        StringBuilder::new(name, "text input").required(true).build()
     }
 }
 
@@ -72,13 +97,16 @@ impl<T: ParseArgument> ParseArgument for Vec<T> {
 pub struct Time {
     pub millis: u64,
 }
-
 impl ParseArgument for Time {
     async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
         let word = ctxt.next_word()?;
         let millis = parse_to_millis(word)?;
 
         Ok(Time { millis })
+    }
+
+    fn as_command_option(name: &str) -> CommandOption {
+        StringBuilder::new(name, "time input").required(true).build()
     }
 }
 
@@ -90,6 +118,10 @@ impl ParseArgument for Word {
     async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
         Ok(Self(ctxt.next_word()?.to_owned()))
     }
+
+    fn as_command_option(name: &str) -> CommandOption {
+        StringBuilder::new(name, "word input").required(true).build()
+    }
 }
 
 /// The rest of a message as an argument. This should be the last argument if used.
@@ -99,6 +131,10 @@ pub struct Rest(pub String);
 impl ParseArgument for Rest {
     async fn parse(ctxt: &mut CommandCtxt<'_>) -> Result<Self, TagParseError> {
         Ok(Self(ctxt.rest()?.to_owned()))
+    }
+
+    fn as_command_option(name: &str) -> CommandOption {
+        StringBuilder::new(name, "text input").required(true).build()
     }
 }
 
@@ -311,6 +347,10 @@ impl ParseArgument for ImageUrl {
 
         Ok(Self(url))
     }
+
+    fn as_command_option(name: &str) -> CommandOption {
+        AttachmentBuilder::new(name, "attachment input").required(true).build()
+    }
 }
 
 pub struct Image(pub Vec<u8>);
@@ -322,5 +362,9 @@ impl ParseArgument for Image {
         let data =
             downloader::download_content(ctxt.assyst(), &url, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES, true).await?;
         Ok(Image(data))
+    }
+
+    fn as_command_option(name: &str) -> CommandOption {
+        AttachmentBuilder::new(name, "attachment input").required(true).build()
     }
 }

@@ -62,24 +62,23 @@ pub fn find_command_by_name(name: &str) -> Option<TCommand> {
 }
 
 pub async fn register_interaction_commands(assyst: ThreadSafeAssyst) -> anyhow::Result<Vec<InteractionCommand>> {
-    // todo: dont register aliases
     let commands = get_or_init_commands()
         .iter()
-        .map(|x| {
-            let mut interaction_command = x.1.as_interaction_command();
-            interaction_command.name = if interaction_command.name.is_empty() {
-                "".to_owned()
-            } else {
-                x.0.to_owned().to_owned()
-            };
-            interaction_command
-        })
-        .filter(|y| !y.name.is_empty())
+        .map(|x| x.1.as_interaction_command())
+        .filter(|x| !x.name.is_empty())
         .collect::<Vec<_>>();
+
+    // deduplicate out aliases
+    let mut deduplicated_commands: Vec<InteractionCommand> = vec![];
+    for command in commands {
+        if !deduplicated_commands.iter().any(|x| x.name == command.name) {
+            deduplicated_commands.push(command);
+        }
+    }
 
     let response = assyst
         .interaction_client()
-        .set_global_commands(&commands)
+        .set_global_commands(&deduplicated_commands)
         .await?
         .model()
         .await?;

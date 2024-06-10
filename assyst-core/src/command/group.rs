@@ -70,13 +70,17 @@ macro_rules! define_commandgroup {
                         name: stringify!($groupname),
                         age_restricted: $crate::defaults!(age_restricted $($age_restricted)?),
                         usage: $crate::defaults!(usage $($usage)?),
-                        send_processing: $crate::defaults!(send_processing $($send_processing)?)
+                        send_processing: $crate::defaults!(send_processing $($send_processing)?),
                     };
                     &META
                 }
 
                 fn subcommand(&self, sub: &str) -> Option<crate::command::TCommand> {
                     crate::command::group::find_subcommand(sub, Self::SUBCOMMANDS)
+                }
+
+                fn interaction_info(&self) -> crate::command::CommandInteractionInfo {
+                    todo!()
                 }
 
                 fn as_interaction_command(&self) -> twilight_model::application::command::Command {

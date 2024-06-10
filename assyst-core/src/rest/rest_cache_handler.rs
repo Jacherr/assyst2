@@ -1,7 +1,7 @@
 use moka::sync::Cache;
 use std::hash::Hash;
 use std::mem::size_of;
-use std::sync::{Arc, OnceLock};
+use std::sync::Arc;
 use std::time::Duration;
 use twilight_http::Client as HttpClient;
 use twilight_model::guild::{Permissions, PremiumTier};

@@ -8,7 +8,8 @@ use quote::{quote, quote_spanned, ToTokens};
 use syn::punctuated::Punctuated;
 use syn::token::Bracket;
 use syn::{
-    parse_macro_input, Expr, ExprArray, ExprLit, FnArg, Ident, Item, Lit, LitBool, LitStr, Meta, PatType, Token, Type,
+    parse_macro_input, Expr, ExprArray, ExprLit, FnArg, Ident, Item, Lit, LitBool, LitStr, Meta, Pat, PatType, Token,
+    Type,
 };
 
 struct CommandAttributes(syn::punctuated::Punctuated<syn::Meta, Token![,]>);
@@ -70,6 +71,7 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
 
     let mut parse_idents = Vec::new();
     let mut parse_exprs = Vec::new();
+    let mut command_option_exprs = Vec::new();
 
     // sanity check that the first parameter is the `ctxt`, and exclude it from the list of arguments
     // it wouldn't compile anyway since `CommandCtxt` can't be parsed as an argument (doesn't implement
@@ -87,9 +89,17 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
 
         match input {
             FnArg::Receiver(_) => panic!("#[command] cannot have `self` arguments"),
-            FnArg::Typed(PatType { ty, .. }) => {
+            FnArg::Typed(PatType { ty, pat, .. }) => {
                 if let Some(span) = is_rest_type(ty) {
                     has_rest_ty = Some(span);
+                }
+
+                if let Pat::Ident(ident) = &**pat {
+                    let ident_string = ident.ident.to_string();
+
+                    command_option_exprs.push(quote! {{
+                            <#ty>::as_command_option(#ident_string)
+                    }});
                 }
 
                 parse_idents.push(Ident::new(&format!("p{index}"), Span::call_site()));
@@ -152,10 +162,19 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
                     name: meta.name.to_owned(),
                     name_localizations: None,
                     nsfw: Some(meta.age_restricted),
-                    // TODO: set options properly
-                    options: vec![],
+                    options: self.interaction_info().command_options,
                     version: twilight_model::id::Id::new(1),
                 }
+            }
+
+            fn interaction_info(&self) -> crate::command::CommandInteractionInfo {
+                use crate::command::arguments::ParseArgument;
+
+                let mut command_options = Vec::new();
+                #(
+                  command_options.push(#command_option_exprs);
+                )*
+                crate::command::CommandInteractionInfo { command_options }
             }
 
             async fn execute(
