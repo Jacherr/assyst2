@@ -235,19 +235,27 @@ impl<'a, T: Clone> ParseCtxt<'a, T> {
             args: self.args.clone(),
         }
     }
-
-    /// Calls the function with a fork of this context (allowing some arbitrary mutations)
-    /// and only actually applies the changes made to the fork if it returns `Ok`.
-    pub async fn commit_if_ok<F, R, E>(&mut self, f: F) -> Result<R, E>
-    where
-        F: async FnOnce(&mut ParseCtxt<'a, T>) -> Result<R, E>,
-    {
-        let mut fork: ParseCtxt<'a, T> = self.fork();
-        let res = f(&mut fork).await?;
-        *self = fork;
-        Ok(res)
-    }
 }
+
+/// Calls the function with a fork of this context (allowing some arbitrary mutations)
+/// and only actually applies the changes made to the fork if it returns `Ok`.
+///
+/// This used to be a function, however due to compiler bugs and the inability to properly express
+/// this pattern with bounds, this was ultimately just made into a macro where no such bounds need
+/// to be specified.
+#[macro_export]
+macro_rules! commit_if_ok {
+    ($ctxt:expr, $f:expr) => {{
+        let ctxt: &mut crate::command::ParseCtxt<'_, _> = $ctxt;
+        let mut fork = ctxt.fork();
+        let res = ($f)(&mut fork).await;
+        if res.is_ok() {
+            *ctxt = fork;
+        }
+        res
+    }};
+}
+
 impl<'a> ParseCtxt<'a, RawMessageArgsIter<'a>> {
     pub fn new(ctxt: CommandCtxt<'a>, args: &'a str) -> Self {
         Self {

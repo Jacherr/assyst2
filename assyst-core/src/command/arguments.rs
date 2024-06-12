@@ -13,6 +13,7 @@ use twilight_model::id::Id;
 use twilight_util::builder::command::{AttachmentBuilder, IntegerBuilder, NumberBuilder, StringBuilder};
 
 use crate::assyst::Assyst;
+use crate::commit_if_ok;
 use crate::downloader::{self, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES};
 use crate::gateway_handler::message_parser::error::{ErrorSeverity, GetErrorSeverity};
 
@@ -502,21 +503,12 @@ impl ParseArgument for ImageUrl {
                 };
             }
 
-            handle!(
-                ctxt.commit_if_ok(async |v| ImageUrl::from_mention_raw_message(v).await)
-                    .await
-            );
-            handle!(
-                ctxt.commit_if_ok(async |v| ImageUrl::from_url_argument_raw_message(v).await)
-                    .await
-            );
-            handle!(ctxt.commit_if_ok(async |v| ImageUrl::from_attachment(v).await).await);
-            handle!(ctxt.commit_if_ok(async |v| ImageUrl::from_reply(v).await).await);
-            handle!(
-                ctxt.commit_if_ok(async |v| ImageUrl::from_emoji_raw_message(v).await)
-                    .await
-            );
-            handle!(ctxt.commit_if_ok(async |v| ImageUrl::from_sticker(v).await).await);
+            handle!(commit_if_ok!(ctxt, ImageUrl::from_mention_raw_message));
+            handle!(commit_if_ok!(ctxt, ImageUrl::from_url_argument_raw_message));
+            handle!(commit_if_ok!(ctxt, ImageUrl::from_attachment));
+            handle!(commit_if_ok!(ctxt, ImageUrl::from_reply));
+            handle!(commit_if_ok!(ctxt, ImageUrl::from_emoji_raw_message));
+            handle!(commit_if_ok!(ctxt, ImageUrl::from_sticker));
             handle!(ImageUrl::from_channel_history(ctxt.cx.assyst(), ctxt.cx.data.message.channel_id).await);
             Err(TagParseError::NoImageFound)
         }
@@ -547,18 +539,9 @@ impl ParseArgument for ImageUrl {
                 };
             }
 
-            handle!(
-                ctxt.commit_if_ok(async |v| ImageUrl::from_mention_command_option(v).await)
-                    .await
-            );
-            handle!(
-                ctxt.commit_if_ok(async |v| ImageUrl::from_url_argument_command_option(v).await)
-                    .await
-            );
-            handle!(
-                ctxt.commit_if_ok(async |v| ImageUrl::from_emoji_command_option(v).await)
-                    .await
-            );
+            handle!(commit_if_ok!(ctxt, ImageUrl::from_mention_command_option));
+            handle!(commit_if_ok!(ctxt, ImageUrl::from_url_argument_command_option));
+            handle!(commit_if_ok!(ctxt, ImageUrl::from_emoji_command_option));
             handle!(ImageUrl::from_channel_history(ctxt.cx.assyst(), ctxt.cx.data.message.channel_id).await);
             Err(TagParseError::NoImageFound)
         }
