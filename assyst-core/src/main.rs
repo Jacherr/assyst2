@@ -159,7 +159,10 @@ async fn main() {
                         | EventTypeFlags::MESSAGE_CREATE
                         | EventTypeFlags::MESSAGE_DELETE
                         | EventTypeFlags::MESSAGE_UPDATE
-                        | EventTypeFlags::READY,
+                        | EventTypeFlags::READY
+                        | EventTypeFlags::INTERACTION_CREATE
+                        | EventTypeFlags::GUILD_UPDATE
+                        | EventTypeFlags::CHANNEL_UPDATE,
                 )
                 .ok()
                 .flatten();

@@ -3,6 +3,7 @@ use std::sync::OnceLock;
 
 use tracing::info;
 use twilight_model::application::command::Command as InteractionCommand;
+use twilight_util::builder::command::{CommandBuilder, StringBuilder, SubCommandBuilder};
 
 use crate::assyst::ThreadSafeAssyst;
 use crate::command::CommandMetadata;
@@ -75,6 +76,20 @@ pub async fn register_interaction_commands(assyst: ThreadSafeAssyst) -> anyhow::
             deduplicated_commands.push(command);
         }
     }
+
+    let test_tag_command = SubCommandBuilder::new("view", "tag")
+        .option(StringBuilder::new("val", "string value").required(true).build())
+        .build();
+
+    let test_subcommand = CommandBuilder::new(
+        "tag",
+        "tag command",
+        twilight_model::application::command::CommandType::ChatInput,
+    )
+    .option(test_tag_command)
+    .build();
+
+    deduplicated_commands.push(test_subcommand);
 
     let response = assyst
         .interaction_client()

@@ -27,6 +27,7 @@
 //!   which does the mapping mentioned above.
 
 use std::fmt::Display;
+use std::slice;
 use std::str::SplitAsciiWhitespace;
 use std::time::{Duration, Instant};
 
@@ -36,6 +37,7 @@ use crate::wsi_handler::WsiHandler;
 use assyst_common::config::CONFIG;
 use async_trait::async_trait;
 use twilight_model::application::command::CommandOption;
+use twilight_model::application::interaction::application_command::CommandDataOption;
 use twilight_model::channel::message::sticker::MessageSticker;
 use twilight_model::channel::message::Embed;
 use twilight_model::channel::{Attachment, Message};
@@ -169,8 +171,11 @@ pub trait Command {
     /// Loads all interaction-specific info for sending to Discord
     fn interaction_info(&self) -> CommandInteractionInfo;
 
-    /// Parses arguments and executes the command.
-    async fn execute(&self, ctxt: CommandCtxt<'_>) -> Result<(), ExecutionError>;
+    /// Parses arguments and executes the command, when the source is a "raw" prefixed message.
+    async fn execute_raw_message(&self, ctxt: RawMessageParseCtxt<'_>) -> Result<(), ExecutionError>;
+
+    /// Parses arguments and executes the command, when the source is an interaction command.
+    async fn execute_interaction_command(&self, ctxt: InteractionCommandParseCtxt<'_>) -> Result<(), ExecutionError>;
 }
 
 /// A set of timings used to diagnose slow areas of parsing for commands.
@@ -204,61 +209,50 @@ pub struct CommandData<'a> {
     pub message: &'a Message,
 }
 
+pub type RawMessageArgsIter<'a> = SplitAsciiWhitespace<'a>;
+pub type InteractionMessageArgsIter<'a> = slice::Iter<'a, CommandDataOption>;
+
+/// A parsing context. Parsing contexts can either be for raw message commands or interaction
+/// commands, and the parsing method differs for each.
 #[derive(Clone)]
-pub struct CommandCtxt<'a> {
-    args: SplitAsciiWhitespace<'a>,
-    pub data: &'a CommandData<'a>,
+pub struct ParseCtxt<'a, T> {
+    pub cx: CommandCtxt<'a>,
+    args: T,
 }
-
-impl<'a> CommandCtxt<'a> {
-    pub fn new(args: &'a str, data: &'a CommandData<'a>) -> Self {
-        Self {
-            args: args.split_ascii_whitespace(),
-            data,
-        }
-    }
-
-    pub async fn reply(&self, builder: impl Into<MessageBuilder>) -> anyhow::Result<()> {
-        let builder = builder.into();
-        match self.data.source {
-            Source::Gateway => gateway_reply::reply(self, builder).await,
-            // TODO: reply properly
-            Source::Interaction => todo!(),
-        }
-    }
-
-    pub fn assyst(&self) -> &'a ThreadSafeAssyst {
-        self.data.assyst
-    }
-
-    pub fn wsi_handler(&self) -> &'a WsiHandler {
-        &self.data.assyst.wsi_handler
-    }
-
+impl<'a, T: Clone> ParseCtxt<'a, T> {
     /// Cheaply forks this context. Useful for trying different combinations
     /// and throwing the fork away after failing.
     /// Also look at `commit_if_ok`.
     pub fn fork(&self) -> Self {
-        // if you change the type of `self.args` and this line starts erroring, check that
-        // this is still cheap to clone.
-        let _: &SplitAsciiWhitespace<'a> = &self.args;
+        // if you change either type and these lines starts erroring, check that
+        // these are still cheap to clone.
+        let _: &T = &self.args;
+        let _: &CommandCtxt<'a> = &self.cx;
 
         Self {
+            cx: self.cx.clone(),
             args: self.args.clone(),
-            data: self.data,
         }
     }
 
     /// Calls the function with a fork of this context (allowing some arbitrary mutations)
     /// and only actually applies the changes made to the fork if it returns `Ok`.
-    pub async fn commit_if_ok<F, T, E>(&mut self, f: F) -> Result<T, E>
+    pub async fn commit_if_ok<F, R, E>(&mut self, f: F) -> Result<R, E>
     where
-        F: async FnOnce(&mut CommandCtxt<'a>) -> Result<T, E>,
+        F: async FnOnce(&mut ParseCtxt<'a, T>) -> Result<R, E>,
     {
-        let mut fork: CommandCtxt<'a> = self.fork();
+        let mut fork: ParseCtxt<'a, T> = self.fork();
         let res = f(&mut fork).await?;
         *self = fork;
         Ok(res)
+    }
+}
+impl<'a> ParseCtxt<'a, RawMessageArgsIter<'a>> {
+    pub fn new(ctxt: CommandCtxt<'a>, args: &'a str) -> Self {
+        Self {
+            args: args.split_ascii_whitespace(),
+            cx: ctxt,
+        }
     }
 
     /// Eagerly takes a word.
@@ -271,6 +265,52 @@ impl<'a> CommandCtxt<'a> {
     /// The rest of the message.
     pub fn rest(&self) -> Result<&'a str, ArgsExhausted> {
         self.args.remainder().ok_or(ArgsExhausted)
+    }
+}
+impl<'a> ParseCtxt<'a, InteractionMessageArgsIter<'a>> {
+    pub fn new(ctxt: CommandCtxt<'a>, args: &'a [CommandDataOption]) -> Self {
+        Self {
+            args: args.iter(),
+            cx: ctxt,
+        }
+    }
+
+    /// Eagerly takes an option.
+    /// If you want to "peek" or you aren't sure if you might want to undo this,
+    /// consider using `commit_if_ok` or `fork` to try it in a subcontext.
+    pub fn next_option(&mut self) -> Result<&'a CommandDataOption, ArgsExhausted> {
+        self.args.next().ok_or(ArgsExhausted)
+    }
+}
+
+pub type RawMessageParseCtxt<'a> = ParseCtxt<'a, RawMessageArgsIter<'a>>;
+pub type InteractionCommandParseCtxt<'a> = ParseCtxt<'a, InteractionMessageArgsIter<'a>>;
+
+#[derive(Clone)]
+pub struct CommandCtxt<'a> {
+    pub data: &'a CommandData<'a>,
+}
+
+impl<'a> CommandCtxt<'a> {
+    pub fn new(data: &'a CommandData<'a>) -> Self {
+        Self { data }
+    }
+
+    pub async fn reply(&self, builder: impl Into<MessageBuilder>) -> anyhow::Result<()> {
+        let builder = builder.into();
+        match self.data.source {
+            Source::RawMessage => gateway_reply::reply(self, builder).await,
+            // TODO: reply properly
+            Source::Interaction => todo!(),
+        }
+    }
+
+    pub fn assyst(&self) -> &'a ThreadSafeAssyst {
+        self.data.assyst
+    }
+
+    pub fn wsi_handler(&self) -> &'a WsiHandler {
+        &self.data.assyst.wsi_handler
     }
 }
 
@@ -339,7 +379,7 @@ pub async fn check_metadata(
         .command_ratelimits
         .insert(id, metadata.name, Instant::now());
 
-    if metadata.send_processing && ctxt.data.source == Source::Gateway {
+    if metadata.send_processing && ctxt.data.source == Source::RawMessage {
         if let Err(e) = ctxt.reply("Processing...").await {
             return Err(ExecutionError::Command(e));
         }

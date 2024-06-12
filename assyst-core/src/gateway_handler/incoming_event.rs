@@ -1,6 +1,7 @@
 use twilight_model::gateway::event::{DispatchEvent, GatewayEvent};
 use twilight_model::gateway::payload::incoming::{
-    ChannelUpdate, GuildCreate, GuildDelete, GuildUpdate, MessageCreate, MessageDelete, MessageUpdate, Ready,
+    ChannelUpdate, GuildCreate, GuildDelete, GuildUpdate, InteractionCreate, MessageCreate, MessageDelete,
+    MessageUpdate, Ready,
 };
 
 #[derive(Debug)]
@@ -9,6 +10,7 @@ pub enum IncomingEvent {
     GuildCreate(Box<GuildCreate>), // this struct is huge.
     GuildDelete(GuildDelete),
     GuildUpdate(GuildUpdate),
+    InteractionCreate(Box<InteractionCreate>),
     MessageCreate(Box<MessageCreate>), // same problem
     MessageDelete(MessageDelete),
     MessageUpdate(MessageUpdate),
@@ -28,6 +30,7 @@ impl TryFrom<GatewayEvent> for IncomingEvent {
                 DispatchEvent::GuildUpdate(guild) => Ok(IncomingEvent::GuildUpdate(*guild)),
                 DispatchEvent::Ready(ready) => Ok(IncomingEvent::ShardReady(*ready)),
                 DispatchEvent::ChannelUpdate(channel) => Ok(IncomingEvent::ChannelUpdate(*channel)),
+                DispatchEvent::InteractionCreate(interaction) => Ok(IncomingEvent::InteractionCreate(interaction)),
                 _ => Err(()),
             },
             _ => Err(()),

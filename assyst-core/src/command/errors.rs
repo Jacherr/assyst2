@@ -3,6 +3,7 @@ use std::num::{ParseFloatError, ParseIntError};
 use std::time::Duration;
 
 use assyst_common::util::ParseToMillisError;
+use twilight_model::application::interaction::application_command::CommandOptionValue;
 use twilight_model::channel::message::sticker::StickerFormatType;
 
 use crate::downloader::DownloadError;
@@ -94,6 +95,7 @@ pub enum TagParseError {
     NoImageFound,
     MediaDownloadFail,
     InvalidSubcommand,
+    MismatchedCommandOptionType((String, CommandOptionValue)),
 }
 
 impl GetErrorSeverity for TagParseError {
@@ -142,6 +144,12 @@ impl Display for TagParseError {
             },
             TagParseError::MediaDownloadFail => f.write_str("failed to download media content"),
             TagParseError::InvalidSubcommand => f.write_str("no subcommand found for given name"),
+            TagParseError::MismatchedCommandOptionType((expected, received)) => {
+                write!(
+                    f,
+                    "Command option mismatch between expected ({expected}) and received ({received:?})"
+                )
+            },
         }
     }
 }

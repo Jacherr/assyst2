@@ -71,6 +71,7 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
 
     let mut parse_idents = Vec::new();
     let mut parse_exprs = Vec::new();
+    let mut interaction_parse_exprs = Vec::new();
     let mut command_option_exprs = Vec::new();
 
     // sanity check that the first parameter is the `ctxt`, and exclude it from the list of arguments
@@ -103,7 +104,8 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
                 }
 
                 parse_idents.push(Ident::new(&format!("p{index}"), Span::call_site()));
-                parse_exprs.push(quote!(<#ty>::parse(&mut ctxt).await));
+                parse_exprs.push(quote!(<#ty>::parse_raw_message(&mut ctxt).await));
+                interaction_parse_exprs.push(quote!(<#ty>::parse_command_option(&mut ctxt).await));
             },
         }
     }
@@ -177,26 +179,44 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
                 crate::command::CommandInteractionInfo { command_options }
             }
 
-            async fn execute(
+            async fn execute_raw_message(
                 &self,
                 mut ctxt:
-                crate::command::CommandCtxt<'_>
+                crate::command::RawMessageParseCtxt<'_>
             ) -> Result<(), crate::command::ExecutionError> {
                 use crate::command::arguments::ParseArgument;
 
-                crate::command::check_metadata(self.metadata(), &mut ctxt).await?;
+                crate::command::check_metadata(self.metadata(), &mut ctxt.cx).await?;
 
                 #(
                     let #parse_idents = #parse_exprs.map_err(crate::command::ExecutionError::Parse)?;
                 )*
 
-                #fn_name(ctxt, #(#parse_idents),*).await.map_err(crate::command::ExecutionError::Command)
+                #fn_name(ctxt.cx, #(#parse_idents),*).await.map_err(crate::command::ExecutionError::Command)
+            }
+
+            async fn execute_interaction_command(
+                &self,
+                mut ctxt:
+                crate::command::InteractionCommandParseCtxt<'_>
+            ) -> Result<(), crate::command::ExecutionError> {
+                use crate::command::arguments::ParseArgument;
+
+                crate::command::check_metadata(self.metadata(), &mut ctxt.cx).await?;
+
+                #(
+                    let #parse_idents = #interaction_parse_exprs.map_err(crate::command::ExecutionError::Parse)?;
+                )*
+
+                #fn_name(ctxt.cx, #(#parse_idents),*).await.map_err(crate::command::ExecutionError::Command)
             }
         }
     };
 
     let mut output = item.into_token_stream();
     output.extend(following);
+
+    //panic!("{}", output);
 
     output.into()
 }

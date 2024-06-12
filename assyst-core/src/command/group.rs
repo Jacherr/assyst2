@@ -1,5 +1,5 @@
 use super::errors::{ExecutionError, TagParseError};
-use super::{CommandCtxt, TCommand};
+use super::{CommandCtxt, RawMessageParseCtxt, TCommand};
 
 // Helper macro that provides defaults
 // cfg_attr is needed because of https://github.com/rust-lang/rust/issues/74087
@@ -76,7 +76,7 @@ macro_rules! define_commandgroup {
                 }
 
                 fn subcommand(&self, sub: &str) -> Option<crate::command::TCommand> {
-                    crate::command::group::find_subcommand(sub, Self::SUBCOMMANDS)
+                    crate::command::group::find_subcommand_raw_message(sub, Self::SUBCOMMANDS)
                 }
 
                 fn interaction_info(&self) -> crate::command::CommandInteractionInfo {
@@ -108,14 +108,14 @@ macro_rules! define_commandgroup {
                     }
                 }
 
-                async fn execute(&self, ctxt: CommandCtxt<'_>) -> Result<(), crate::command::ExecutionError> {
+                async fn execute_raw_message(&self, ctxt: crate::command::RawMessageParseCtxt<'_>) -> Result<(), crate::command::ExecutionError> {
                     #![allow(unreachable_code)]
-                    match crate::command::group::execute_subcommand(ctxt.fork(), Self::SUBCOMMANDS).await {
+                    match crate::command::group::execute_subcommand_raw_message(ctxt.fork(), Self::SUBCOMMANDS).await {
                         Ok(res) => Ok(res),
                         Err(crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::InvalidSubcommand)) => {
                             // No subcommand was found, call either the default if provided, or error out
                             $(
-                                return [<$default _command>].execute(ctxt).await;
+                                return [<$default _command>].execute_raw_message(ctxt).await;
                             )?
                             return Err(crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::InvalidSubcommand));
                         },
@@ -127,20 +127,20 @@ macro_rules! define_commandgroup {
     };
 }
 
-pub fn find_subcommand(sub: &str, cmds: &[(&str, TCommand)]) -> Option<TCommand> {
+pub fn find_subcommand_raw_message(sub: &str, cmds: &[(&str, TCommand)]) -> Option<TCommand> {
     cmds.iter().find(|(k, _)| *k == sub).map(|(_, v)| v).copied()
 }
 
 /// Tries to execute a subcommand, by taking the next word from the arguments and looking for it in
 /// `commands`
-pub async fn execute_subcommand(
-    mut ctxt: CommandCtxt<'_>,
+pub async fn execute_subcommand_raw_message(
+    mut ctxt: RawMessageParseCtxt<'_>,
     commands: &[(&str, TCommand)],
 ) -> Result<(), ExecutionError> {
     let subcommand = ctxt.next_word().map_err(|err| ExecutionError::Parse(err.into()))?;
 
     let command =
-        find_subcommand(subcommand, commands).ok_or(ExecutionError::Parse(TagParseError::InvalidSubcommand))?;
+        find_subcommand_raw_message(subcommand, commands).ok_or(ExecutionError::Parse(TagParseError::InvalidSubcommand))?;
 
-    command.execute(ctxt).await
+    command.execute_raw_message(ctxt).await
 }

@@ -36,5 +36,8 @@ pub async fn handle_raw_event(context: ThreadSafeAssyst, event: IncomingEvent) {
         IncomingEvent::ChannelUpdate(event) => {
             event_handlers::channel_update::handle(context, event);
         },
+        IncomingEvent::InteractionCreate(event) => {
+            event_handlers::interaction_create::handle(context, *event).await;
+        },
     }
 }
