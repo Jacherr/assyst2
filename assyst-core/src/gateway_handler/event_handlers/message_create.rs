@@ -28,6 +28,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, MessageCreate(message): MessageCre
                 execution_timings: result.execution_timings,
                 calling_prefix: result.calling_prefix,
                 message: &message,
+                interaction_subcommand: None,
             };
             let ctxt = RawMessageParseCtxt::new(CommandCtxt::new(&data), result.args);
 

@@ -37,7 +37,7 @@ use crate::wsi_handler::WsiHandler;
 use assyst_common::config::CONFIG;
 use async_trait::async_trait;
 use twilight_model::application::command::CommandOption;
-use twilight_model::application::interaction::application_command::CommandDataOption;
+use twilight_model::application::interaction::application_command::{CommandDataOption, CommandOptionValue};
 use twilight_model::channel::message::sticker::MessageSticker;
 use twilight_model::channel::message::Embed;
 use twilight_model::channel::{Attachment, Message};
@@ -207,6 +207,7 @@ pub struct CommandData<'a> {
     pub execution_timings: ExecutionTimings,
     pub calling_prefix: String,
     pub message: &'a Message,
+    pub interaction_subcommand: Option<CommandOptionValue>,
 }
 
 pub type RawMessageArgsIter<'a> = SplitAsciiWhitespace<'a>;

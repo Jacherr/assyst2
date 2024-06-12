@@ -1,5 +1,7 @@
+use twilight_model::application::interaction::application_command::CommandOptionValue;
+
 use super::errors::{ExecutionError, TagParseError};
-use super::{CommandCtxt, RawMessageParseCtxt, TCommand};
+use super::{CommandCtxt, InteractionCommandParseCtxt, RawMessageParseCtxt, TCommand};
 
 // Helper macro that provides defaults
 // cfg_attr is needed because of https://github.com/rust-lang/rust/issues/74087
@@ -112,10 +114,26 @@ macro_rules! define_commandgroup {
                     #![allow(unreachable_code)]
                     match crate::command::group::execute_subcommand_raw_message(ctxt.fork(), Self::SUBCOMMANDS).await {
                         Ok(res) => Ok(res),
-                        Err(crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::InvalidSubcommand)) => {
+                        Err(crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::InvalidSubcommand) 
+                        | crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::ArgsExhausted)) => {
                             // No subcommand was found, call either the default if provided, or error out
                             $(
                                 return [<$default _command>].execute_raw_message(ctxt).await;
+                            )?
+                            return Err(crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::InvalidSubcommand));
+                        },
+                        Err(err) => Err(err)
+                    }
+                }
+
+                async fn execute_interaction_command(&self, ctxt: crate::command::InteractionCommandParseCtxt<'_>) -> Result<(), crate::command::ExecutionError> {
+                    #![allow(unreachable_code)]
+                    match crate::command::group::execute_subcommand_interaction_command(ctxt.fork(), Self::SUBCOMMANDS).await {
+                        Ok(res) => Ok(res),
+                        Err(crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::InvalidSubcommand)) => {
+                            // No subcommand was found, call either the default if provided, or error out
+                            $(
+                                return [<$default _command>].execute_interaction_command(ctxt).await;
                             )?
                             return Err(crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::InvalidSubcommand));
                         },
@@ -131,7 +149,7 @@ pub fn find_subcommand_raw_message(sub: &str, cmds: &[(&str, TCommand)]) -> Opti
     cmds.iter().find(|(k, _)| *k == sub).map(|(_, v)| v).copied()
 }
 
-/// Tries to execute a subcommand, by taking the next word from the arguments and looking for it in
+/// Tries to execute a subcommand from a "raw" message, by taking the next word from the arguments and looking for it in
 /// `commands`
 pub async fn execute_subcommand_raw_message(
     mut ctxt: RawMessageParseCtxt<'_>,
@@ -143,4 +161,26 @@ pub async fn execute_subcommand_raw_message(
         find_subcommand_raw_message(subcommand, commands).ok_or(ExecutionError::Parse(TagParseError::InvalidSubcommand))?;
 
     command.execute_raw_message(ctxt).await
+}
+
+pub fn find_subcommand_interaction_command(sub: &str, cmds: &[(&str, TCommand)]) -> Option<TCommand> {
+    cmds.iter().find(|(k, _)| *k == sub).map(|(_, v)| v).copied()
+}
+
+/// Tries to execute a subcommand from an interaction command, by seeing if we extracted a subcommand
+pub async fn execute_subcommand_interaction_command(
+    ctxt: InteractionCommandParseCtxt<'_>,
+    commands: &[(&str, TCommand)],
+) -> Result<(), ExecutionError> {
+    let subcommand = ctxt.cx.data.interaction_subcommand.clone().ok_or(ExecutionError::Parse(TagParseError::ArgsExhausted))?;
+    let subcommand = if let CommandOptionValue::SubCommand(c) = subcommand {
+        c.get(0).map(|x| x.name.clone()).unwrap()
+    } else {
+        unreachable!()
+    };
+
+    let command =
+        find_subcommand_interaction_command(&subcommand, commands).ok_or(ExecutionError::Parse(TagParseError::InvalidSubcommand))?;
+
+    command.execute_interaction_command(ctxt).await
 }
