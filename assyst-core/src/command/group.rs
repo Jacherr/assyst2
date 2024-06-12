@@ -43,6 +43,7 @@ macro_rules! define_commandgroup {
                 $subcommand:literal => $commandfn:expr
             ),*
         ]
+        default_interaction_subcommand: $default_interaction_subcommand:expr
         $(,default: $default:expr)?
     ) => {
         paste::paste! {
@@ -82,6 +83,7 @@ macro_rules! define_commandgroup {
                 }
 
                 fn interaction_info(&self) -> crate::command::CommandInteractionInfo {
+                    // todo
                     todo!()
                 }
 
@@ -128,10 +130,10 @@ macro_rules! define_commandgroup {
 
                 async fn execute_interaction_command(&self, ctxt: crate::command::InteractionCommandParseCtxt<'_>) -> Result<(), crate::command::ExecutionError> {
                     #![allow(unreachable_code)]
-                    match crate::command::group::execute_subcommand_interaction_command(ctxt.fork(), Self::SUBCOMMANDS).await {
+                    match crate::command::group::execute_subcommand_interaction_command(ctxt.fork(), Self::SUBCOMMANDS, $default_interaction_subcommand).await {
                         Ok(res) => Ok(res),
-                        Err(crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::InvalidSubcommand)) => {
-                            // No subcommand was found, call either the default if provided, or error out
+                        Err(crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::InteractionCommandIsBaseSubcommand)) => {
+                            // Subcommand was "defau;t" command, call either the default if provided, or error out
                             $(
                                 return [<$default _command>].execute_interaction_command(ctxt).await;
                             )?
@@ -171,13 +173,18 @@ pub fn find_subcommand_interaction_command(sub: &str, cmds: &[(&str, TCommand)])
 pub async fn execute_subcommand_interaction_command(
     ctxt: InteractionCommandParseCtxt<'_>,
     commands: &[(&str, TCommand)],
+    default_interaction_subcommand: &str
 ) -> Result<(), ExecutionError> {
-    let subcommand = ctxt.cx.data.interaction_subcommand.clone().ok_or(ExecutionError::Parse(TagParseError::ArgsExhausted))?;
+    let subcommand = ctxt.cx.data.interaction_subcommand.clone().ok_or(ExecutionError::Parse(TagParseError::NoInteractionSubcommandProvided))?;
     let subcommand = if let CommandOptionValue::SubCommand(c) = subcommand {
         c.get(0).map(|x| x.name.clone()).unwrap()
     } else {
         unreachable!()
     };
+
+    if subcommand == default_interaction_subcommand {
+        return Err(ExecutionError::Parse(TagParseError::InteractionCommandIsBaseSubcommand));
+    }
 
     let command =
         find_subcommand_interaction_command(&subcommand, commands).ok_or(ExecutionError::Parse(TagParseError::InvalidSubcommand))?;

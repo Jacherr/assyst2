@@ -95,6 +95,8 @@ pub enum TagParseError {
     NoImageFound,
     MediaDownloadFail,
     InvalidSubcommand,
+    NoInteractionSubcommandProvided,
+    InteractionCommandIsBaseSubcommand,
     MismatchedCommandOptionType((String, CommandOptionValue)),
 }
 
@@ -105,7 +107,8 @@ impl GetErrorSeverity for TagParseError {
             | Self::TwilightDeserialize(..)
             | Self::DownloadError(..)
             | Self::UnsupportedSticker(..)
-            | Self::Reqwest(..) => ErrorSeverity::High,
+            | Self::Reqwest(..)
+            | Self::NoInteractionSubcommandProvided => ErrorSeverity::High,
             _ => ErrorSeverity::Low,
         }
     }
@@ -149,6 +152,12 @@ impl Display for TagParseError {
                     f,
                     "Command option mismatch between expected ({expected}) and received ({received:?})"
                 )
+            },
+            TagParseError::NoInteractionSubcommandProvided => {
+                f.write_str("Attempted to execute an interaction base command on a command group")
+            },
+            TagParseError::InteractionCommandIsBaseSubcommand => {
+                f.write_str("Interaction subcommand is base subcommand")
             },
         }
     }

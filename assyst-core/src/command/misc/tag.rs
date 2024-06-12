@@ -185,6 +185,7 @@ define_commandgroup! {
     usage: "<create>",
     commands: [
         "create" => create
-    ],
+    ]
+    default_interaction_subcommand: "view",
     default: default
 }
