@@ -41,6 +41,9 @@ use twilight_model::application::interaction::application_command::{CommandDataO
 use twilight_model::channel::message::sticker::MessageSticker;
 use twilight_model::channel::message::Embed;
 use twilight_model::channel::{Attachment, Message};
+use twilight_model::http::interaction::InteractionResponse;
+use twilight_model::id::marker::{ChannelMarker, GuildMarker, InteractionMarker};
+use twilight_model::id::Id;
 use twilight_model::user::User;
 
 use self::errors::{ArgsExhausted, ExecutionError, MetadataCheckError};
@@ -206,8 +209,13 @@ pub struct CommandData<'a> {
     pub assyst: &'a ThreadSafeAssyst,
     pub execution_timings: ExecutionTimings,
     pub calling_prefix: String,
-    pub message: &'a Message,
+    pub channel_id: Id<ChannelMarker>,
+    pub guild_id: Option<Id<GuildMarker>>,
+    pub author: User,
     pub interaction_subcommand: Option<CommandOptionValue>,
+    pub message: Option<&'a Message>,
+    pub interaction_token: Option<String>,
+    pub interaction_id: Option<Id<InteractionMarker>>,
 }
 
 pub type RawMessageArgsIter<'a> = SplitAsciiWhitespace<'a>;
@@ -308,9 +316,9 @@ impl<'a> CommandCtxt<'a> {
     pub async fn reply(&self, builder: impl Into<MessageBuilder>) -> anyhow::Result<()> {
         let builder = builder.into();
         match self.data.source {
-            Source::RawMessage => gateway_reply::reply(self, builder).await,
+            Source::RawMessage => gateway_reply::reply_raw_message(self, builder).await,
             // TODO: reply properly
-            Source::Interaction => todo!(),
+            Source::Interaction => gateway_reply::reply_interaction_command(self, builder).await,
         }
     }
 
@@ -331,7 +339,7 @@ pub async fn check_metadata(
         let channel_age_restricted = ctxt
             .assyst()
             .rest_cache_handler
-            .channel_is_age_restricted(ctxt.data.message.channel_id.get())
+            .channel_is_age_restricted(ctxt.data.channel_id.get())
             .await
             .unwrap_or(false);
 
@@ -345,16 +353,16 @@ pub async fn check_metadata(
     // command availability check
     match metadata.access {
         Availability::Dev => {
-            if !CONFIG.dev.admin_users.contains(&ctxt.data.message.author.id.get()) {
+            if !CONFIG.dev.admin_users.contains(&ctxt.data.author.id.get()) {
                 return Err(ExecutionError::MetadataCheck(MetadataCheckError::DevOnlyCommand));
             }
         },
         Availability::ServerManagers => {
-            if let Some(guild_id) = ctxt.data.message.guild_id {
+            if let Some(guild_id) = ctxt.data.guild_id {
                 if !ctxt
                     .assyst()
                     .rest_cache_handler
-                    .user_is_guild_manager(guild_id.get(), ctxt.data.message.author.id.get())
+                    .user_is_guild_manager(guild_id.get(), ctxt.data.author.id.get())
                     .await
                     .unwrap_or(false)
                 {
@@ -370,9 +378,8 @@ pub async fn check_metadata(
     // ratelimit check
     let id = ctxt
         .data
-        .message
         .guild_id
-        .map_or_else(|| ctxt.data.message.author.id.get(), |id| id.get());
+        .map_or_else(|| ctxt.data.author.id.get(), |id| id.get());
     let last_command_invoked = ctxt.assyst().command_ratelimits.get(id, metadata.name);
     if let Some(invocation_time) = last_command_invoked {
         let elapsed = invocation_time.elapsed();
@@ -392,6 +399,25 @@ pub async fn check_metadata(
         if let Err(e) = ctxt.reply("Processing...").await {
             return Err(ExecutionError::Command(e));
         }
+    } else if metadata.send_processing && ctxt.data.source == Source::Interaction {
+        let response = InteractionResponse {
+            kind: twilight_model::http::interaction::InteractionResponseType::DeferredChannelMessageWithSource,
+            data: None,
+        };
+
+        ctxt.assyst()
+            .interaction_client()
+            .create_response(
+                ctxt.data.interaction_id.unwrap(),
+                &ctxt.data.interaction_token.clone().unwrap(),
+                &response,
+            )
+            .await
+            .map_err(|e| ExecutionError::Parse(errors::TagParseError::TwilightHttp(Box::new(e))))?;
+
+        ctxt.assyst()
+            .replies
+            .insert_interaction_command(ctxt.data.interaction_id.unwrap().get());
     }
     Ok(())
 }

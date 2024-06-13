@@ -3,7 +3,9 @@ use std::time::Instant;
 use assyst_common::util::filetype::{get_sig, Type};
 use twilight_model::channel::message::AllowedMentions;
 use twilight_model::http::attachment::Attachment as TwilightAttachment;
+use twilight_model::http::interaction::InteractionResponse;
 use twilight_model::id::Id;
+use twilight_util::builder::{self, InteractionResponseDataBuilder};
 
 use crate::command::messagebuilder::MessageBuilder;
 use crate::command::CommandCtxt;
@@ -29,7 +31,7 @@ async fn get_filer_url(
     let filer_formatted;
 
     if data.len() > NORMAL_DISCORD_UPLOAD_LIMIT_BYTES as usize {
-        let guild_upload_limit = if let Some(guild_id) = ctxt.data.message.guild_id {
+        let guild_upload_limit = if let Some(guild_id) = ctxt.data.guild_id {
             ctxt.assyst()
                 .rest_cache_handler
                 .get_guild_upload_limit_bytes(guild_id.get())
@@ -64,7 +66,7 @@ pub async fn edit(ctxt: &CommandCtxt<'_>, builder: MessageBuilder, reply: ReplyI
         .data
         .assyst
         .http_client
-        .update_message(ctxt.data.message.channel_id, Id::new(reply.message_id))
+        .update_message(ctxt.data.channel_id, Id::new(reply.message_id))
         .allowed_mentions(Some(&allowed_mentions));
 
     let mut content_clone = builder.content.clone();
@@ -106,7 +108,7 @@ async fn create_message(ctxt: &CommandCtxt<'_>, builder: MessageBuilder) -> anyh
         .data
         .assyst
         .http_client
-        .create_message(ctxt.data.message.channel_id)
+        .create_message(ctxt.data.channel_id)
         .allowed_mentions(Some(&allowed_mentions));
 
     let mut content_clone = builder.content.clone();
@@ -138,8 +140,8 @@ async fn create_message(ctxt: &CommandCtxt<'_>, builder: MessageBuilder) -> anyh
     }
 
     let reply = message.await?.model().await?;
-    ctxt.data.assyst.replies.insert(
-        ctxt.data.message.id.get(),
+    ctxt.data.assyst.replies.insert_raw_message(
+        ctxt.data.message.unwrap().id.get(),
         Reply {
             state: ReplyState::InUse(ReplyInUse {
                 message_id: reply.id.get(),
@@ -152,12 +154,12 @@ async fn create_message(ctxt: &CommandCtxt<'_>, builder: MessageBuilder) -> anyh
     Ok(())
 }
 
-pub async fn reply(ctxt: &CommandCtxt<'_>, builder: MessageBuilder) -> anyhow::Result<()> {
+pub async fn reply_raw_message(ctxt: &CommandCtxt<'_>, builder: MessageBuilder) -> anyhow::Result<()> {
     let reply_in_use = ctxt
         .data
         .assyst
         .replies
-        .get(ctxt.data.message.id.get())
+        .get_raw_message(ctxt.data.message.unwrap().id.get())
         .and_then(|r| r.in_use());
 
     if let Some(reply_in_use) = reply_in_use {
@@ -165,4 +167,60 @@ pub async fn reply(ctxt: &CommandCtxt<'_>, builder: MessageBuilder) -> anyhow::R
     } else {
         create_message(ctxt, builder).await
     }
+}
+
+pub async fn reply_interaction_command(ctxt: &CommandCtxt<'_>, builder: MessageBuilder) -> anyhow::Result<()> {
+    let reply_in_use = ctxt
+        .data
+        .assyst
+        .replies
+        .get_interaction_command(ctxt.data.interaction_id.unwrap().get())
+        .is_some();
+
+    let c = ctxt.assyst().interaction_client();
+    let mut response_data = InteractionResponseDataBuilder::new();
+    if let Some(ref a) = builder.attachment {
+        let attachments = [TwilightAttachment::from_bytes(a.name.clone().into(), a.data.clone(), 0)];
+        response_data = response_data.attachments(attachments);
+        response_data = response_data.content("");
+    }
+
+    if let Some(c) = builder.content.clone() {
+        response_data = response_data.content(c);
+    }
+
+    let response = InteractionResponse {
+        kind: twilight_model::http::interaction::InteractionResponseType::ChannelMessageWithSource,
+        data: Some(response_data.build()),
+    };
+
+    if reply_in_use {
+        let token = ctxt.data.interaction_token.clone().unwrap();
+        let mut update = c.update_response(&token);
+        let attachments;
+
+        if let Some(ref a) = builder.attachment {
+            attachments = [TwilightAttachment::from_bytes(a.name.clone().into(), a.data.clone(), 0)];
+            update = update.attachments(&attachments);
+        }
+
+        if let Some(ref c) = builder.content {
+            update = update.content(Some(c));
+        }
+
+        update.await?;
+    } else {
+        c.create_response(
+            ctxt.data.interaction_id.unwrap(),
+            &ctxt.data.interaction_token.clone().unwrap(),
+            &response,
+        )
+        .await?;
+
+        ctxt.assyst()
+            .replies
+            .insert_interaction_command(ctxt.data.interaction_id.unwrap().get());
+    }
+
+    Ok(())
 }

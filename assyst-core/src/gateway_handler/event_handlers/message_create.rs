@@ -27,8 +27,13 @@ pub async fn handle(assyst: ThreadSafeAssyst, MessageCreate(message): MessageCre
                 assyst: &assyst,
                 execution_timings: result.execution_timings,
                 calling_prefix: result.calling_prefix,
-                message: &message,
+                message: Some(&message),
                 interaction_subcommand: None,
+                channel_id: message.channel_id,
+                guild_id: message.guild_id,
+                author: message.author.clone(),
+                interaction_token: None,
+                interaction_id: None,
             };
             let ctxt = RawMessageParseCtxt::new(CommandCtxt::new(&data), result.args);
 

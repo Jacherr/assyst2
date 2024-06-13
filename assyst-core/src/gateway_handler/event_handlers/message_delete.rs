@@ -11,7 +11,7 @@ use crate::replies::ReplyState;
 /// If it was, then Assyst will attempt to delete the response to that command, to prevent any
 /// "dangling responses".
 pub async fn handle(assyst: ThreadSafeAssyst, message: MessageDelete) {
-    if let Some(reply) = assyst.replies.get(message.id.get())
+    if let Some(reply) = assyst.replies.get_raw_message(message.id.get())
         && let ReplyState::InUse(reply) = reply.state
     {
         _ = assyst

@@ -37,8 +37,13 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: MessageUpdate) {
                         assyst: &assyst,
                         execution_timings: result.execution_timings,
                         calling_prefix: result.calling_prefix,
-                        message: &message,
+                        message: Some(&message),
                         interaction_subcommand: None,
+                        channel_id: message.channel_id,
+                        guild_id: message.guild_id,
+                        author: message.author.clone(),
+                        interaction_token: None,
+                        interaction_id: None,
                     };
                     let ctxt = RawMessageParseCtxt::new(CommandCtxt::new(&data), result.args);
 
@@ -68,7 +73,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: MessageUpdate) {
                     }
                 },
                 Ok(None) | Err(ParseError::PreParseFail(PreParseError::MessageNotPrefixed(_))) => {
-                    if let Some(reply) = assyst.replies.remove(message.id.get())
+                    if let Some(reply) = assyst.replies.remove_raw_message(message.id.get())
                         && let ReplyState::InUse(reply) = reply.state
                     {
                         // A previous command invocation was edited to non-command, delete response

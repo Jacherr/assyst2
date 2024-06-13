@@ -30,7 +30,7 @@ pub async fn create(ctxt: CommandCtxt<'_>, Word(name): Word, Rest(contents): Res
 
 #[command(description = "runs a tag", cooldown = Duration::from_secs(2), access = Availability::Public, category = Category::Misc, usage = "<args>")]
 pub async fn default(ctxt: CommandCtxt<'_>, Word(tag_name): Word, arguments: Vec<Word>) -> anyhow::Result<()> {
-    let Some(guild_id) = ctxt.data.message.guild_id else {
+    let Some(guild_id) = ctxt.data.guild_id else {
         bail!("tags can only be used in guilds")
     };
 
@@ -42,7 +42,7 @@ pub async fn default(ctxt: CommandCtxt<'_>, Word(tag_name): Word, arguments: Vec
         .context("Tag not found in this server")?;
 
     let assyst = ctxt.assyst().clone();
-    let message = ctxt.data.message.clone();
+    let message = ctxt.data.message.unwrap().clone();
 
     let (res, tag) = tokio::task::spawn_blocking(move || {
         let tag = tag;

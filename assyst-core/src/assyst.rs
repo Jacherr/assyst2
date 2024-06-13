@@ -44,7 +44,7 @@ pub struct Assyst {
     pub tasks: Mutex<Vec<Task>>,
     /// The recommended number of shards for this instance.
     pub shard_count: u64,
-    /// Cached command replies.
+    /// Cached command replies for "raw" message commands.
     pub replies: Replies,
     /// All command ratelimits, in the format <(guild/user id, command name) => time command was
     /// ran>

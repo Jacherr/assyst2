@@ -328,9 +328,24 @@ impl ImageUrl {
         Ok(Self(attachment.url.clone()))
     }
 
-    /// This only exists for raw message
-    async fn from_attachment(ctxt: &mut RawMessageParseCtxt<'_>) -> Result<Self, TagParseError> {
-        Self::attachment(ctxt.cx.data.message.attachments.first())
+    async fn from_attachment_raw_message(ctxt: &mut RawMessageParseCtxt<'_>) -> Result<Self, TagParseError> {
+        Self::attachment(ctxt.cx.data.message.as_ref().unwrap().attachments.first())
+    }
+
+    async fn from_attachment_interaction_command(
+        ctxt: &mut InteractionCommandParseCtxt<'_>,
+    ) -> Result<Self, TagParseError> {
+        let word = ctxt.next_option()?;
+
+        if let CommandOptionValue::Attachment(ref option) = word.value {
+            // ?? no idea how to get a url here
+            todo!()
+        } else {
+            Err(TagParseError::MismatchedCommandOptionType((
+                "Attachment".to_owned(),
+                word.value.clone(),
+            )))
+        }
     }
 
     /// This only exists for raw message
@@ -339,6 +354,8 @@ impl ImageUrl {
             .cx
             .data
             .message
+            .as_ref()
+            .unwrap()
             .referenced_message
             .as_deref()
             .ok_or(TagParseError::NoReply)?;
@@ -452,7 +469,7 @@ impl ImageUrl {
 
     /// This only exists for raw message
     async fn from_sticker(ctxt: &mut RawMessageParseCtxt<'_>) -> Result<Self, TagParseError> {
-        Self::sticker(ctxt.cx.data.message.sticker_items.first())
+        Self::sticker(ctxt.cx.data.message.as_ref().unwrap().sticker_items.first())
     }
 
     // Defined separately without a CommandCtxt because it is also used elsewhere where we don't have
@@ -505,11 +522,11 @@ impl ParseArgument for ImageUrl {
 
             handle!(commit_if_ok!(ctxt, ImageUrl::from_mention_raw_message));
             handle!(commit_if_ok!(ctxt, ImageUrl::from_url_argument_raw_message));
-            handle!(commit_if_ok!(ctxt, ImageUrl::from_attachment));
+            handle!(commit_if_ok!(ctxt, ImageUrl::from_attachment_raw_message));
             handle!(commit_if_ok!(ctxt, ImageUrl::from_reply));
             handle!(commit_if_ok!(ctxt, ImageUrl::from_emoji_raw_message));
             handle!(commit_if_ok!(ctxt, ImageUrl::from_sticker));
-            handle!(ImageUrl::from_channel_history(ctxt.cx.assyst(), ctxt.cx.data.message.channel_id).await);
+            handle!(ImageUrl::from_channel_history(ctxt.cx.assyst(), ctxt.cx.data.channel_id).await);
             Err(TagParseError::NoImageFound)
         }
 
@@ -539,10 +556,11 @@ impl ParseArgument for ImageUrl {
                 };
             }
 
+            handle!(commit_if_ok!(ctxt, ImageUrl::from_attachment_interaction_command));
             handle!(commit_if_ok!(ctxt, ImageUrl::from_mention_command_option));
             handle!(commit_if_ok!(ctxt, ImageUrl::from_url_argument_command_option));
             handle!(commit_if_ok!(ctxt, ImageUrl::from_emoji_command_option));
-            handle!(ImageUrl::from_channel_history(ctxt.cx.assyst(), ctxt.cx.data.message.channel_id).await);
+            handle!(ImageUrl::from_channel_history(ctxt.cx.assyst(), ctxt.cx.data.channel_id).await);
             Err(TagParseError::NoImageFound)
         }
 
