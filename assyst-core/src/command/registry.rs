@@ -77,20 +77,6 @@ pub async fn register_interaction_commands(assyst: ThreadSafeAssyst) -> anyhow::
         }
     }
 
-    let test_tag_command = SubCommandBuilder::new("view", "tag")
-        .option(StringBuilder::new("val", "string value").required(true).build())
-        .build();
-
-    let test_subcommand = CommandBuilder::new(
-        "tag",
-        "tag command",
-        twilight_model::application::command::CommandType::ChatInput,
-    )
-    .option(test_tag_command)
-    .build();
-
-    deduplicated_commands.push(test_subcommand);
-
     let response = assyst
         .interaction_client()
         .set_global_commands(&deduplicated_commands)

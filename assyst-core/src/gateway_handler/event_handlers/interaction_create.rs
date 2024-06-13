@@ -51,7 +51,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
                     sorted_incoming_options.push(op.clone());
                 } else {
                     // default required: false
-                    if !option.required.unwrap_or(false) {
+                    if option.required.unwrap_or(false) {
                         err!(
                             "expected required option {} for command {}, but it was missing",
                             option.name,
@@ -62,8 +62,8 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
                 }
             }
 
-            println!("{sorted_incoming_options:#?}");
-            println!("{:#?}", command.interaction_info().command_options);
+            //println!("{sorted_incoming_options:#?}");
+            //println!("{:#?}", command.interaction_info().command_options);
 
             let data = CommandData {
                 source: Source::Interaction,
