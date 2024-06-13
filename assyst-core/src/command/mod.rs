@@ -26,6 +26,7 @@
 //!   entry point (and the only relevant for the outside) is [`registry::find_command_by_name`],
 //!   which does the mapping mentioned above.
 
+use std::collections::HashMap;
 use std::fmt::Display;
 use std::slice;
 use std::str::SplitAsciiWhitespace;
@@ -42,7 +43,7 @@ use twilight_model::channel::message::sticker::MessageSticker;
 use twilight_model::channel::message::Embed;
 use twilight_model::channel::{Attachment, Message};
 use twilight_model::http::interaction::InteractionResponse;
-use twilight_model::id::marker::{ChannelMarker, GuildMarker, InteractionMarker};
+use twilight_model::id::marker::{AttachmentMarker, ChannelMarker, GuildMarker, InteractionMarker};
 use twilight_model::id::Id;
 use twilight_model::user::User;
 
@@ -216,6 +217,7 @@ pub struct CommandData<'a> {
     pub message: Option<&'a Message>,
     pub interaction_token: Option<String>,
     pub interaction_id: Option<Id<InteractionMarker>>,
+    pub interaction_attachments: HashMap<Id<AttachmentMarker>, Attachment>,
 }
 
 pub type RawMessageArgsIter<'a> = SplitAsciiWhitespace<'a>;

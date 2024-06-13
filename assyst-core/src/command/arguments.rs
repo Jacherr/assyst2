@@ -338,8 +338,9 @@ impl ImageUrl {
         let word = ctxt.next_option()?;
 
         if let CommandOptionValue::Attachment(ref option) = word.value {
-            // ?? no idea how to get a url here
-            todo!()
+            let attachment = ctxt.cx.data.interaction_attachments.get(option);
+            let attachment = attachment.ok_or(TagParseError::NoAttachment)?;
+            Self::attachment(Some(attachment))
         } else {
             Err(TagParseError::MismatchedCommandOptionType((
                 "Attachment".to_owned(),

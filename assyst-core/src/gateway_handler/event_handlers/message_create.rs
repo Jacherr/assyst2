@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::time::Instant;
 
 use assyst_common::err;
@@ -34,6 +35,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, MessageCreate(message): MessageCre
                 author: message.author.clone(),
                 interaction_token: None,
                 interaction_id: None,
+                interaction_attachments: HashMap::new(),
             };
             let ctxt = RawMessageParseCtxt::new(CommandCtxt::new(&data), result.args);
 
