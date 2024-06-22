@@ -94,10 +94,11 @@ pub enum TagParseError {
     NoImageInHistory,
     NoImageFound,
     MediaDownloadFail,
-    InvalidSubcommand,
+    InvalidSubcommand(String),
     NoInteractionSubcommandProvided,
     InteractionCommandIsBaseSubcommand,
     MismatchedCommandOptionType((String, CommandOptionValue)),
+    FlagParseError(anyhow::Error),
 }
 
 impl GetErrorSeverity for TagParseError {
@@ -146,7 +147,7 @@ impl Display for TagParseError {
                 f.write_str("an image was expected as an argument, but no image could be found")
             },
             TagParseError::MediaDownloadFail => f.write_str("failed to download media content"),
-            TagParseError::InvalidSubcommand => f.write_str("no subcommand found for given name"),
+            TagParseError::InvalidSubcommand(name) => write!(f, "no subcommand found for given subcommand name {name}"),
             TagParseError::MismatchedCommandOptionType((expected, received)) => {
                 write!(
                     f,
@@ -159,6 +160,7 @@ impl Display for TagParseError {
             TagParseError::InteractionCommandIsBaseSubcommand => {
                 f.write_str("Interaction subcommand is base subcommand")
             },
+            TagParseError::FlagParseError(x) => write!(f, "Error parsing command flags ({})", x.to_string()),
         }
     }
 }

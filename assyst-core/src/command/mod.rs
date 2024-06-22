@@ -37,6 +37,7 @@ use crate::assyst::ThreadSafeAssyst;
 use crate::wsi_handler::WsiHandler;
 use assyst_common::config::CONFIG;
 use async_trait::async_trait;
+use errors::TagParseError;
 use twilight_model::application::command::CommandOption;
 use twilight_model::application::interaction::application_command::{CommandDataOption, CommandOptionValue};
 use twilight_model::channel::message::sticker::MessageSticker;
@@ -46,6 +47,7 @@ use twilight_model::http::interaction::InteractionResponse;
 use twilight_model::id::marker::{AttachmentMarker, ChannelMarker, GuildMarker, InteractionMarker};
 use twilight_model::id::Id;
 use twilight_model::user::User;
+use twilight_util::builder::command::{CommandBuilder, SubCommandBuilder};
 
 use self::errors::{ArgsExhausted, ExecutionError, MetadataCheckError};
 use self::messagebuilder::MessageBuilder;
@@ -53,6 +55,7 @@ use self::source::Source;
 
 pub mod arguments;
 pub mod errors;
+pub mod flags;
 pub mod group;
 pub mod messagebuilder;
 pub mod misc;
@@ -103,6 +106,34 @@ pub struct CommandMetadata {
 }
 
 #[derive(Debug)]
+pub enum CommandGroupingInteractionInfo {
+    Group(Vec<(String /* subcommand name */, CommandInteractionInfo)>),
+    Command(CommandInteractionInfo),
+}
+impl CommandGroupingInteractionInfo {
+    pub fn unwrap_command(&self) -> &CommandInteractionInfo {
+        if let Self::Command(x) = self { x } else { unreachable!() }
+    }
+
+    pub fn group_as_option_tree(&self) -> Vec<CommandOption> {
+        let group = if let Self::Group(x) = self { x } else { unreachable!() };
+        let mut options = Vec::new();
+
+        for member in group {
+            let mut subcommand = SubCommandBuilder::new(member.0.clone(), format!("{} subcommand", member.0));
+
+            for option in member.1.command_options.clone() {
+                subcommand = subcommand.option(option);
+            }
+
+            options.push(subcommand.build());
+        }
+
+        options
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct CommandInteractionInfo {
     pub command_options: Vec<CommandOption>,
 }
@@ -167,13 +198,13 @@ pub trait Command {
     fn metadata(&self) -> &'static CommandMetadata;
 
     /// Tries to find a subcommand given a name, provided that `self` is a command group
-    fn subcommand(&self, s: &str) -> Option<TCommand>;
+    fn subcommands(&self) -> Option<&'static [(&'static str, TCommand)]>;
 
     /// Creates an interaction command for subitting for Discord on startup
     fn as_interaction_command(&self) -> twilight_model::application::command::Command;
 
     /// Loads all interaction-specific info for sending to Discord
-    fn interaction_info(&self) -> CommandInteractionInfo;
+    fn interaction_info(&self) -> CommandGroupingInteractionInfo;
 
     /// Parses arguments and executes the command, when the source is a "raw" prefixed message.
     async fn execute_raw_message(&self, ctxt: RawMessageParseCtxt<'_>) -> Result<(), ExecutionError>;
@@ -213,7 +244,7 @@ pub struct CommandData<'a> {
     pub channel_id: Id<ChannelMarker>,
     pub guild_id: Option<Id<GuildMarker>>,
     pub author: User,
-    pub interaction_subcommand: Option<CommandOptionValue>,
+    pub interaction_subcommand: Option<(String /* name */, CommandOptionValue)>,
     pub message: Option<&'a Message>,
     pub interaction_token: Option<String>,
     pub interaction_id: Option<Id<InteractionMarker>>,
@@ -281,11 +312,26 @@ impl<'a> ParseCtxt<'a, RawMessageArgsIter<'a>> {
         self.args.next().ok_or(ArgsExhausted)
     }
 
-    /// The rest of the message.
-    pub fn rest(&self) -> Result<&'a str, ArgsExhausted> {
-        self.args.remainder().ok_or(ArgsExhausted)
+    /// The rest of the message, excluding flags.
+    pub fn rest(&mut self) -> Result<String, TagParseError> {
+        // todo: handle newlines etc with
+        let raw = self.args.remainder().ok_or(TagParseError::ArgsExhausted)?;
+        let (args, flags) = if let Some(idx) = raw.find("--") {
+            (&raw[..idx], &raw[idx..])
+        } else {
+            (raw, "")
+        };
+
+        self.args = flags.split_ascii_whitespace();
+
+        Ok(args.to_owned())
+    }
+
+    pub fn rest_all(&self) -> String {
+        self.args.remainder().map(|x| x.to_owned()).unwrap_or(String::new())
     }
 }
+
 impl<'a> ParseCtxt<'a, InteractionMessageArgsIter<'a>> {
     pub fn new(ctxt: CommandCtxt<'a>, args: &'a [CommandDataOption]) -> Self {
         Self {

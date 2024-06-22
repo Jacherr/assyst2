@@ -14,12 +14,13 @@ use tokio::time::timeout;
 use tracing::debug;
 
 use crate::assyst::ThreadSafeAssyst;
+use crate::command::flags::DownloadFlags;
 use crate::downloader::{download_content, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES};
 
 pub const INSTANCES_ROUTE: &str = "https://instances.hyper.lol/instances.json";
 
 pub const TEST_URL: &str = "https://www.youtube.com/watch?v=sbvp3kuU2ak";
-pub const TEST_URL_TIMEOUT: LazyCell<Duration> = LazyCell::new(|| Duration::from_secs(10));
+pub const TEST_URL_TIMEOUT: LazyCell<Duration> = LazyCell::new(|| Duration::from_secs(5));
 pub const TEST_SCORE_THRESHOLD: f32 = 90.0;
 
 #[derive(Default)]
@@ -27,6 +28,19 @@ pub struct WebDownloadOpts {
     pub audio_only: Option<bool>,
     pub quality: Option<String>,
     pub api_url_override: Option<String>,
+}
+impl WebDownloadOpts {
+    pub fn from_download_flags(flags: DownloadFlags) -> Self {
+        Self {
+            audio_only: Some(flags.audio),
+            quality: if flags.quality != 0 {
+                Some(flags.quality.to_string())
+            } else {
+                None
+            },
+            api_url_override: None,
+        }
+    }
 }
 
 #[derive(Deserialize)]

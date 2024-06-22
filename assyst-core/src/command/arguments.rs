@@ -1,7 +1,10 @@
+use std::collections::HashMap;
 use std::fmt::Display;
 
+use assyst_common::markdown::parse_codeblock;
 use assyst_common::util::discord::{get_avatar_url, id_from_mention};
 use assyst_common::util::{parse_to_millis, regex};
+use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use twilight_model::application::command::CommandOption;
 use twilight_model::application::interaction::application_command::CommandOptionValue;
@@ -213,13 +216,47 @@ impl ParseArgument for Word {
     }
 }
 
+/// A codeblock argument (may also be plaintext).
+#[derive(Debug)]
+pub struct Codeblock(pub String);
+impl ParseArgument for Codeblock {
+    async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>) -> Result<Self, TagParseError> {
+        Ok(Codeblock(parse_codeblock(ctxt.rest()?)))
+    }
+
+    async fn parse_command_option(ctxt: &mut InteractionCommandParseCtxt<'_>) -> Result<Self, TagParseError> {
+        let word = ctxt.next_option()?;
+
+        if let CommandOptionValue::String(ref option) = word.value {
+            Ok(Codeblock(option.clone()))
+        } else {
+            Err(TagParseError::MismatchedCommandOptionType((
+                "String".to_owned(),
+                word.value.clone(),
+            )))
+        }
+    }
+
+    fn as_command_option(name: &str) -> CommandOption {
+        StringBuilder::new(name, "code argument").required(true).build()
+    }
+}
+
 /// The rest of a message as an argument. This should be the last argument if used.
 #[derive(Debug)]
 pub struct Rest(pub String);
 
 impl ParseArgument for Rest {
     async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>) -> Result<Self, TagParseError> {
-        Ok(Self(ctxt.rest()?.to_owned()))
+        if let Some(m) = ctxt.cx.data.message {
+            if let Some(ref r) = m.referenced_message {
+                Ok(Self(r.content.clone()))
+            } else {
+                Ok(Self(ctxt.rest()?))
+            }
+        } else {
+            Ok(Self(ctxt.rest()?))
+        }
     }
 
     async fn parse_command_option(ctxt: &mut InteractionCommandParseCtxt<'_>) -> Result<Self, TagParseError> {

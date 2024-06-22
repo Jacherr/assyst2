@@ -43,7 +43,7 @@ macro_rules! define_commandgroup {
                 $subcommand:literal => $commandfn:expr
             ),*
         ]
-        default_interaction_subcommand: $default_interaction_subcommand:expr
+        $(,default_interaction_subcommand: $default_interaction_subcommand:expr)?
         $(,default: $default:expr)?
     ) => {
         paste::paste! {
@@ -61,8 +61,6 @@ macro_rules! define_commandgroup {
             #[::async_trait::async_trait]
             impl crate::command::Command for [<$groupname _command>] {
                 fn metadata(&self) -> &'static crate::command::CommandMetadata {
-                    // TODO: use options in metadata instead of things like empty &str
-
                     static META: crate::command::CommandMetadata = crate::command::CommandMetadata {
                         access: $crate::defaults!(access $($access)?),
                         category: $category,
@@ -78,17 +76,25 @@ macro_rules! define_commandgroup {
                     &META
                 }
 
-                fn subcommand(&self, sub: &str) -> Option<crate::command::TCommand> {
-                    crate::command::group::find_subcommand_raw_message(sub, Self::SUBCOMMANDS)
+                fn subcommands(&self) -> Option<&'static [(&'static str, crate::command::TCommand)]> {
+                    Some(Self::SUBCOMMANDS)
                 }
 
-                fn interaction_info(&self) -> crate::command::CommandInteractionInfo {
-                    // todo
-                    todo!()
+                fn interaction_info(&self) -> crate::command::CommandGroupingInteractionInfo {
+                    let mut subcommands = Vec::<(String, crate::command::CommandInteractionInfo)>::new();
+                    for command in Self::SUBCOMMANDS {
+                        subcommands.push((command.0.to_owned(), command.1.interaction_info().unwrap_command().clone()));
+                    }
+
+                    $(
+                        subcommands.push(($default_interaction_subcommand.to_owned(), [<$default _command>].interaction_info().unwrap_command().clone()));
+                    )?
+                    crate::command::CommandGroupingInteractionInfo::Group(subcommands)
                 }
 
                 fn as_interaction_command(&self) -> twilight_model::application::command::Command {
                     let meta = self.metadata();
+                    let options = self.interaction_info().group_as_option_tree();
 
                     twilight_model::application::command::Command {
                         application_id: None,
@@ -102,12 +108,10 @@ macro_rules! define_commandgroup {
                         guild_id: None,
                         id: None,
                         kind: twilight_model::application::command::CommandType::ChatInput,
-                        // todo: handle properly
-                        name: "".to_owned(),
+                        name: meta.name.to_owned(),
                         name_localizations: None,
                         nsfw: Some(meta.age_restricted),
-                        // TODO: set options properly
-                        options: vec![],
+                        options,
                         version: twilight_model::id::Id::new(1),
                     }
                 }
@@ -116,28 +120,34 @@ macro_rules! define_commandgroup {
                     #![allow(unreachable_code)]
                     match crate::command::group::execute_subcommand_raw_message(ctxt.fork(), Self::SUBCOMMANDS).await {
                         Ok(res) => Ok(res),
-                        Err(crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::InvalidSubcommand) 
+                        Err(crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::InvalidSubcommand(_)) 
                         | crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::ArgsExhausted)) => {
                             // No subcommand was found, call either the default if provided, or error out
                             $(
                                 return [<$default _command>].execute_raw_message(ctxt).await;
                             )?
-                            return Err(crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::InvalidSubcommand));
+                            return Err(crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::InvalidSubcommand("unknown".to_owned())));
                         },
                         Err(err) => Err(err)
                     }
                 }
 
                 async fn execute_interaction_command(&self, ctxt: crate::command::InteractionCommandParseCtxt<'_>) -> Result<(), crate::command::ExecutionError> {
-                    #![allow(unreachable_code)]
-                    match crate::command::group::execute_subcommand_interaction_command(ctxt.fork(), Self::SUBCOMMANDS, $default_interaction_subcommand).await {
+                    #[allow(unused_mut, unused_assignments)]
+                    let mut default = "";
+                    $(
+                        default = $default_interaction_subcommand;
+                    )?
+
+                    #[allow(unreachable_code)]
+                    match crate::command::group::execute_subcommand_interaction_command(ctxt.fork(), Self::SUBCOMMANDS, default).await {
                         Ok(res) => Ok(res),
                         Err(crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::InteractionCommandIsBaseSubcommand)) => {
-                            // Subcommand was "defau;t" command, call either the default if provided, or error out
+                            // Subcommand was "default" command, call either the default if provided, or error out
                             $(
                                 return [<$default _command>].execute_interaction_command(ctxt).await;
                             )?
-                            return Err(crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::InvalidSubcommand));
+                            return Err(crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::InvalidSubcommand("unknown".to_owned())));
                         },
                         Err(err) => Err(err)
                     }
@@ -147,7 +157,7 @@ macro_rules! define_commandgroup {
     };
 }
 
-pub fn find_subcommand_raw_message(sub: &str, cmds: &[(&str, TCommand)]) -> Option<TCommand> {
+pub fn find_subcommand(sub: &str, cmds: &[(&str, TCommand)]) -> Option<TCommand> {
     cmds.iter().find(|(k, _)| *k == sub).map(|(_, v)| v).copied()
 }
 
@@ -160,7 +170,7 @@ pub async fn execute_subcommand_raw_message(
     let subcommand = ctxt.next_word().map_err(|err| ExecutionError::Parse(err.into()))?;
 
     let command =
-        find_subcommand_raw_message(subcommand, commands).ok_or(ExecutionError::Parse(TagParseError::InvalidSubcommand))?;
+        find_subcommand(subcommand, commands).ok_or(ExecutionError::Parse(TagParseError::InvalidSubcommand(subcommand.to_owned())))?;
 
     command.execute_raw_message(ctxt).await
 }
@@ -176,18 +186,13 @@ pub async fn execute_subcommand_interaction_command(
     default_interaction_subcommand: &str
 ) -> Result<(), ExecutionError> {
     let subcommand = ctxt.cx.data.interaction_subcommand.clone().ok_or(ExecutionError::Parse(TagParseError::NoInteractionSubcommandProvided))?;
-    let subcommand = if let CommandOptionValue::SubCommand(c) = subcommand {
-        c.get(0).map(|x| x.name.clone()).unwrap()
-    } else {
-        unreachable!()
-    };
 
-    if subcommand == default_interaction_subcommand {
+    if subcommand.0 == default_interaction_subcommand {
         return Err(ExecutionError::Parse(TagParseError::InteractionCommandIsBaseSubcommand));
     }
 
     let command =
-        find_subcommand_interaction_command(&subcommand, commands).ok_or(ExecutionError::Parse(TagParseError::InvalidSubcommand))?;
+        find_subcommand_interaction_command(&subcommand.0, commands).ok_or(ExecutionError::Parse(TagParseError::InvalidSubcommand(subcommand.0)))?;
 
     command.execute_interaction_command(ctxt).await
 }

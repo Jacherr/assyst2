@@ -22,14 +22,14 @@ use crate::rest::eval::fake_eval;
 use super::{CommandCtxt, Rest, Word};
 
 #[command(description = "creates a tag", cooldown = Duration::from_secs(2), access = Availability::Public, category = Category::Misc, usage = "<name> <contents>")]
-pub async fn create(ctxt: CommandCtxt<'_>, Word(name): Word, Rest(contents): Rest) -> anyhow::Result<()> {
-    ctxt.reply(format!("create tag, name={name}, contents={contents}"))
+pub async fn create(ctxt: CommandCtxt<'_>, name: Word, contents: Rest) -> anyhow::Result<()> {
+    ctxt.reply(format!("create tag, name={}, contents={}", name.0, contents.0))
         .await?;
     Ok(())
 }
 
 #[command(description = "runs a tag", cooldown = Duration::from_secs(2), access = Availability::Public, category = Category::Misc, usage = "<args>")]
-pub async fn default(ctxt: CommandCtxt<'_>, Word(tag_name): Word, arguments: Vec<Word>) -> anyhow::Result<()> {
+pub async fn default(ctxt: CommandCtxt<'_>, tag_name: Word, arguments: Vec<Word>) -> anyhow::Result<()> {
     let Some(guild_id) = ctxt.data.guild_id else {
         bail!("tags can only be used in guilds")
     };
@@ -37,7 +37,7 @@ pub async fn default(ctxt: CommandCtxt<'_>, Word(tag_name): Word, arguments: Vec
     let tag = ctxt
         .assyst()
         .database_handler
-        .get_tag(guild_id.get() as i64, &tag_name)
+        .get_tag(guild_id.get() as i64, &tag_name.0)
         .await?
         .context("Tag not found in this server")?;
 
@@ -185,7 +185,7 @@ define_commandgroup! {
     usage: "<create>",
     commands: [
         "create" => create
-    ]
+    ],
     default_interaction_subcommand: "view",
     default: default
 }

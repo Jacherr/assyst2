@@ -145,3 +145,14 @@ where
         )
     }
 }
+
+pub fn parse_codeblock(input: String) -> String {
+    if input.trim().starts_with("```") && input.trim().ends_with("```") {
+        let r = input.trim().replace("\n", "\n ");
+        let new = r.split(" ").skip(1).collect::<Vec<_>>();
+        let joined = new.join(" ");
+        joined[..joined.len() - 3].to_owned()
+    } else {
+        input
+    }
+}

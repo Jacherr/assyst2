@@ -20,6 +20,8 @@ macro_rules! declare_commands {
 
 declare_commands!(
     misc::enlarge_command,
+    misc::exec_command,
+    misc::run::run_command,
     misc::help::help_command,
     misc::ping_command,
     misc::remind_command,

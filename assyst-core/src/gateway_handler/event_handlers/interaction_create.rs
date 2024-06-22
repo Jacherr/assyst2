@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
 use assyst_common::err;
@@ -14,39 +15,58 @@ use crate::assyst::ThreadSafeAssyst;
 use crate::command::errors::{ExecutionError, TagParseError};
 use crate::command::registry::find_command_by_name;
 use crate::command::source::Source;
-use crate::command::{CommandCtxt, CommandData, ExecutionTimings, InteractionCommandParseCtxt};
+use crate::command::{
+    CommandCtxt, CommandData, CommandGroupingInteractionInfo, ExecutionTimings, InteractionCommandParseCtxt,
+};
 use crate::gateway_handler::message_parser::error::{ErrorSeverity, GetErrorSeverity};
 
 use super::after_command_execution_success;
 
-/// (Full name, is_subcommand)
-fn parse_full_command_name_from_interaction_data(data: &DiscordCommandData) -> (String, bool) {
-    let mut is_subcommand = false;
-    let mut name = data.name.to_owned();
+fn parse_subcommand_data(data: &DiscordCommandData) -> Option<(String, CommandOptionValue)> {
     if let Some(option_zero) = data.options.get(0)
         && let CommandOptionValue::SubCommand(_) = option_zero.value
     {
-        is_subcommand = true;
-        name += " ";
-        name += &option_zero.name;
+        Some((option_zero.name.clone(), option_zero.value.clone()))
+    } else {
+        None
     }
-    (name, is_subcommand)
 }
 
 pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): InteractionCreate) {
     if let Some(InteractionData::ApplicationCommand(command_data)) = interaction.data {
-        let (full_name, is_subcommand) = parse_full_command_name_from_interaction_data(&command_data);
-        // todo: follow subcommands to find "real" name for commands like tag
         let command = find_command_by_name(&command_data.name);
+        let subcommand_data = parse_subcommand_data(&command_data);
 
         if let Some(command) = command {
             // we need to re-order the command options to match what assyst expects
             // todo: support both attachment and link for image inputs (when there is only one attachment input)
-            let command_interaction_options = command.interaction_info().command_options;
+            let command_interaction_options = match command.interaction_info() {
+                CommandGroupingInteractionInfo::Command(x) => x.command_options,
+                CommandGroupingInteractionInfo::Group(g) => {
+                    let subcommand_name = subcommand_data
+                        .clone()
+                        .expect("somehow called base command on a subcommand tree?")
+                        .0;
+                    g.iter()
+                        .find(|x| x.0 == subcommand_name)
+                        .map(|x| x.1.command_options.clone())
+                        .expect("invalid subcommand")
+                },
+            };
+
+            let incoming_options = if let Some(d) = subcommand_data.clone() {
+                match d.1 {
+                    CommandOptionValue::SubCommand(s) => s,
+                    _ => unreachable!(),
+                }
+            } else {
+                command_data.options
+            };
+
             let mut sorted_incoming_options = Vec::<CommandDataOption>::new();
 
             for option in command_interaction_options {
-                let incoming_match = command_data.options.iter().find(|x| x.name == option.name);
+                let incoming_match = incoming_options.iter().find(|x| x.name == option.name);
                 if let Some(op) = incoming_match {
                     sorted_incoming_options.push(op.clone());
                 } else {
@@ -65,6 +85,15 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
             //println!("{sorted_incoming_options:#?}");
             //println!("{:#?}", command.interaction_info().command_options);
 
+            let interaction_subcommand = if let Some(d) = subcommand_data.clone() {
+                match d.1 {
+                    CommandOptionValue::SubCommand(_) => Some(d),
+                    _ => unreachable!(),
+                }
+            } else {
+                None
+            };
+
             let data = CommandData {
                 source: Source::Interaction,
                 assyst: &assyst,
@@ -77,7 +106,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
                 },
                 calling_prefix: "/".to_owned(),
                 message: None,
-                interaction_subcommand: None,
+                interaction_subcommand: interaction_subcommand,
                 channel_id: interaction.channel.unwrap().id,
                 guild_id: interaction.guild_id,
                 author: interaction
@@ -88,7 +117,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
                     .unwrap(),
                 interaction_token: Some(interaction.token),
                 interaction_id: Some(interaction.id),
-                interaction_attachments: command_data.resolved.unwrap().attachments,
+                interaction_attachments: command_data.resolved.map(|x| x.attachments).unwrap_or(HashMap::new()),
             };
 
             let ctxt = InteractionCommandParseCtxt::new(CommandCtxt::new(&data), &sorted_incoming_options);

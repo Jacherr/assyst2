@@ -10,4 +10,4 @@ pub mod metrics_handler;
 pub mod pipe;
 pub mod util;
 
-pub static BOT_ID: u64 = 571661221854707713;
+pub static BOT_ID: u64 = 526861829872549898;

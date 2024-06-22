@@ -1,5 +1,5 @@
 use rayon::prelude::*;
-use std::process::Command;
+use std::process::{Command, ExitStatus};
 
 use crate::ansi::Ansi;
 
@@ -128,10 +128,11 @@ pub fn pid_of(name: &str) -> Option<usize> {
     result.trim().parse().ok()
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct CommandOutput {
     pub stdout: String,
     pub stderr: String,
+    pub exit_code: ExitStatus,
 }
 
 /// Executes a bash command
@@ -144,5 +145,6 @@ pub fn exec_sync(command: &str) -> Result<CommandOutput, std::io::Error> {
     Ok(CommandOutput {
         stdout: String::from_utf8_lossy(&output.stdout).to_string(),
         stderr: String::from_utf8_lossy(&output.stderr).to_string(),
+        exit_code: output.status,
     })
 }

@@ -56,7 +56,12 @@ pub async fn help(ctxt: CommandCtxt<'_>, labels: Vec<Word>) -> anyhow::Result<()
 
                 label.make_ascii_lowercase();
 
-                match command.subcommand(&label) {
+                let subcommands = command.subcommands();
+
+                match subcommands
+                    .map(|x| x.iter().find(|y| y.0 == label).map(|z| z.1))
+                    .flatten()
+                {
                     Some(sc) => command = sc,
                     None => bail!(
                         "subcommand {} does not exist (use {}help {})",
@@ -85,6 +90,15 @@ pub async fn help(ctxt: CommandCtxt<'_>, labels: Vec<Word>) -> anyhow::Result<()
                 });
             let cooldown = format!("{} {} seconds", "Cooldown:".fg_yellow(), meta.cooldown.as_secs());
             let access = "Access: ".fg_yellow() + &meta.access.to_string();
+            let subcommands = if let Some(subcommands) = command.subcommands() {
+                format!(
+                    "\n{} {}",
+                    "Subcommands:".fg_yellow(),
+                    subcommands.iter().map(|x| x.0).collect::<Vec<_>>().join(", ")
+                )
+            } else {
+                String::new()
+            };
 
             let examples_format = if !meta.examples.is_empty() {
                 format!(
@@ -101,9 +115,11 @@ pub async fn help(ctxt: CommandCtxt<'_>, labels: Vec<Word>) -> anyhow::Result<()
             let examples = "Examples: ".fg_cyan() + &examples_format;
 
             ctxt.reply(
-                format!("{name_fmt} {description}\n\n{aliases}\n{cooldown}\n{access}\n{usage}\n\n{examples}")
-                    .trim()
-                    .codeblock("ansi"),
+                format!(
+                    "{name_fmt} {description}\n\n{aliases}\n{cooldown}\n{access}\n{usage}{subcommands}\n\n{examples}"
+                )
+                .trim()
+                .codeblock("ansi"),
             )
             .await?;
         } else {

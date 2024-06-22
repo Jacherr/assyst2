@@ -80,21 +80,11 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
     // but this gives us a more useful error
     verify_input_is_ctxt(&item.sig.inputs);
 
-    // used for sanity checking that `Rest` only ever appears as the last type
-    let mut has_rest_ty = None;
 
     for (index, input) in item.sig.inputs.iter().skip(1).enumerate() {
-        if let Some(span) = has_rest_ty {
-            return quote_spanned!(span => compile_error!("`Rest` must be the last argument");).into();
-        }
-
         match input {
             FnArg::Receiver(_) => panic!("#[command] cannot have `self` arguments"),
             FnArg::Typed(PatType { ty, pat, .. }) => {
-                if let Some(span) = is_rest_type(ty) {
-                    has_rest_ty = Some(span);
-                }
-
                 if let Pat::Ident(ident) = &**pat {
                     let ident_string = ident.ident.to_string();
 
@@ -142,12 +132,17 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
                 &META
             }
 
-            fn subcommand(&self, _sub: &str) -> Option<crate::command::TCommand> {
+            fn subcommands(&self) -> Option<&'static [(&'static str, crate::command::TCommand)]> {
                 None
             }
 
             fn as_interaction_command(&self) -> twilight_model::application::command::Command {
                 let meta = self.metadata();
+                let options = if let crate::command::CommandGroupingInteractionInfo::Command(x) = self.interaction_info() {
+                    x.command_options
+                } else {
+                    unreachable!()
+                };
 
                 twilight_model::application::command::Command {
                     application_id: None,
@@ -164,19 +159,21 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
                     name: meta.name.to_owned(),
                     name_localizations: None,
                     nsfw: Some(meta.age_restricted),
-                    options: self.interaction_info().command_options,
+                    options,
                     version: twilight_model::id::Id::new(1),
                 }
             }
 
-            fn interaction_info(&self) -> crate::command::CommandInteractionInfo {
+            fn interaction_info(&self) -> crate::command::CommandGroupingInteractionInfo {
                 use crate::command::arguments::ParseArgument;
 
                 let mut command_options = Vec::new();
                 #(
                   command_options.push(#command_option_exprs);
                 )*
-                crate::command::CommandInteractionInfo { command_options }
+
+                let command_info = crate::command::CommandInteractionInfo { command_options };
+                crate::command::CommandGroupingInteractionInfo::Command(command_info)
             }
 
             async fn execute_raw_message(
@@ -219,17 +216,6 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
     //panic!("{}", output);
 
     output.into()
-}
-
-fn is_rest_type(ty: &Type) -> Option<Span> {
-    if let Type::Path(p) = ty
-        && let Some(ident) = p.path.get_ident()
-        && *ident == "Rest"
-    {
-        Some(ident.span())
-    } else {
-        None
-    }
 }
 
 fn verify_input_is_ctxt(inputs: &Punctuated<FnArg, Token![,]>) {
