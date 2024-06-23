@@ -152,6 +152,8 @@ pub fn parse_codeblock(input: String) -> String {
         let new = r.split(" ").skip(1).collect::<Vec<_>>();
         let joined = new.join(" ");
         joined[..joined.len() - 3].to_owned()
+    } else if input.trim().starts_with("`") && input.trim().ends_with("`") {
+        input[1..input.len() - 1].to_owned()
     } else {
         input
     }

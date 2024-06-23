@@ -81,6 +81,8 @@ flag_parse_argument! { RustFlags }
 #[derive(Default)]
 pub struct LangFlags {
     pub verbose: bool,
+    pub llir: bool,
+    pub opt: u64,
 }
 impl FlagDecode for LangFlags {
     fn from_str(input: &str) -> anyhow::Result<Self>
@@ -89,10 +91,22 @@ impl FlagDecode for LangFlags {
     {
         let mut valid_flags = HashMap::new();
         valid_flags.insert("verbose", FlagType::NoValue);
+        valid_flags.insert("llir", FlagType::NoValue);
+        valid_flags.insert("opt", FlagType::WithValue);
 
         let raw_decode = flags_from_str(input, valid_flags)?;
+        let opt = raw_decode
+            .get("opt")
+            .map(|x| x.as_deref())
+            .flatten()
+            .map(|x| x.parse::<u64>())
+            .unwrap_or(Ok(0))
+            .context("Failed to parse optimisation level")?;
+
         let result = Self {
             verbose: raw_decode.get("verbose").is_some(),
+            llir: raw_decode.get("llir").is_some(),
+            opt,
         };
 
         Ok(result)

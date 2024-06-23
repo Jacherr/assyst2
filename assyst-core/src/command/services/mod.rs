@@ -57,9 +57,13 @@ pub async fn r34(ctxt: CommandCtxt<'_>, tags: Rest) -> anyhow::Result<()> {
     access = Availability::Public,
     cooldown = Duration::from_secs(2),
     category = Category::Services,
-    usage = "[url] <audio|[quality]>",
-    examples = ["https://www.youtube.com/watch?v=dQw4w9WgXcQ", "https://www.youtube.com/watch?v=dQw4w9WgXcQ audio", "https://www.youtube.com/watch?v=dQw4w9WgXcQ 480"],
-    send_processing = true
+    usage = "[url] <flags>",
+    examples = ["https://www.youtube.com/watch?v=dQw4w9WgXcQ", "https://www.youtube.com/watch?v=dQw4w9WgXcQ --audio", "https://www.youtube.com/watch?v=dQw4w9WgXcQ --quality 480"],
+    send_processing = true,
+    flag_descriptions = [
+        ("audio", "Get content as MP3"),
+        ("quality [quality:144|240|360|480|720|1080|max]", "Set resolution of output"),
+    ]
 )]
 pub async fn download(ctxt: CommandCtxt<'_>, url: Word, options: DownloadFlags) -> anyhow::Result<()> {
     let opts = WebDownloadOpts::from_download_flags(options);

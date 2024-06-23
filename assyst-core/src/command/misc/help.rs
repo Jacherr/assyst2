@@ -43,7 +43,10 @@ pub async fn help(ctxt: CommandCtxt<'_>, labels: Vec<Word>) -> anyhow::Result<()
     if let Some(Word(base_command)) = labels.next() {
         // if the base is a command
         if let Some(mut command) = find_command_by_name(&base_command) {
+            let mut meta = command.metadata();
+
             let mut usage = format!("{}{}", "Usage: ".fg_yellow(), ctxt.data.calling_prefix);
+            let mut name_fmt = meta.name.to_owned();
 
             // For better error reporting, store the "chain of commands" (e.g. `-t create`)
             let mut command_chain = command.metadata().name.to_owned();
@@ -74,13 +77,45 @@ pub async fn help(ctxt: CommandCtxt<'_>, labels: Vec<Word>) -> anyhow::Result<()
                 command_chain += " ";
                 command_chain += command.metadata().name;
             }
-            usage += command.metadata().name;
+
+            meta = command.metadata();
+
+            usage += meta.name;
             usage += " ";
-            usage += command.metadata().usage;
+            usage += meta.usage;
 
-            let meta = command.metadata();
+            name_fmt += " ";
+            name_fmt += meta.name;
 
-            let name_fmt = (meta.name.to_owned() + ":").fg_green();
+            let flags_format = if !meta.flag_descriptions.is_empty() {
+                format!(
+                    "\n{}",
+                    meta.flag_descriptions
+                        .iter()
+                        .map(|(x, y)| { format!("--{}: {}", x, y) })
+                        .collect::<Vec<_>>()
+                        .join("\n")
+                )
+            } else {
+                "None".to_owned()
+            };
+            let flags = "Flags:".fg_cyan() + &flags_format;
+
+            let examples_format = if !meta.examples.is_empty() {
+                format!(
+                    "\n{}",
+                    meta.examples
+                        .iter()
+                        .map(|x| { format!("{}{} {}", ctxt.data.calling_prefix, name_fmt, x) })
+                        .collect::<Vec<_>>()
+                        .join("\n")
+                )
+            } else {
+                "None".to_owned()
+            };
+            let examples = "Examples: ".fg_cyan() + &examples_format;
+
+            name_fmt = (name_fmt.to_owned() + ":").fg_green();
             let description = meta.description;
             let aliases = "Aliases: ".fg_yellow()
                 + &(if !meta.aliases.is_empty() {
@@ -100,23 +135,9 @@ pub async fn help(ctxt: CommandCtxt<'_>, labels: Vec<Word>) -> anyhow::Result<()
                 String::new()
             };
 
-            let examples_format = if !meta.examples.is_empty() {
-                format!(
-                    "\n{}",
-                    meta.examples
-                        .iter()
-                        .map(|x| { format!("{}{} {}", ctxt.data.calling_prefix, meta.name, x) })
-                        .collect::<Vec<_>>()
-                        .join("\n")
-                )
-            } else {
-                "None".to_owned()
-            };
-            let examples = "Examples: ".fg_cyan() + &examples_format;
-
             ctxt.reply(
                 format!(
-                    "{name_fmt} {description}\n\n{aliases}\n{cooldown}\n{access}\n{usage}{subcommands}\n\n{examples}"
+                    "{name_fmt} {description}\n\n{aliases}\n{cooldown}\n{access}\n{usage}{subcommands}\n\n{examples}\n\n{flags}"
                 )
                 .trim()
                 .codeblock("ansi"),

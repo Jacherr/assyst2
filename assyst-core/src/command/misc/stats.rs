@@ -2,7 +2,9 @@ use std::time::Duration;
 
 use assyst_common::ansi::Ansi;
 use assyst_common::markdown::Markdown;
-use assyst_common::util::process::{get_processes_cpu_usage, get_processes_mem_usage, get_processes_uptimes};
+use assyst_common::util::process::{
+    exec_sync, get_processes_cpu_usage, get_processes_mem_usage, get_processes_uptimes,
+};
 use assyst_proc_macro::command;
 use human_bytes::human_bytes;
 use twilight_model::gateway::SessionStartLimit;
@@ -97,6 +99,9 @@ pub async fn stats(ctxt: CommandCtxt<'_>, option: Option<Word>) -> anyhow::Resul
     fn get_general_stats(ctxt: &CommandCtxt<'_>) -> String {
         let events_rate = ctxt.assyst().metrics_handler.get_events_rate().to_string();
         let commands_rate = ctxt.assyst().metrics_handler.get_commands_rate().to_string();
+        let commit = exec_sync("git rev-parse head")
+            .map(|x| x.stdout[..8].to_owned())
+            .unwrap_or("Unknown".to_string());
 
         let stats_table = key_value(&[
             (
@@ -106,6 +111,7 @@ pub async fn stats(ctxt: CommandCtxt<'_>, option: Option<Word>) -> anyhow::Resul
             ("Shards".fg_cyan(), ctxt.assyst().shard_count.to_string()),
             ("Events".fg_cyan(), events_rate + "/sec"),
             ("Commands".fg_cyan(), commands_rate + "/min"),
+            ("Commit Hash".fg_cyan(), commit),
         ]);
 
         stats_table.codeblock("ansi")

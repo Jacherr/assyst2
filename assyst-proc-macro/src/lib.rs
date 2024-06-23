@@ -8,8 +8,7 @@ use quote::{quote, quote_spanned, ToTokens};
 use syn::punctuated::Punctuated;
 use syn::token::Bracket;
 use syn::{
-    parse_macro_input, Expr, ExprArray, ExprLit, FnArg, Ident, Item, Lit, LitBool, LitStr, Meta, Pat, PatType, Token,
-    Type,
+    parse_macro_input, parse_quote, Expr, ExprArray, ExprLit, FnArg, Ident, Item, Lit, LitBool, LitStr, Meta, Pat, PatType, Token, Type
 };
 
 struct CommandAttributes(syn::punctuated::Punctuated<syn::Meta, Token![,]>);
@@ -110,6 +109,7 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
     let usage = fields.remove("usage").expect("missing usage");
     let send_processing = fields.remove("send_processing").unwrap_or_else(false_expr);
     let age_restricted = fields.remove("age_restricted").unwrap_or_else(false_expr);
+    let flag_descriptions = fields.remove("flag_descriptions").unwrap_or_else(empty_array_expr);
 
     let following = quote::quote! {
         pub struct #struct_name;
@@ -117,7 +117,14 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
         #[::async_trait::async_trait]
         impl crate::command::Command for #struct_name {
             fn metadata(&self) -> &'static crate::command::CommandMetadata {
-                static META: crate::command::CommandMetadata = crate::command::CommandMetadata {
+                use std::collections::HashMap;
+                let mut descriptions = HashMap::new();
+                for (k, v) in #flag_descriptions {
+                    descriptions.insert(k, v);
+                }
+
+                static META: std::sync::OnceLock<crate::command::CommandMetadata> = std::sync::OnceLock::new(); 
+                META.get_or_init(|| crate::command::CommandMetadata {
                     description: #description,
                     cooldown: #cooldown,
                     access: #access,
@@ -127,9 +134,9 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
                     examples: &#examples,
                     usage: #usage,
                     send_processing: #send_processing,
-                    age_restricted: #age_restricted
-                };
-                &META
+                    age_restricted: #age_restricted,
+                    flag_descriptions: descriptions
+                })
             }
 
             fn subcommands(&self) -> Option<&'static [(&'static str, crate::command::TCommand)]> {
@@ -243,6 +250,10 @@ fn empty_array_expr() -> Expr {
         bracket_token: Bracket::default(),
         elems: Default::default(),
     })
+}
+
+fn empty_hashmap_expr() -> Expr {
+    parse_quote!{ HashMap::new() }
 }
 
 fn false_expr() -> Expr {

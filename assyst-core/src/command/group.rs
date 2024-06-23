@@ -61,7 +61,8 @@ macro_rules! define_commandgroup {
             #[::async_trait::async_trait]
             impl crate::command::Command for [<$groupname _command>] {
                 fn metadata(&self) -> &'static crate::command::CommandMetadata {
-                    static META: crate::command::CommandMetadata = crate::command::CommandMetadata {
+                    static META: std::sync::OnceLock<crate::command::CommandMetadata> = std::sync::OnceLock::new(); 
+                    META.get_or_init(|| crate::command::CommandMetadata {
                         access: $crate::defaults!(access $($access)?),
                         category: $category,
                         aliases: $crate::defaults!(aliases $(&$aliases)?),
@@ -72,8 +73,8 @@ macro_rules! define_commandgroup {
                         age_restricted: $crate::defaults!(age_restricted $($age_restricted)?),
                         usage: $crate::defaults!(usage $($usage)?),
                         send_processing: $crate::defaults!(send_processing $($send_processing)?),
-                    };
-                    &META
+                        flag_descriptions: std::collections::HashMap::new()
+                    })
                 }
 
                 fn subcommands(&self) -> Option<&'static [(&'static str, crate::command::TCommand)]> {

@@ -103,6 +103,7 @@ pub struct CommandMetadata {
     /// or to send a prelim response to an interaction (a.k.a., Assyst is thinking...)
     pub send_processing: bool,
     pub age_restricted: bool,
+    pub flag_descriptions: HashMap<&'static str, &'static str>,
 }
 
 #[derive(Debug)]
