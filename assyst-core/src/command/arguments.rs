@@ -1,10 +1,8 @@
-use std::collections::HashMap;
 use std::fmt::Display;
 
 use assyst_common::markdown::parse_codeblock;
 use assyst_common::util::discord::{get_avatar_url, id_from_mention};
 use assyst_common::util::{parse_to_millis, regex};
-use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use twilight_model::application::command::CommandOption;
 use twilight_model::application::interaction::application_command::CommandOptionValue;
@@ -552,6 +550,7 @@ impl ParseArgument for ImageUrl {
                 ($v:expr) => {
                     match $v {
                         Ok(r) => return Ok(r),
+                        Err(err) if let TagParseError::TwilightHttp(_) = err => {},
                         Err(err) if err.get_severity() == ErrorSeverity::High => return Err(err),
                         _ => {},
                     }

@@ -3,7 +3,6 @@ use std::sync::OnceLock;
 
 use tracing::info;
 use twilight_model::application::command::Command as InteractionCommand;
-use twilight_util::builder::command::{CommandBuilder, StringBuilder, SubCommandBuilder};
 
 use crate::assyst::ThreadSafeAssyst;
 use crate::command::CommandMetadata;
@@ -28,6 +27,7 @@ declare_commands!(
     misc::stats::stats_command,
     misc::tag::tag_command,
     misc::url_command,
+    misc::findsong_command,
     services::burntext_command,
     services::download_command,
     services::r34_command,

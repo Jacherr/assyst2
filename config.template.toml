@@ -25,6 +25,8 @@ top_gg_webhook_token = ""
 top_gg_webhook_port = 3000
 # Authentication key for Filer, the Assyst CDN.
 filer_key = ""
+# Authentication key for NotSoAPI, for audio identification.
+notsoapi = ""
 
 # Assyst database information.
 [database]

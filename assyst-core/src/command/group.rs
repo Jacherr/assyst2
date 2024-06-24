@@ -1,7 +1,5 @@
-use twilight_model::application::interaction::application_command::CommandOptionValue;
-
 use super::errors::{ExecutionError, TagParseError};
-use super::{CommandCtxt, InteractionCommandParseCtxt, RawMessageParseCtxt, TCommand};
+use super::{InteractionCommandParseCtxt, RawMessageParseCtxt, TCommand};
 
 // Helper macro that provides defaults
 // cfg_attr is needed because of https://github.com/rust-lang/rust/issues/74087
@@ -61,7 +59,7 @@ macro_rules! define_commandgroup {
             #[::async_trait::async_trait]
             impl crate::command::Command for [<$groupname _command>] {
                 fn metadata(&self) -> &'static crate::command::CommandMetadata {
-                    static META: std::sync::OnceLock<crate::command::CommandMetadata> = std::sync::OnceLock::new(); 
+                    static META: std::sync::OnceLock<crate::command::CommandMetadata> = std::sync::OnceLock::new();
                     META.get_or_init(|| crate::command::CommandMetadata {
                         access: $crate::defaults!(access $($access)?),
                         category: $category,
@@ -121,7 +119,7 @@ macro_rules! define_commandgroup {
                     #![allow(unreachable_code)]
                     match crate::command::group::execute_subcommand_raw_message(ctxt.fork(), Self::SUBCOMMANDS).await {
                         Ok(res) => Ok(res),
-                        Err(crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::InvalidSubcommand(_)) 
+                        Err(crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::InvalidSubcommand(_))
                         | crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::ArgsExhausted)) => {
                             // No subcommand was found, call either the default if provided, or error out
                             $(
@@ -162,16 +160,17 @@ pub fn find_subcommand(sub: &str, cmds: &[(&str, TCommand)]) -> Option<TCommand>
     cmds.iter().find(|(k, _)| *k == sub).map(|(_, v)| v).copied()
 }
 
-/// Tries to execute a subcommand from a "raw" message, by taking the next word from the arguments and looking for it in
-/// `commands`
+/// Tries to execute a subcommand from a "raw" message, by taking the next word from the arguments
+/// and looking for it in `commands`
 pub async fn execute_subcommand_raw_message(
     mut ctxt: RawMessageParseCtxt<'_>,
     commands: &[(&str, TCommand)],
 ) -> Result<(), ExecutionError> {
     let subcommand = ctxt.next_word().map_err(|err| ExecutionError::Parse(err.into()))?;
 
-    let command =
-        find_subcommand(subcommand, commands).ok_or(ExecutionError::Parse(TagParseError::InvalidSubcommand(subcommand.to_owned())))?;
+    let command = find_subcommand(subcommand, commands).ok_or(ExecutionError::Parse(
+        TagParseError::InvalidSubcommand(subcommand.to_owned()),
+    ))?;
 
     command.execute_raw_message(ctxt).await
 }
@@ -180,20 +179,26 @@ pub fn find_subcommand_interaction_command(sub: &str, cmds: &[(&str, TCommand)])
     cmds.iter().find(|(k, _)| *k == sub).map(|(_, v)| v).copied()
 }
 
-/// Tries to execute a subcommand from an interaction command, by seeing if we extracted a subcommand
+/// Tries to execute a subcommand from an interaction command, by seeing if we extracted a
+/// subcommand
 pub async fn execute_subcommand_interaction_command(
     ctxt: InteractionCommandParseCtxt<'_>,
     commands: &[(&str, TCommand)],
-    default_interaction_subcommand: &str
+    default_interaction_subcommand: &str,
 ) -> Result<(), ExecutionError> {
-    let subcommand = ctxt.cx.data.interaction_subcommand.clone().ok_or(ExecutionError::Parse(TagParseError::NoInteractionSubcommandProvided))?;
+    let subcommand = ctxt
+        .cx
+        .data
+        .interaction_subcommand
+        .clone()
+        .ok_or(ExecutionError::Parse(TagParseError::NoInteractionSubcommandProvided))?;
 
     if subcommand.0 == default_interaction_subcommand {
         return Err(ExecutionError::Parse(TagParseError::InteractionCommandIsBaseSubcommand));
     }
 
-    let command =
-        find_subcommand_interaction_command(&subcommand.0, commands).ok_or(ExecutionError::Parse(TagParseError::InvalidSubcommand(subcommand.0)))?;
+    let command = find_subcommand_interaction_command(&subcommand.0, commands)
+        .ok_or(ExecutionError::Parse(TagParseError::InvalidSubcommand(subcommand.0)))?;
 
     command.execute_interaction_command(ctxt).await
 }

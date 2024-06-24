@@ -1,3 +1,4 @@
+pub mod audio_identification;
 pub mod cooltext;
 pub mod eval;
 pub mod filer;

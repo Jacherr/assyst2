@@ -76,6 +76,9 @@ pub async fn help(ctxt: CommandCtxt<'_>, labels: Vec<Word>) -> anyhow::Result<()
 
                 command_chain += " ";
                 command_chain += command.metadata().name;
+
+                name_fmt += " ";
+                name_fmt += command.metadata().name;
             }
 
             meta = command.metadata();
@@ -83,9 +86,6 @@ pub async fn help(ctxt: CommandCtxt<'_>, labels: Vec<Word>) -> anyhow::Result<()
             usage += meta.name;
             usage += " ";
             usage += meta.usage;
-
-            name_fmt += " ";
-            name_fmt += meta.name;
 
             let flags_format = if !meta.flag_descriptions.is_empty() {
                 format!(
@@ -99,7 +99,7 @@ pub async fn help(ctxt: CommandCtxt<'_>, labels: Vec<Word>) -> anyhow::Result<()
             } else {
                 "None".to_owned()
             };
-            let flags = "Flags:".fg_cyan() + &flags_format;
+            let flags = "Flags: ".fg_cyan() + &flags_format;
 
             let examples_format = if !meta.examples.is_empty() {
                 format!(

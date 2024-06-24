@@ -66,7 +66,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: MessageUpdate) {
                                         .await;
                                 },
                                 _ => {
-                                    let _ = ctxt.cx.reply(format!(":warning: ``{err}``")).await;
+                                    let _ = ctxt.cx.reply(format!(":warning: ``{err:#}``")).await;
                                 },
                             },
                         }

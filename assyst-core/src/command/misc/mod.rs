@@ -1,15 +1,16 @@
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant};
 
 use crate::command::Availability;
+use crate::rest::audio_identification::identify_song_notsoidentify;
 
-use super::arguments::{Codeblock, Image, ImageUrl, Rest, Time, Word};
-use super::flags::LangFlags;
+use super::arguments::{Image, ImageUrl, Rest, Time, Word};
 use super::{Category, CommandCtxt};
 
+use anyhow::Context;
 use assyst_common::ansi::Ansi;
 use assyst_common::markdown::Markdown;
 use assyst_common::util::format_duration;
-use assyst_common::util::process::{exec_sync, CommandOutput};
+use assyst_common::util::process::exec_sync;
 use assyst_common::util::table::key_value;
 use assyst_proc_macro::command;
 
@@ -112,6 +113,43 @@ pub async fn exec(ctxt: CommandCtxt<'_>, script: Rest) -> anyhow::Result<()> {
     }
 
     ctxt.reply(output).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "Find a song in a video",
+    cooldown = Duration::from_secs(2),
+    access = Availability::Public,
+    category = Category::Wsi,
+    usage = "[video]",
+    examples = ["https://link.to.my/video.mp4"],
+    send_processing = true
+)]
+pub async fn findsong(ctxt: CommandCtxt<'_>, input: ImageUrl) -> anyhow::Result<()> {
+    let result = identify_song_notsoidentify(ctxt.assyst().clone(), input.0)
+        .await
+        .context("Failed to identify song")?;
+
+    if result.len() > 0 {
+        let formatted = format!(
+            "**Title:** {}\n**Artist(s):** {}\n**YouTube Link:** <{}>",
+            result[0].title.clone(),
+            result[0]
+                .artists
+                .iter()
+                .map(|x| x.name.clone())
+                .collect::<Vec<_>>()
+                .join(", "),
+            match &result[0].platforms.youtube {
+                Some(x) => x.url.clone(),
+                None => "Unknown".to_owned(),
+            }
+        );
+        ctxt.reply(formatted).await?;
+    } else {
+        ctxt.reply("No results found").await?;
+    }
 
     Ok(())
 }

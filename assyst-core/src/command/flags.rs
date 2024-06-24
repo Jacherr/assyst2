@@ -79,12 +79,13 @@ impl FlagDecode for RustFlags {
 flag_parse_argument! { RustFlags }
 
 #[derive(Default)]
-pub struct LangFlags {
+pub struct ChargeFlags {
     pub verbose: bool,
     pub llir: bool,
     pub opt: u64,
+    pub valgrind: bool,
 }
-impl FlagDecode for LangFlags {
+impl FlagDecode for ChargeFlags {
     fn from_str(input: &str) -> anyhow::Result<Self>
     where
         Self: Sized,
@@ -93,6 +94,7 @@ impl FlagDecode for LangFlags {
         valid_flags.insert("verbose", FlagType::NoValue);
         valid_flags.insert("llir", FlagType::NoValue);
         valid_flags.insert("opt", FlagType::WithValue);
+        valid_flags.insert("valgrind", FlagType::NoValue);
 
         let raw_decode = flags_from_str(input, valid_flags)?;
         let opt = raw_decode
@@ -107,12 +109,17 @@ impl FlagDecode for LangFlags {
             verbose: raw_decode.get("verbose").is_some(),
             llir: raw_decode.get("llir").is_some(),
             opt,
+            valgrind: raw_decode.get("valgrind").is_some(),
         };
+
+        if result.llir && result.valgrind {
+            bail!("Cannot set both valgrind and llir flags at the same time");
+        }
 
         Ok(result)
     }
 }
-flag_parse_argument! { LangFlags }
+flag_parse_argument! { ChargeFlags }
 
 #[derive(Default)]
 pub struct DownloadFlags {

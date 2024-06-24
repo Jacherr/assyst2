@@ -3,7 +3,8 @@
     str_split_whitespace_remainder,
     round_char_boundary,
     trait_alias,
-    async_closure
+    async_closure,
+    if_let_guard
 )]
 
 use std::sync::Arc;
@@ -123,12 +124,6 @@ async fn main() {
         info!("Reminder processing disabled in config.dev.disable_reminder_check: not registering task");
     }
 
-    info!("Caching web download API URLs");
-    let web_download_urls = get_web_download_api_urls(assyst.clone()).await.unwrap();
-    info!("Got {} URLs to cache", web_download_urls.len());
-    debug!(?web_download_urls);
-    assyst.rest_cache_handler.set_web_download_urls(web_download_urls);
-
     info!("Starting assyst-webserver");
     assyst_webserver::run(
         assyst.database_handler.clone(),
@@ -139,6 +134,8 @@ async fn main() {
 
     info!("Registering interaction commands");
     register_interaction_commands(assyst.clone()).await.unwrap();
+
+    let a = assyst.clone();
 
     spawn(async move {
         info!("Connecting to assyst-gateway pipe at {}", GATEWAY_PIPE_PATH);
@@ -180,6 +177,12 @@ async fn main() {
             err!("Connection to assyst-gateway lost, attempting reconnection");
         }
     });
+
+    info!("Caching web download API URLs");
+    let web_download_urls = get_web_download_api_urls(a.clone()).await.unwrap();
+    info!("Got {} URLs to cache", web_download_urls.len());
+    debug!(?web_download_urls);
+    a.rest_cache_handler.set_web_download_urls(web_download_urls);
 
     // todo: connect to slash client
     loop {}

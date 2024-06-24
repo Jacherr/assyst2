@@ -117,8 +117,8 @@ pub async fn resize(ctxt: CommandCtxt<'_>, source: Image, size: Option<Word>) ->
         && i_size.0.contains('x')
         && let Some((width, height)) = i_size.0.split_once('x')
     {
-        let width = width.parse::<u32>().context("Invalid width.")?;
-        let height = height.parse::<u32>().context("Invalid height.")?;
+        let width = width.parse::<u32>().context("Invalid width")?;
+        let height = height.parse::<u32>().context("Invalid height")?;
 
         ctxt.wsi_handler()
             .resize_absolute(source.0, width, height, ctxt.data.author.id.get())

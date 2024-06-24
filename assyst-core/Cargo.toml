@@ -24,7 +24,7 @@ async-trait = "0.1.77"
 assyst-proc-macro = { path = "../assyst-proc-macro" }
 bytes = "1.5.0"
 serde = "1.0.196"
-reqwest = { version = "0.11.24", features = ["json", "stream"] }
+reqwest = { version = "0.11.24", features = ["json", "stream", "multipart"] }
 emoji = { git = "https://github.com/Jacherr/emoji-rs/", package = "emoji" }
 url = "2.5.0"
 futures-util = "0.3.30"

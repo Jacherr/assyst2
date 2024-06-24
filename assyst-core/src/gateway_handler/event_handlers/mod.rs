@@ -14,5 +14,5 @@ pub fn after_command_execution_success(ctxt: CommandCtxt<'_>, command: TCommand)
     ctxt.assyst().metrics_handler.add_command();
     ctxt.assyst()
         .metrics_handler
-        .add_individual_command_usage(command.metadata().name)
+        .add_individual_command_usage(command.metadata().name);
 }

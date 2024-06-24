@@ -52,7 +52,7 @@ async fn main() -> anyhow::Result<()> {
 
     let presence = UpdatePresencePayload::new(vec![ACTIVITY.to_owned()], false, None, Status::Online).unwrap();
 
-    let intents = Intents::MESSAGE_CONTENT | Intents::GUILDS | Intents::GUILD_MESSAGES;
+    let intents = Intents::MESSAGE_CONTENT | Intents::GUILDS | Intents::GUILD_MESSAGES | Intents::DIRECT_MESSAGES;
     debug!("intents={:?}", intents);
     let gateway_config = GatewayConfigBuilder::new(CONFIG.authentication.discord_token.clone(), intents)
         .presence(presence)

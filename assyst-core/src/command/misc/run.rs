@@ -1,7 +1,6 @@
-use std::process::{ExitCode, ExitStatus};
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant};
 
-use anyhow::bail;
+use anyhow::Context;
 use assyst_common::markdown::Markdown;
 use assyst_common::util::process::{exec_sync, CommandOutput};
 use assyst_proc_macro::command;
@@ -11,47 +10,43 @@ use dash_vm::value::Root;
 use dash_vm::Vm;
 
 use crate::command::arguments::Codeblock;
-use crate::command::flags::{LangFlags, RustFlags};
+use crate::command::flags::{ChargeFlags, RustFlags};
 use crate::command::messagebuilder::{Attachment, MessageBuilder};
 use crate::command::{Availability, Category, CommandCtxt};
 use crate::define_commandgroup;
 use crate::rest::rust::{run_benchmark, run_binary, run_clippy, run_godbolt, run_miri, OptimizationLevel};
 
-/*
-struct TempDrop(String);
-impl Drop for TempDrop {
+struct ExecutableDeletionDefer(String);
+impl Drop for ExecutableDeletionDefer {
     fn drop(&mut self) {
-        let _ = std::fs::remove_dir_all(self.0.clone());
+        let _ = std::fs::remove_file(self.0.clone());
     }
-}*/
+}
 
 #[command(
-    description = "execute some lang",
+    description = "execute some charge",
     cooldown = Duration::from_millis(100),
     access = Availability::Dev,
     category = Category::Misc,
     usage = "[script] <flags>",
-    examples = ["1"],
+    examples = ["fn main(): i32 { return 1; }"],
     send_processing = true,
     flag_descriptions = [
         ("verbose", "Get verbose output"),
         ("llir", "Output LLVM IR"),
-        ("opt [level:0|1|2|3]", "Set optimisation level of LLVM")
+        ("opt [level:0|1|2|3]", "Set optimisation level of LLVM"),
+        ("valgrind", "Run output executable in valgrind")
     ]
 )]
-pub async fn lang(ctxt: CommandCtxt<'_>, script: Codeblock, flags: LangFlags) -> anyhow::Result<()> {
-    let dir = "/tmp/lang".to_owned();
-
-    //#[allow(unused)]
-    //let dir_temp_drop = TempDrop(dir.clone());
-
+pub async fn charge(ctxt: CommandCtxt<'_>, script: Codeblock, flags: ChargeFlags) -> anyhow::Result<()> {
+    let dir = "/tmp/charge".to_owned();
     if std::fs::metadata(format!("{dir}/.git")).is_err() {
-        std::fs::remove_dir_all(&dir)?;
-        exec_sync(&format!("git clone https://github.com/y21/lang.git {dir} --depth=0"))?;
+        let _ = std::fs::remove_dir_all(&dir);
+        exec_sync(&format!("git clone https://github.com/y21/lang.git {dir} --depth=1"))?;
     };
 
     exec_sync(&format!("cd {dir} && git pull"))?;
-    std::fs::write(format!("{dir}/input"), script.0)?;
+    std::fs::write(format!("{dir}/input"), script.0).context("Failed to write input file")?;
     exec_sync(&format!("cd {dir} && npm i --save-dev @types/node && tsc"))?;
 
     let commit_hash = exec_sync(&format!("cd {dir} && git rev-parse HEAD"))
@@ -72,9 +67,17 @@ pub async fn lang(ctxt: CommandCtxt<'_>, script: Codeblock, flags: LangFlags) ->
     let result = exec_sync(&format!("cd {dir} && node . input {}", flags_string.trim()))?;
 
     if !flags.llir {
+        let executable = format!("{dir}/a.out");
+
+        #[allow(unused)]
+        let exec_defer = ExecutableDeletionDefer(executable.clone());
+
         let bin_start = Instant::now();
-        let bin_result = if std::fs::metadata(format!("{dir}/a.out")).is_ok() {
-            Some(exec_sync(&format!("cd {dir} && ./a.out"))?)
+        let bin_result = if std::fs::metadata(executable).is_ok() {
+            Some(exec_sync(&format!(
+                "cd {dir} && {}./a.out",
+                if flags.valgrind { "valgrind -q " } else { "" }
+            ))?)
         } else {
             None
         };
@@ -125,8 +128,6 @@ pub async fn lang(ctxt: CommandCtxt<'_>, script: Codeblock, flags: LangFlags) ->
             }
         }
     }
-
-    // todo: delete `dir`
 
     Ok(())
 }
@@ -217,7 +218,7 @@ define_commandgroup! {
     description: "run code via various runtimes and languages",
     usage: "[language/runtime] [code] <...flags>",
     commands: [
-        "lang" => lang,
+        "charge" => charge,
         "rust" => rust,
         "dash" => dash
     ]

@@ -40,14 +40,12 @@ use async_trait::async_trait;
 use errors::TagParseError;
 use twilight_model::application::command::CommandOption;
 use twilight_model::application::interaction::application_command::{CommandDataOption, CommandOptionValue};
-use twilight_model::channel::message::sticker::MessageSticker;
-use twilight_model::channel::message::Embed;
 use twilight_model::channel::{Attachment, Message};
 use twilight_model::http::interaction::InteractionResponse;
 use twilight_model::id::marker::{AttachmentMarker, ChannelMarker, GuildMarker, InteractionMarker};
 use twilight_model::id::Id;
 use twilight_model::user::User;
-use twilight_util::builder::command::{CommandBuilder, SubCommandBuilder};
+use twilight_util::builder::command::SubCommandBuilder;
 
 use self::errors::{ArgsExhausted, ExecutionError, MetadataCheckError};
 use self::messagebuilder::MessageBuilder;
@@ -424,25 +422,27 @@ pub async fn check_metadata(
         _ => {},
     }
 
-    // ratelimit check
-    let id = ctxt
-        .data
-        .guild_id
-        .map_or_else(|| ctxt.data.author.id.get(), |id| id.get());
-    let last_command_invoked = ctxt.assyst().command_ratelimits.get(id, metadata.name);
-    if let Some(invocation_time) = last_command_invoked {
-        let elapsed = invocation_time.elapsed();
-        if elapsed < metadata.cooldown {
-            return Err(ExecutionError::MetadataCheck(MetadataCheckError::CommandOnCooldown(
-                metadata.cooldown - elapsed,
-            )));
+    if !CONFIG.dev.admin_users.contains(&ctxt.data.author.id.get()) {
+        // ratelimit check
+        let id = ctxt
+            .data
+            .guild_id
+            .map_or_else(|| ctxt.data.author.id.get(), |id| id.get());
+        let last_command_invoked = ctxt.assyst().command_ratelimits.get(id, metadata.name);
+        if let Some(invocation_time) = last_command_invoked {
+            let elapsed = invocation_time.elapsed();
+            if elapsed < metadata.cooldown {
+                return Err(ExecutionError::MetadataCheck(MetadataCheckError::CommandOnCooldown(
+                    metadata.cooldown - elapsed,
+                )));
+            }
         }
-    }
 
-    // update/set new last invocation time
-    ctxt.assyst()
-        .command_ratelimits
-        .insert(id, metadata.name, Instant::now());
+        // update/set new last invocation time
+        ctxt.assyst()
+            .command_ratelimits
+            .insert(id, metadata.name, Instant::now());
+    }
 
     if metadata.send_processing && ctxt.data.source == Source::RawMessage {
         if let Err(e) = ctxt.reply("Processing...").await {

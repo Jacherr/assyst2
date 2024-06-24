@@ -126,7 +126,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
                 match err.get_severity() {
                     ErrorSeverity::Low => debug!("{err:?}"),
                     ErrorSeverity::High => {
-                        let _ = ctxt.cx.reply(format!(":warning: ``{err}``")).await;
+                        let _ = ctxt.cx.reply(format!(":warning: ``{err:#}``")).await;
                     },
                 }
             } else {

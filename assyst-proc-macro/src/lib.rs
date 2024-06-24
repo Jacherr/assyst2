@@ -8,7 +8,8 @@ use quote::{quote, quote_spanned, ToTokens};
 use syn::punctuated::Punctuated;
 use syn::token::Bracket;
 use syn::{
-    parse_macro_input, parse_quote, Expr, ExprArray, ExprLit, FnArg, Ident, Item, Lit, LitBool, LitStr, Meta, Pat, PatType, Token, Type
+    parse_macro_input, parse_quote, Expr, ExprArray, ExprLit, FnArg, Ident, Item, Lit, LitBool, LitStr, Meta, Pat,
+    PatType, Token, Type,
 };
 
 struct CommandAttributes(syn::punctuated::Punctuated<syn::Meta, Token![,]>);
@@ -79,7 +80,6 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
     // but this gives us a more useful error
     verify_input_is_ctxt(&item.sig.inputs);
 
-
     for (index, input) in item.sig.inputs.iter().skip(1).enumerate() {
         match input {
             FnArg::Receiver(_) => panic!("#[command] cannot have `self` arguments"),
@@ -123,7 +123,7 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
                     descriptions.insert(k, v);
                 }
 
-                static META: std::sync::OnceLock<crate::command::CommandMetadata> = std::sync::OnceLock::new(); 
+                static META: std::sync::OnceLock<crate::command::CommandMetadata> = std::sync::OnceLock::new();
                 META.get_or_init(|| crate::command::CommandMetadata {
                     description: #description,
                     cooldown: #cooldown,
@@ -253,7 +253,7 @@ fn empty_array_expr() -> Expr {
 }
 
 fn empty_hashmap_expr() -> Expr {
-    parse_quote!{ HashMap::new() }
+    parse_quote! { HashMap::new() }
 }
 
 fn false_expr() -> Expr {
