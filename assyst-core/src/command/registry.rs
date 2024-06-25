@@ -18,19 +18,20 @@ macro_rules! declare_commands {
 }
 
 declare_commands!(
+    fun::colour::colour_command,
+    fun::findsong_command,
     fun::translation::bad_translate_command,
     fun::translation::translate_command,
-    fun::colour::colour_command,
     misc::enlarge_command,
+    misc::eval_command,
     misc::exec_command,
-    misc::run::run_command,
     misc::help::help_command,
     misc::ping_command,
     misc::remind::remind_command,
+    misc::run::run_command,
     misc::stats::stats_command,
     misc::tag::tag_command,
     misc::url_command,
-    misc::findsong_command,
     services::burntext_command,
     services::download_command,
     services::r34_command,

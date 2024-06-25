@@ -1,23 +1,27 @@
 use std::time::Duration;
 
 use anyhow::{bail, Context};
+use assyst_common::markdown::Markdown;
+use assyst_common::util::table;
 use assyst_proc_macro::command;
 
 use crate::command::arguments::{Rest, Word};
 use crate::command::flags::BadTranslateFlags;
 use crate::command::{Availability, Category, CommandCtxt};
 use crate::rest::bad_translation::{
-    bad_translate as bad_translate_default, bad_translate_with_count, translate_single, TranslateResult, Translation,
+    bad_translate as bad_translate_default, bad_translate_with_count, get_languages, translate_single, TranslateResult,
+    Translation,
 };
 
 #[command(
+    name = "badtranslate",
     aliases = ["bt"],
     description = "Badly translate some text",
     access = Availability::Public,
     cooldown = Duration::from_secs(5),
     category = Category::Fun,
-    usage = "[text]",
-    examples = ["hello i love assyst"],
+    usage = "[text|\"languages\"]",
+    examples = ["hello i love assyst", "languages"],
     flag_descriptions = [
         ("chain", "Show language chain"),
         ("count", "Set the amount of translations to perform")
@@ -25,6 +29,18 @@ use crate::rest::bad_translation::{
     send_processing = true
 )]
 pub async fn bad_translate(ctxt: CommandCtxt<'_>, text: Rest, flags: BadTranslateFlags) -> anyhow::Result<()> {
+    if text.0 == "languages" {
+        let languages = get_languages(&ctxt.assyst().reqwest_client)
+            .await
+            .context("Failed to fetch translation languages")?;
+
+        let formatted = table::generate_list("Code", "Name", &languages);
+
+        ctxt.reply(formatted.codeblock("")).await?;
+
+        return Ok(());
+    };
+
     let TranslateResult {
         result: Translation { text, .. },
         translations,

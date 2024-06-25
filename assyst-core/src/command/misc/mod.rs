@@ -1,13 +1,14 @@
 use std::time::{Duration, Instant};
 
 use crate::command::Availability;
-use crate::rest::audio_identification::identify_song_notsoidentify;
+use crate::rest::eval::fake_eval;
 
 use super::arguments::{Image, ImageUrl, Rest, Word};
 use super::{Category, CommandCtxt};
 
 use anyhow::Context;
 use assyst_common::ansi::Ansi;
+use assyst_common::eval::FakeEvalImageResponse;
 use assyst_common::markdown::Markdown;
 use assyst_common::util::format_duration;
 use assyst_common::util::process::exec_sync;
@@ -105,37 +106,25 @@ pub async fn exec(ctxt: CommandCtxt<'_>, script: Rest) -> anyhow::Result<()> {
 }
 
 #[command(
-    description = "Find a song in a video",
-    cooldown = Duration::from_secs(2),
+    description = "evaluate javascript code",
+    cooldown = Duration::from_millis(1),
     access = Availability::Public,
-    category = Category::Wsi,
-    usage = "[video]",
-    examples = ["https://link.to.my/video.mp4"],
-    send_processing = true
+    category = Category::Misc,
+    usage = "[script]",
+    examples = ["1"]
 )]
-pub async fn findsong(ctxt: CommandCtxt<'_>, input: ImageUrl) -> anyhow::Result<()> {
-    let result = identify_song_notsoidentify(ctxt.assyst().clone(), input.0)
+pub async fn eval(ctxt: CommandCtxt<'_>, script: Rest) -> anyhow::Result<()> {
+    let result = fake_eval(&ctxt.assyst(), script.0, true, ctxt.data.message, Vec::new())
         .await
-        .context("Failed to identify song")?;
+        .context("Evaluation failed")?;
 
-    if result.len() > 0 {
-        let formatted = format!(
-            "**Title:** {}\n**Artist(s):** {}\n**YouTube Link:** <{}>",
-            result[0].title.clone(),
-            result[0]
-                .artists
-                .iter()
-                .map(|x| x.name.clone())
-                .collect::<Vec<_>>()
-                .join(", "),
-            match &result[0].platforms.youtube {
-                Some(x) => x.url.clone(),
-                None => "Unknown".to_owned(),
-            }
-        );
-        ctxt.reply(formatted).await?;
-    } else {
-        ctxt.reply("No results found").await?;
+    match result {
+        FakeEvalImageResponse::Image(im, _) => {
+            ctxt.reply(im).await?;
+        },
+        FakeEvalImageResponse::Text(text) => {
+            ctxt.reply(text.message.codeblock("js")).await?;
+        },
     }
 
     Ok(())
