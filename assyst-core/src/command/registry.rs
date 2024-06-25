@@ -19,6 +19,7 @@ macro_rules! declare_commands {
 
 declare_commands!(
     fun::translation::bad_translate_command,
+    fun::translation::translate_command,
     fun::colour::colour_command,
     misc::enlarge_command,
     misc::exec_command,
