@@ -5,7 +5,7 @@ use twilight_model::channel::message::AllowedMentions;
 use twilight_model::http::attachment::Attachment as TwilightAttachment;
 use twilight_model::http::interaction::InteractionResponse;
 use twilight_model::id::Id;
-use twilight_util::builder::{self, InteractionResponseDataBuilder};
+use twilight_util::builder::InteractionResponseDataBuilder;
 
 use crate::command::messagebuilder::MessageBuilder;
 use crate::command::CommandCtxt;

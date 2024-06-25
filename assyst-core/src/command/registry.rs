@@ -7,7 +7,7 @@ use twilight_model::application::command::Command as InteractionCommand;
 use crate::assyst::ThreadSafeAssyst;
 use crate::command::CommandMetadata;
 
-use super::{misc, services, wsi, TCommand};
+use super::{fun, misc, services, wsi, TCommand};
 
 macro_rules! declare_commands {
     ($($name:path),*) => {
@@ -18,6 +18,7 @@ macro_rules! declare_commands {
 }
 
 declare_commands!(
+    fun::colour::colour_command,
     misc::enlarge_command,
     misc::exec_command,
     misc::run::run_command,

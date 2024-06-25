@@ -51,7 +51,6 @@ pub struct GodboltResult {
 
 #[derive(Deserialize)]
 pub struct ApiResult {
-    pub success: bool,
     pub stdout: String,
     pub stderr: String,
 }
@@ -197,7 +196,6 @@ pub async fn run_godbolt(client: &Client, code: &str) -> Result<ApiResult, Error
     let asm = godbolt(client, code).await?;
 
     Ok(ApiResult {
-        success: true,
         stdout: asm,
         stderr: String::new(),
     })

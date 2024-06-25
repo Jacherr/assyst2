@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use proc_macro::TokenStream;
 use proc_macro2::Span;
-use quote::{quote, quote_spanned, ToTokens};
+use quote::{quote, ToTokens};
 use syn::punctuated::Punctuated;
 use syn::token::Bracket;
 use syn::{
@@ -250,10 +250,6 @@ fn empty_array_expr() -> Expr {
         bracket_token: Bracket::default(),
         elems: Default::default(),
     })
-}
-
-fn empty_hashmap_expr() -> Expr {
-    parse_quote! { HashMap::new() }
 }
 
 fn false_expr() -> Expr {

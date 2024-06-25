@@ -99,7 +99,7 @@ pub async fn stats(ctxt: CommandCtxt<'_>, option: Option<Word>) -> anyhow::Resul
     fn get_general_stats(ctxt: &CommandCtxt<'_>) -> String {
         let events_rate = ctxt.assyst().metrics_handler.get_events_rate().to_string();
         let commands_rate = ctxt.assyst().metrics_handler.get_commands_rate().to_string();
-        let commit = exec_sync("git rev-parse head")
+        let commit = exec_sync("git rev-parse HEAD")
             .map(|x| x.stdout[..8].to_owned())
             .unwrap_or("Unknown".to_string());
 

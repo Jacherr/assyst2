@@ -67,11 +67,11 @@ pub async fn ping(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
     let ping_elapsed = format_duration(&ping_start.elapsed());
 
     let table = key_value(&[
-        ("Full Processing Time".fg_cyan(), processing_time.to_string()),
-        ("Metadata and Args Parsing".fg_cyan(), metadata_time.to_string()),
-        ("Preprocessing Time".fg_cyan(), preprocess_time.to_string()),
         ("Prefix Determinism Time".fg_cyan(), prefix_time.to_string()),
+        ("Preprocessing Time".fg_cyan(), preprocess_time.to_string()),
+        ("Metadata and Args Parsing".fg_cyan(), metadata_time.to_string()),
         ("Full Parsing Time".fg_cyan(), parse_time.to_string()),
+        ("Processing Time".fg_cyan(), processing_time.to_string()),
         ("Response Time".fg_cyan(), ping_elapsed.to_string()),
     ]);
 

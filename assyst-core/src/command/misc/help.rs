@@ -119,7 +119,7 @@ pub async fn help(ctxt: CommandCtxt<'_>, labels: Vec<Word>) -> anyhow::Result<()
             let description = meta.description;
             let aliases = "Aliases: ".fg_yellow()
                 + &(if !meta.aliases.is_empty() {
-                    meta.aliases.join(",")
+                    meta.aliases.join(", ")
                 } else {
                     "[none]".to_owned()
                 });

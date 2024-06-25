@@ -79,6 +79,28 @@ impl FlagDecode for RustFlags {
 flag_parse_argument! { RustFlags }
 
 #[derive(Default)]
+pub struct ColourRemoveAllFlags {
+    pub i_am_sure: bool,
+}
+impl FlagDecode for ColourRemoveAllFlags {
+    fn from_str(input: &str) -> anyhow::Result<Self>
+    where
+        Self: Sized,
+    {
+        let mut valid_flags = HashMap::new();
+        valid_flags.insert("i-am-sure", FlagType::NoValue);
+
+        let raw_decode = flags_from_str(input, valid_flags)?;
+        let result = Self {
+            i_am_sure: raw_decode.get("i-am-sure").is_some(),
+        };
+
+        Ok(result)
+    }
+}
+flag_parse_argument! { ColourRemoveAllFlags }
+
+#[derive(Default)]
 pub struct ChargeFlags {
     pub verbose: bool,
     pub llir: bool,

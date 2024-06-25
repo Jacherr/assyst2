@@ -181,6 +181,7 @@ define_commandgroup! {
     access: Availability::Public,
     category: Category::Misc,
     aliases: ["t"],
+    cooldown: Duration::from_secs(2),
     description: "assyst's tag system (documentation: https://jacher.io/tags)",
     usage: "<create>",
     commands: [

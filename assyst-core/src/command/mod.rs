@@ -54,6 +54,7 @@ use self::source::Source;
 pub mod arguments;
 pub mod errors;
 pub mod flags;
+pub mod fun;
 pub mod group;
 pub mod messagebuilder;
 pub mod misc;

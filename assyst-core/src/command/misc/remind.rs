@@ -1,9 +1,8 @@
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use anyhow::{bail, Context};
-use assyst_common::markdown::Markdown;
 use assyst_common::util::discord::format_discord_timestamp;
-use assyst_common::util::{format_time, table};
+use assyst_common::util::format_time;
 use assyst_database::model::reminder::Reminder;
 use assyst_proc_macro::command;
 
@@ -103,6 +102,7 @@ define_commandgroup! {
     access: Availability::Public,
     category: Category::Misc,
     aliases: ["t"],
+    cooldown: Duration::from_secs(2),
     description: "assyst reminders - get and set reminders",
     examples: ["2h do the laundry", "3d30m hand assignment in", "30m"],
     usage: "[time] <message>",
