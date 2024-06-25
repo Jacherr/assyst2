@@ -111,6 +111,10 @@ async fn create_message(ctxt: &CommandCtxt<'_>, builder: MessageBuilder) -> anyh
         .create_message(ctxt.data.channel_id)
         .allowed_mentions(Some(&allowed_mentions));
 
+    if let Some(source_message) = ctxt.data.message {
+        message = message.reply(source_message.id);
+    }
+
     let mut content_clone = builder.content.clone();
 
     if builder.attachment.is_none() && builder.content.as_ref().map(|x| x.trim().is_empty()).unwrap_or(true) {

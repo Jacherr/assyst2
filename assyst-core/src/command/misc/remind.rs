@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use anyhow::{bail, Context};
 use assyst_common::markdown::Markdown;
@@ -21,6 +21,17 @@ use crate::define_commandgroup;
     examples = ["2h do the laundry", "3d30m hand assignment in", "30m"],
 )]
 pub async fn default(ctxt: CommandCtxt<'_>, when: Time, text: Option<Rest>) -> anyhow::Result<()> {
+    if when.millis < 1000 {
+        bail!(
+            "Invalid time provided (see {}help remind for examples)",
+            ctxt.data.calling_prefix
+        );
+    } else if when.millis / 1000 / 60 / 24 / 365 /* years */ >= 100 {
+        bail!("Cannot set a reminder further than 100 years in the future :-(");
+    }
+
+    let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as u64 + when.millis;
+
     let text = text.map(|x| x.0).unwrap_or("...".to_owned());
 
     if text.len() > 250 {
@@ -30,7 +41,7 @@ pub async fn default(ctxt: CommandCtxt<'_>, when: Time, text: Option<Rest>) -> a
     let reminder = Reminder {
         id: 0, // unused
         user_id: ctxt.data.author.id.get() as i64,
-        timestamp: when.millis as i64,
+        timestamp: timestamp as i64,
         guild_id: ctxt.data.guild_id.map(|x| x.get()).unwrap_or(0) as i64,
         channel_id: ctxt.data.channel_id.get() as i64,
         message_id: ctxt.data.message.map(|x| x.id.get()).unwrap_or(0) as i64,
