@@ -2,17 +2,14 @@ use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
 use assyst_common::err;
-use tracing::{debug, info, warn};
+use tracing::{debug, warn};
 use twilight_model::application::interaction::application_command::{
     CommandData as DiscordCommandData, CommandDataOption, CommandOptionValue,
 };
 use twilight_model::application::interaction::InteractionData;
 use twilight_model::gateway::payload::incoming::InteractionCreate;
-use twilight_model::http::interaction::InteractionResponse;
-use twilight_util::builder::InteractionResponseDataBuilder;
 
 use crate::assyst::ThreadSafeAssyst;
-use crate::command::errors::{ExecutionError, TagParseError};
 use crate::command::registry::find_command_by_name;
 use crate::command::source::Source;
 use crate::command::{

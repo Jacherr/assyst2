@@ -3,7 +3,10 @@ use twilight_model::id::marker::GuildMarker;
 use twilight_model::id::Id;
 use twilight_model::user::User;
 
+use super::format_time;
 use super::regex::USER_MENTION;
+
+pub const MAX_TIMESTAMP: u64 = 8640000000000000;
 
 /// Attempts to resolve a guild's owner's user ID
 pub async fn get_guild_owner(http: &Client, guild_id: u64) -> anyhow::Result<u64> {
@@ -64,4 +67,19 @@ pub fn message_link(guild_id: u64, channel_id: u64, message_id: u64) -> String {
         "https://discord.com/channels/{}/{}/{}",
         guild_id, channel_id, message_id
     )
+}
+
+/// Generates a DM message link
+pub fn dm_message_link(channel_id: u64, message_id: u64) -> String {
+    format!("https://discord.com/channels/@me/{}/{}", channel_id, message_id)
+}
+
+/// Attempts to return the timestamp as a Discord timestamp,
+/// and falls back to [`format_time`] if Discord were to render it as "Invalid Date"
+pub fn format_discord_timestamp(input: u64) -> String {
+    if input <= MAX_TIMESTAMP {
+        format!("<t:{}:R>", input / 1000)
+    } else {
+        format_time(input)
+    }
 }

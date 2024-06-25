@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::time::Duration;
 
 use time::format_description;
@@ -90,6 +91,39 @@ pub fn format_duration(duration: &Duration) -> String {
     } else {
         let micros = duration.as_nanos() as f64 / 1000.0;
         format!("{micros:.2}μs")
+    }
+}
+
+mod units {
+    pub const SECOND: u64 = 1000;
+    pub const MINUTE: u64 = SECOND * 60;
+    pub const HOUR: u64 = MINUTE * 60;
+    pub const DAY: u64 = HOUR * 24;
+}
+
+/// Pluralizes a string
+pub fn pluralize<'a>(s: &'a str, adder: &str, count: u64) -> Cow<'a, str> {
+    if count == 1 {
+        Cow::Borrowed(s)
+    } else {
+        Cow::Owned(s.to_owned() + adder)
+    }
+}
+
+/// Converts a timestamp to a humanly readable string
+pub fn format_time(input: u64) -> String {
+    if input >= units::DAY {
+        let amount = input / units::DAY;
+        format!("{} {}", amount, pluralize("day", "s", amount))
+    } else if input >= units::HOUR {
+        let amount = input / units::HOUR;
+        format!("{} {}", amount, pluralize("hour", "s", amount))
+    } else if input >= units::MINUTE {
+        let amount = input / units::MINUTE;
+        format!("{} {}", amount, pluralize("minute", "s", amount))
+    } else {
+        let amount = input / units::SECOND;
+        format!("{} {}", amount, pluralize("second", "s", amount))
     }
 }
 

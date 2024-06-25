@@ -23,7 +23,7 @@ declare_commands!(
     misc::run::run_command,
     misc::help::help_command,
     misc::ping_command,
-    misc::remind_command,
+    misc::remind::remind_command,
     misc::stats::stats_command,
     misc::tag::tag_command,
     misc::url_command,

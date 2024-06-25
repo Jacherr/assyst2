@@ -1,5 +1,5 @@
 use assyst_common::err;
-use assyst_common::util::discord::message_link;
+use assyst_common::util::discord::{dm_message_link, message_link};
 use assyst_database::model::reminder::Reminder;
 use twilight_model::channel::message::AllowedMentions;
 use twilight_model::id::marker::{ChannelMarker, UserMarker};
@@ -24,11 +24,18 @@ async fn process_single_reminder(assyst: ThreadSafeAssyst, reminder: &Reminder) 
             "<@{}> Reminder: {}\n{}",
             reminder.user_id,
             reminder.message,
-            message_link(
-                reminder.guild_id as u64,
-                reminder.channel_id as u64,
-                reminder.message_id as u64
-            )
+            // may not be set in a guild or have a message id
+            if reminder.guild_id != 0 && reminder.message_id != 0 {
+                message_link(
+                    reminder.guild_id as u64,
+                    reminder.channel_id as u64,
+                    reminder.message_id as u64,
+                )
+            } else if reminder.guild_id == 0 && reminder.message_id != 0 {
+                dm_message_link(reminder.channel_id as u64, reminder.message_id as u64)
+            } else {
+                "".to_owned()
+            }
         ))
         .await?;
 

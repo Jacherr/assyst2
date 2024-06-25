@@ -15,23 +15,10 @@ use assyst_common::util::table::key_value;
 use assyst_proc_macro::command;
 
 pub mod help;
+pub mod remind;
 pub mod run;
 pub mod stats;
 pub mod tag;
-
-#[command(
-    name = "remind",
-    aliases = ["reminder"],
-    description = "get reminders or set a reminder, time format is xdyhzm (check examples)",
-    access = Availability::Public,
-    cooldown = Duration::from_secs(2),
-    category = Category::Misc,
-    usage = "[time] <message>",
-    examples = ["2h do the laundry", "3d30m hand assignment in", "30m"],
-)]
-pub async fn remind(_ctxt: CommandCtxt<'_>, _when: Time, _text: Rest) -> anyhow::Result<()> {
-    Ok(())
-}
 
 #[command(
     description = "enlarges an image", 
