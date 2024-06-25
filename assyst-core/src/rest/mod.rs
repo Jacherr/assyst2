@@ -1,4 +1,5 @@
 pub mod audio_identification;
+pub mod bad_translation;
 pub mod cooltext;
 pub mod eval;
 pub mod filer;

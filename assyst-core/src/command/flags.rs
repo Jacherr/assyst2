@@ -101,6 +101,43 @@ impl FlagDecode for ColourRemoveAllFlags {
 flag_parse_argument! { ColourRemoveAllFlags }
 
 #[derive(Default)]
+pub struct BadTranslateFlags {
+    pub chain: bool,
+    pub count: Option<u64>,
+}
+impl FlagDecode for BadTranslateFlags {
+    fn from_str(input: &str) -> anyhow::Result<Self>
+    where
+        Self: Sized,
+    {
+        let mut valid_flags = HashMap::new();
+        valid_flags.insert("chain", FlagType::NoValue);
+        valid_flags.insert("count", FlagType::WithValue);
+
+        let raw_decode = flags_from_str(input, valid_flags)?;
+
+        let count = raw_decode
+            .get("count")
+            .map(|x| x.clone().map(|y| y.parse::<u64>()))
+            .flatten();
+
+        let count = if let Some(inner) = count {
+            Some(inner.context("Failed to parse translation count")?)
+        } else {
+            None
+        };
+
+        let result = Self {
+            chain: raw_decode.get("chain").is_some(),
+            count,
+        };
+
+        Ok(result)
+    }
+}
+flag_parse_argument! { BadTranslateFlags }
+
+#[derive(Default)]
 pub struct ChargeFlags {
     pub verbose: bool,
     pub llir: bool,
@@ -199,7 +236,7 @@ pub fn flags_from_str(input: &str, valid_flags: ValidFlags) -> anyhow::Result<Ha
 
                 if let FlagType::NoValue = flag {
                     entries.insert(c.clone(), None);
-                    current_flag = None;
+                    current_flag = Some(arg[2..].to_owned());
                 } else {
                     bail!("Flag {c} expects a value, but none was provided");
                 }
@@ -219,10 +256,7 @@ pub fn flags_from_str(input: &str, valid_flags: ValidFlags) -> anyhow::Result<Ha
                 } else {
                     bail!("Flag {c} does not expect a value, even though one was provided");
                 }
-            } //else {
-            // random value not following any flag: ignore?
-
-            //}
+            }
         }
     }
 

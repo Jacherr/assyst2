@@ -112,6 +112,7 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
     let flag_descriptions = fields.remove("flag_descriptions").unwrap_or_else(empty_array_expr);
 
     let following = quote::quote! {
+        #[allow(non_camel_case_types)]
         pub struct #struct_name;
 
         #[::async_trait::async_trait]

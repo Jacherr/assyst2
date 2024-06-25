@@ -18,6 +18,7 @@ pub struct Urls {
     pub filer: String,
     pub eval: String,
     pub wsi: String,
+    pub bad_translation: String,
 }
 
 #[derive(Deserialize)]

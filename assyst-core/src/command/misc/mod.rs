@@ -3,7 +3,7 @@ use std::time::{Duration, Instant};
 use crate::command::Availability;
 use crate::rest::audio_identification::identify_song_notsoidentify;
 
-use super::arguments::{Image, ImageUrl, Rest, Time, Word};
+use super::arguments::{Image, ImageUrl, Rest, Word};
 use super::{Category, CommandCtxt};
 
 use anyhow::Context;

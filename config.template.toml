@@ -11,6 +11,8 @@ proxy = []
 filer = ""
 # URL for the WSI TCP server.
 wsi = ""
+# Bad translation URL.
+bad_translation = ""
 
 [authentication]
 # Token to authenticate with Discord.

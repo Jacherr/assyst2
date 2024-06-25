@@ -211,6 +211,9 @@ pub async fn remove(ctxt: CommandCtxt<'_>, name: Word) -> anyhow::Result<()> {
     category = Category::Fun,
     usage = "--i-am-sure",
     examples = ["", "--i-am-sure"],
+    flag_descriptions = [
+        ("i-am-sure", "Confirm this operation"),
+    ]
 )]
 pub async fn remove_all(ctxt: CommandCtxt<'_>, flags: ColourRemoveAllFlags) -> anyhow::Result<()> {
     if let Some(id) = ctxt.data.guild_id.map(|x| x.get()) {
@@ -367,7 +370,7 @@ pub async fn default(ctxt: CommandCtxt<'_>, colour: Option<Word>) -> anyhow::Res
 define_commandgroup! {
     name: colour,
     access: Availability::Public,
-    category: Category::Misc,
+    category: Category::Fun,
     aliases: ["color", "colours", "colors"],
     cooldown: Duration::from_secs(5),
     description: "Assyst colour roles",
