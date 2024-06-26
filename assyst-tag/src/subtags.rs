@@ -338,7 +338,7 @@ pub fn set(parser: &mut Parser<'_>, (key, value): (String, String)) -> TResult<S
 pub fn get(parser: &mut Parser<'_>, key: String) -> TResult<String> {
     parser
         .state()
-        .with_variables(|vars| -> TResult<String> { Ok(vars.get(&key).map(Clone::clone).unwrap_or_default()) })
+        .with_variables(|vars| -> TResult<String> { Ok(vars.get(&key).cloned().unwrap_or_default()) })
 }
 
 pub fn delete(parser: &mut Parser<'_>, key: String) -> TResult<String> {
@@ -373,7 +373,7 @@ pub fn sqrt(_: &mut Parser<'_>, arg: f64) -> TResult<String> {
 }
 
 pub fn e(_: &mut Parser<'_>, _: ()) -> TResult<String> {
-    Ok(std::f64::EPSILON.to_string())
+    Ok(f64::EPSILON.to_string())
 }
 
 pub fn pi(_: &mut Parser<'_>, _: ()) -> TResult<String> {

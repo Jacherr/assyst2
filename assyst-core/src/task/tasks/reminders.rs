@@ -43,12 +43,12 @@ async fn process_single_reminder(assyst: ThreadSafeAssyst, reminder: &Reminder) 
 }
 
 async fn process_reminders(assyst: ThreadSafeAssyst, reminders: Vec<Reminder>) -> Result<(), anyhow::Error> {
-    if reminders.len() < 1 {
+    if reminders.is_empty() {
         return Ok(());
     }
 
     for reminder in &reminders {
-        if let Err(e) = process_single_reminder(assyst.clone(), &reminder).await {
+        if let Err(e) = process_single_reminder(assyst.clone(), reminder).await {
             err!("Failed to process reminder: {:?}", e);
         }
 

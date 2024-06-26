@@ -79,17 +79,18 @@ pub async fn list(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
         return Ok(());
     }
 
-    let formatted = reminders
-        .iter()
-        .map(|reminder| {
-            format!(
-                "[#{}] {}: `{}`\n",
-                reminder.id,
-                format_discord_timestamp(reminder.timestamp as u64),
-                reminder.message
-            )
-        })
-        .collect::<String>();
+    let formatted = reminders.iter().fold(String::new(), |mut f, reminder| {
+        use std::fmt::Write;
+        writeln!(
+            f,
+            "[#{}] {}: `{}`",
+            reminder.id,
+            format_discord_timestamp(reminder.timestamp as u64),
+            reminder.message
+        )
+        .unwrap();
+        f
+    });
 
     ctxt.reply(format!(":calendar: **Upcoming Reminders:**\n\n{formatted}"))
         .await?;

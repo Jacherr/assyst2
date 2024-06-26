@@ -99,7 +99,7 @@ pub async fn charge(ctxt: CommandCtxt<'_>, script: Codeblock, flags: ChargeFlags
             "\nCompiler: {}\nExecutable: {}\nCommit Hash: {commit_hash}",
             result.exit_code,
             if let Some(b) = bin_result {
-                format!("{} (execution time {:?})", b.exit_code.to_string(), bin_time)
+                format!("{} (execution time {:?})", b.exit_code, bin_time)
             } else {
                 "N/A".to_owned()
             }
@@ -195,7 +195,7 @@ pub async fn dash(ctxt: CommandCtxt<'_>, script: Codeblock) -> anyhow::Result<()
                 EvalError::Exception(unrooted) => {
                     let fmt = format_value(unrooted.root(&mut scope), &mut scope);
                     if let Ok(f) = fmt {
-                        format!("Exception: {}", f.to_string())
+                        format!("Exception: {}", f)
                     } else {
                         format!("Exception: {:?}", fmt.unwrap_err())
                     }

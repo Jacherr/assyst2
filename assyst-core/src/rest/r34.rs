@@ -3,7 +3,7 @@ use anyhow::{bail, Context};
 use rand::prelude::SliceRandom;
 use serde::Deserialize;
 
-static R34_URL: &'static str = "https://api.rule34.xxx/index.php?tags=";
+static R34_URL: &str = "https://api.rule34.xxx/index.php?tags=";
 
 #[derive(Deserialize, Clone)]
 pub struct R34Result {

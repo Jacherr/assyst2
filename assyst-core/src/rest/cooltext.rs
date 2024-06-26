@@ -38,7 +38,7 @@ pub async fn burn_text(text: &str) -> anyhow::Result<Vec<u8>> {
         .await?;
 
     let url = cool_text_response.render_location;
-    let content = client.get(&url.replace("https", "http")).send().await?.bytes().await?;
+    let content = client.get(url.replace("https", "http")).send().await?.bytes().await?;
 
     let mut hasher = DefaultHasher::new();
     content.hash(&mut hasher);

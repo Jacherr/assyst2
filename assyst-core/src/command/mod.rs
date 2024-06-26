@@ -336,7 +336,7 @@ impl<'a> ParseCtxt<'a, RawMessageArgsIter<'a>> {
     }
 
     pub fn rest_all(&self, _: Label) -> String {
-        self.args.remainder().map(|x| x.to_owned()).unwrap_or(String::new())
+        self.args.remainder().map(|x| x.to_owned()).unwrap_or_default()
     }
 }
 

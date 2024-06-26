@@ -56,7 +56,11 @@ pub struct ApiResult {
 }
 impl ApiResult {
     pub fn format(&self) -> &str {
-        if self.stdout == "" { &self.stderr } else { &self.stdout }
+        if self.stdout.is_empty() {
+            &self.stderr
+        } else {
+            &self.stdout
+        }
     }
 }
 
@@ -85,6 +89,7 @@ pub async fn godbolt(client: &Client, code: &str) -> Result<String, Error> {
         .join("\n"))
 }
 
+#[allow(clippy::too_many_arguments)]
 pub async fn request(
     client: &Client,
     path: &str,
@@ -152,7 +157,7 @@ pub fn prepend_code(code: &str) -> Cow<str> {
 pub async fn run_miri(client: &Client, code: &str, channel: &str, opt: OptimizationLevel) -> Result<ApiResult, Error> {
     let code = prepend_code(code);
 
-    miri(client, &*code, Some(channel), opt).await
+    miri(client, &code, Some(channel), opt).await
 }
 
 pub async fn run_clippy(
@@ -163,7 +168,7 @@ pub async fn run_clippy(
 ) -> Result<ApiResult, Error> {
     let code = prepend_code(code);
 
-    clippy(client, &*code, Some(channel), opt).await
+    clippy(client, &code, Some(channel), opt).await
 }
 
 pub async fn run_binary(

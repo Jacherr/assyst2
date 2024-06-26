@@ -114,7 +114,7 @@ pub async fn exec(ctxt: CommandCtxt<'_>, script: Rest) -> anyhow::Result<()> {
     examples = ["1"]
 )]
 pub async fn eval(ctxt: CommandCtxt<'_>, script: Rest) -> anyhow::Result<()> {
-    let result = fake_eval(&ctxt.assyst(), script.0, true, ctxt.data.message, Vec::new())
+    let result = fake_eval(ctxt.assyst(), script.0, true, ctxt.data.message, Vec::new())
         .await
         .context("Evaluation failed")?;
 

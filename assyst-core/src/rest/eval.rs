@@ -18,7 +18,7 @@ pub async fn fake_eval(
         .post(format!("{}/eval", CONFIG.urls.eval))
         .query(&[("returnBuffer", accept_image)])
         .json(&FakeEvalBody {
-            code: code,
+            code,
             data: Some(FakeEvalMessageData { args, message }),
         })
         .send()

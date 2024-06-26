@@ -110,9 +110,7 @@ pub async fn get_web_download_api_urls(assyst: ThreadSafeAssyst) -> anyhow::Resu
     let test_urls = json
         .iter()
         .map(|entry: &InstancesQueryResult| {
-            if entry.protocol == "https" && entry.score >= TEST_SCORE_THRESHOLD {
-                format!("https://{}/api/json", entry.api)
-            } else if entry.api == "api.cobalt.tools" {
+            if (entry.protocol == "https" && entry.score >= TEST_SCORE_THRESHOLD) || (entry.api == "api.cobalt.tools") {
                 format!("https://{}/api/json", entry.api)
             } else {
                 String::new()
@@ -193,7 +191,7 @@ pub async fn download_web_media(assyst: ThreadSafeAssyst, url: &str, opts: WebDo
                             req_result_url = Some(j.url.to_string());
                             break;
                         },
-                        Err(e) => err = format!("Failed to deserialize download url: {}", e.to_string()),
+                        Err(e) => err = format!("Failed to deserialize download url: {}", e),
                     }
                 } else {
                     let try_err = r.text().await;
@@ -224,24 +222,22 @@ pub async fn download_web_media(assyst: ThreadSafeAssyst, url: &str, opts: WebDo
                                         break;
                                     }
                                 },
-                                Err(d_e) => {
-                                    err = format!("Download request failed: {} (raw error: {})", d_e.to_string(), e)
-                                },
+                                Err(d_e) => err = format!("Download request failed: {} (raw error: {})", d_e, e),
                             }
                         },
-                        Err(e) => err = format!("Failed to extract download request error: {}", e.to_string()),
+                        Err(e) => err = format!("Failed to extract download request error: {}", e),
                     }
                 }
             },
             Err(e) => {
-                err = format!("Download request failed: {}", e.to_string());
+                err = format!("Download request failed: {}", e);
             },
         }
     }
 
     if let Some(r) = req_result_url {
         let media = download_content(&assyst, &r, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES, false).await?;
-        return Ok(media);
+        Ok(media)
     } else if !err.is_empty() {
         bail!("{err}");
     } else {

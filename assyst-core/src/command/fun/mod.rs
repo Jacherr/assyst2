@@ -26,7 +26,7 @@ pub async fn findsong(ctxt: CommandCtxt<'_>, input: ImageUrl) -> anyhow::Result<
         .await
         .context("Failed to identify song")?;
 
-    if result.len() > 0 {
+    if !result.is_empty() {
         let formatted = format!(
             "**Title:** {}\n**Artist(s):** {}\n**YouTube Link:** <{}>",
             result[0].title.clone(),

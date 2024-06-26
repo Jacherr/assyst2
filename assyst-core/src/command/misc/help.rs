@@ -62,8 +62,7 @@ pub async fn help(ctxt: CommandCtxt<'_>, labels: Vec<Word>) -> anyhow::Result<()
                 let subcommands = command.subcommands();
 
                 match subcommands
-                    .map(|x| x.iter().find(|y| y.0 == label).map(|z| z.1))
-                    .flatten()
+                    .and_then(|x| x.iter().find(|y| y.0 == label).map(|z| z.1))
                 {
                     Some(sc) => command = sc,
                     None => bail!(

@@ -68,7 +68,6 @@ impl Reminder {
             .bind(self.message_id)
             .bind(&*self.message)
             .execute(&handler.pool)
-            .await
-            .and_then(|_| Ok(()))
+            .await.map(|_| ())
     }
 }

@@ -174,11 +174,11 @@ impl WsiHandler {
             return Ok(p.tier as usize);
         }
 
-        let user_tier2 = FreeTier2Requests::get_user_free_tier_2_requests(&*self.database_handler, user_id).await?;
+        let user_tier2 = FreeTier2Requests::get_user_free_tier_2_requests(&self.database_handler, user_id).await?;
 
         if user_tier2.count > 0 {
             user_tier2
-                .change_free_tier_2_requests(&*self.database_handler, -1)
+                .change_free_tier_2_requests(&self.database_handler, -1)
                 .await?;
             Ok(2)
         } else {

@@ -228,7 +228,7 @@ impl<'buf> DiagnosticBuilder<'buf> {
                         NoteKind::Note => {
                             out += &arrows.bold();
                             out += " ";
-                            out += &message;
+                            out += message;
                         },
                     }
                 },
