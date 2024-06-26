@@ -120,7 +120,7 @@ macro_rules! define_commandgroup {
                     match crate::command::group::execute_subcommand_raw_message(ctxt.fork(), Self::SUBCOMMANDS).await {
                         Ok(res) => Ok(res),
                         Err(crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::InvalidSubcommand(_))
-                        | crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::ArgsExhausted)) => {
+                        | crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::ArgsExhausted(_))) => {
                             // No subcommand was found, call either the default if provided, or error out
                             $(
                                 return [<$default _command>].execute_raw_message(ctxt).await;
@@ -166,7 +166,8 @@ pub async fn execute_subcommand_raw_message(
     mut ctxt: RawMessageParseCtxt<'_>,
     commands: &[(&str, TCommand)],
 ) -> Result<(), ExecutionError> {
-    let subcommand = ctxt.next_word().map_err(|err| ExecutionError::Parse(err.into()))?;
+    // todo: come up with better names for this?
+    let subcommand = ctxt.next_word(None).map_err(|err| ExecutionError::Parse(err.into()))?;
 
     let command = find_subcommand(subcommand, commands).ok_or(ExecutionError::Parse(
         TagParseError::InvalidSubcommand(subcommand.to_owned()),

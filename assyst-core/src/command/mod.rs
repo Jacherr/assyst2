@@ -286,16 +286,20 @@ impl<'a, T: Clone> ParseCtxt<'a, T> {
 /// to be specified.
 #[macro_export]
 macro_rules! commit_if_ok {
-    ($ctxt:expr, $f:expr) => {{
+    ($ctxt:expr, $f:expr, $label:expr) => {{
         let ctxt: &mut crate::command::ParseCtxt<'_, _> = $ctxt;
         let mut fork = ctxt.fork();
-        let res = ($f)(&mut fork).await;
+        // label should be cheaply cloneable?
+        let res = ($f)(&mut fork, $label.clone()).await;
         if res.is_ok() {
             *ctxt = fork;
         }
         res
     }};
 }
+
+/// A label for a command argument.
+pub type Label = Option<(String, String)>;
 
 impl<'a> ParseCtxt<'a, RawMessageArgsIter<'a>> {
     pub fn new(ctxt: CommandCtxt<'a>, args: &'a str) -> Self {
@@ -308,14 +312,17 @@ impl<'a> ParseCtxt<'a, RawMessageArgsIter<'a>> {
     /// Eagerly takes a word.
     /// If you want to "peek" or you aren't sure if you might want to undo this,
     /// consider using `commit_if_ok` or `fork` to try it in a subcontext.
-    pub fn next_word(&mut self) -> Result<&'a str, ArgsExhausted> {
-        self.args.next().ok_or(ArgsExhausted)
+    pub fn next_word(&mut self, label: Label) -> Result<&'a str, ArgsExhausted> {
+        self.args.next().ok_or(ArgsExhausted(label))
     }
 
     /// The rest of the message, excluding flags.
-    pub fn rest(&mut self) -> Result<String, TagParseError> {
+    pub fn rest(&mut self, label: Label) -> Result<String, TagParseError> {
         // todo: handle newlines etc with
-        let raw = self.args.remainder().ok_or(TagParseError::ArgsExhausted)?;
+        let raw = self
+            .args
+            .remainder()
+            .ok_or(TagParseError::ArgsExhausted(ArgsExhausted(label)))?;
         let (args, flags) = if let Some(idx) = raw.find("--") {
             (&raw[..idx], &raw[idx..])
         } else {
@@ -327,7 +334,7 @@ impl<'a> ParseCtxt<'a, RawMessageArgsIter<'a>> {
         Ok(args.to_owned())
     }
 
-    pub fn rest_all(&self) -> String {
+    pub fn rest_all(&self, _: Label) -> String {
         self.args.remainder().map(|x| x.to_owned()).unwrap_or(String::new())
     }
 }
@@ -344,7 +351,7 @@ impl<'a> ParseCtxt<'a, InteractionMessageArgsIter<'a>> {
     /// If you want to "peek" or you aren't sure if you might want to undo this,
     /// consider using `commit_if_ok` or `fork` to try it in a subcontext.
     pub fn next_option(&mut self) -> Result<&'a CommandDataOption, ArgsExhausted> {
-        self.args.next().ok_or(ArgsExhausted)
+        self.args.next().ok_or(ArgsExhausted(None))
     }
 }
 

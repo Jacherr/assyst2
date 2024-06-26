@@ -6,6 +6,7 @@ use twilight_util::builder::command::StringBuilder;
 
 use super::arguments::ParseArgument;
 use super::errors::TagParseError;
+use super::Label;
 
 macro_rules! flag_parse_argument {
     ($s:ty) => {
@@ -16,8 +17,9 @@ macro_rules! flag_parse_argument {
 
             async fn parse_raw_message(
                 ctxt: &mut super::RawMessageParseCtxt<'_>,
+                label: Label,
             ) -> Result<Self, super::errors::TagParseError> {
-                let args = ctxt.rest_all();
+                let args = ctxt.rest_all(label);
                 let parsed = Self::from_str(&args).map_err(|x| TagParseError::FlagParseError(x))?;
                 Ok(parsed)
             }

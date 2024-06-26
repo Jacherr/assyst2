@@ -93,7 +93,7 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
                 }
 
                 parse_idents.push(Ident::new(&format!("p{index}"), Span::call_site()));
-                parse_exprs.push(quote!(<#ty>::parse_raw_message(&mut ctxt).await));
+                parse_exprs.push(quote!(<#ty>::parse_raw_message(&mut ctxt, Some((stringify!(#pat).to_string(), stringify!(#ty).to_string()))).await));
                 interaction_parse_exprs.push(quote!(<#ty>::parse_command_option(&mut ctxt).await));
             },
         }

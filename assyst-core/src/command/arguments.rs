@@ -19,19 +19,19 @@ use crate::downloader::{self, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES};
 use crate::gateway_handler::message_parser::error::{ErrorSeverity, GetErrorSeverity};
 
 use super::errors::TagParseError;
-use super::{CommandCtxt, InteractionCommandParseCtxt, RawMessageParseCtxt};
+use super::{CommandCtxt, InteractionCommandParseCtxt, Label, RawMessageParseCtxt};
 
 pub trait ParseArgument: Sized {
     /// Parses `Self`, given a command, where the source is a raw message.
-    async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>) -> Result<Self, TagParseError>;
+    async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>, label: Label) -> Result<Self, TagParseError>;
     /// Parses `Self`, given a command, where the source is an interaction command.
     async fn parse_command_option(ctxt: &mut InteractionCommandParseCtxt<'_>) -> Result<Self, TagParseError>;
     fn as_command_option(name: &str) -> CommandOption;
 }
 
 impl ParseArgument for u64 {
-    async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>) -> Result<Self, TagParseError> {
-        let word = ctxt.next_word()?;
+    async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>, label: Label) -> Result<Self, TagParseError> {
+        let word = ctxt.next_word(label)?;
         Ok(word.parse()?)
     }
 
@@ -54,8 +54,8 @@ impl ParseArgument for u64 {
 }
 
 impl ParseArgument for f64 {
-    async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>) -> Result<Self, TagParseError> {
-        let word = ctxt.next_word()?;
+    async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>, label: Label) -> Result<Self, TagParseError> {
+        let word = ctxt.next_word(label)?;
         Ok(word.parse()?)
     }
 
@@ -77,8 +77,8 @@ impl ParseArgument for f64 {
 }
 
 impl ParseArgument for f32 {
-    async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>) -> Result<Self, TagParseError> {
-        let word = ctxt.next_word()?;
+    async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>, label: Label) -> Result<Self, TagParseError> {
+        let word = ctxt.next_word(label)?;
         Ok(word.parse()?)
     }
 
@@ -100,9 +100,9 @@ impl ParseArgument for f32 {
 }
 
 impl<T: ParseArgument> ParseArgument for Option<T> {
-    async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>) -> Result<Self, TagParseError> {
+    async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>, label: Label) -> Result<Self, TagParseError> {
         // TODO: should we be using commit_if_ok to undo failed parsers?
-        match T::parse_raw_message(ctxt).await {
+        match T::parse_raw_message(ctxt, label).await {
             Ok(v) => Ok(Some(v)),
             Err(err) if err.get_severity() == ErrorSeverity::High => Err(err),
             _ => Ok(None),
@@ -126,12 +126,12 @@ impl<T: ParseArgument> ParseArgument for Option<T> {
 }
 
 impl ParseArgument for Vec<Word> {
-    async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>) -> Result<Self, TagParseError> {
+    async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>, label: Label) -> Result<Self, TagParseError> {
         let mut items = Vec::new();
 
         // `Option<T>`'s parser takes care of recovering from low severity errors
         // and any `Err`s returned are fatal, so we can just use `?`
-        while let Some(value) = <Option<Word>>::parse_raw_message(ctxt).await? {
+        while let Some(value) = <Option<Word>>::parse_raw_message(ctxt, label.clone()).await? {
             items.push(value)
         }
 
@@ -160,8 +160,8 @@ pub struct Time {
     pub millis: u64,
 }
 impl ParseArgument for Time {
-    async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>) -> Result<Self, TagParseError> {
-        let word = ctxt.next_word()?;
+    async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>, label: Label) -> Result<Self, TagParseError> {
+        let word = ctxt.next_word(label)?;
         let millis = parse_to_millis(word)?;
 
         Ok(Time { millis })
@@ -192,8 +192,8 @@ impl ParseArgument for Time {
 pub struct Word(pub String);
 
 impl ParseArgument for Word {
-    async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>) -> Result<Self, TagParseError> {
-        Ok(Self(ctxt.next_word()?.to_owned()))
+    async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>, label: Label) -> Result<Self, TagParseError> {
+        Ok(Self(ctxt.next_word(label)?.to_owned()))
     }
 
     async fn parse_command_option(ctxt: &mut InteractionCommandParseCtxt<'_>) -> Result<Self, TagParseError> {
@@ -218,8 +218,8 @@ impl ParseArgument for Word {
 #[derive(Debug)]
 pub struct Codeblock(pub String);
 impl ParseArgument for Codeblock {
-    async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>) -> Result<Self, TagParseError> {
-        Ok(Codeblock(parse_codeblock(ctxt.rest()?)))
+    async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>, label: Label) -> Result<Self, TagParseError> {
+        Ok(Codeblock(parse_codeblock(ctxt.rest(label)?)))
     }
 
     async fn parse_command_option(ctxt: &mut InteractionCommandParseCtxt<'_>) -> Result<Self, TagParseError> {
@@ -245,15 +245,15 @@ impl ParseArgument for Codeblock {
 pub struct Rest(pub String);
 
 impl ParseArgument for Rest {
-    async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>) -> Result<Self, TagParseError> {
+    async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>, label: Label) -> Result<Self, TagParseError> {
         if let Some(m) = ctxt.cx.data.message {
             if let Some(ref r) = m.referenced_message {
                 Ok(Self(r.content.clone()))
             } else {
-                Ok(Self(ctxt.rest()?))
+                Ok(Self(ctxt.rest(label)?))
             }
         } else {
-            Ok(Self(ctxt.rest()?))
+            Ok(Self(ctxt.rest(label)?))
         }
     }
 
@@ -280,8 +280,8 @@ impl ParseArgument for Rest {
 pub struct ImageUrl(pub String);
 
 impl ImageUrl {
-    async fn from_mention_raw_message(ctxt: &mut RawMessageParseCtxt<'_>) -> Result<Self, TagParseError> {
-        let word = ctxt.next_word()?;
+    async fn from_mention_raw_message(ctxt: &mut RawMessageParseCtxt<'_>, label: Label) -> Result<Self, TagParseError> {
+        let word = ctxt.next_word(label)?;
 
         let user_id = id_from_mention(word).ok_or(TagParseError::NoMention)?;
 
@@ -301,7 +301,10 @@ impl ImageUrl {
         Ok(Self(get_avatar_url(&user)))
     }
 
-    async fn from_mention_command_option(ctxt: &mut InteractionCommandParseCtxt<'_>) -> Result<Self, TagParseError> {
+    async fn from_mention_command_option(
+        ctxt: &mut InteractionCommandParseCtxt<'_>,
+        _: Label,
+    ) -> Result<Self, TagParseError> {
         let word = ctxt.next_option()?;
 
         if let CommandOptionValue::String(ref option) = word.value {
@@ -329,8 +332,11 @@ impl ImageUrl {
         }
     }
 
-    async fn from_url_argument_raw_message(ctxt: &mut RawMessageParseCtxt<'_>) -> Result<Self, TagParseError> {
-        let word = ctxt.next_word()?;
+    async fn from_url_argument_raw_message(
+        ctxt: &mut RawMessageParseCtxt<'_>,
+        label: Label,
+    ) -> Result<Self, TagParseError> {
+        let word = ctxt.next_word(label)?;
 
         if regex::URL.is_match(word) {
             Ok(Self(word.to_owned()))
@@ -341,6 +347,7 @@ impl ImageUrl {
 
     async fn from_url_argument_command_option(
         ctxt: &mut InteractionCommandParseCtxt<'_>,
+        _: Label,
     ) -> Result<Self, TagParseError> {
         let word = ctxt.next_option()?;
 
@@ -363,12 +370,13 @@ impl ImageUrl {
         Ok(Self(attachment.url.clone()))
     }
 
-    async fn from_attachment_raw_message(ctxt: &mut RawMessageParseCtxt<'_>) -> Result<Self, TagParseError> {
+    async fn from_attachment_raw_message(ctxt: &mut RawMessageParseCtxt<'_>, _: Label) -> Result<Self, TagParseError> {
         Self::attachment(ctxt.cx.data.message.as_ref().unwrap().attachments.first())
     }
 
     async fn from_attachment_interaction_command(
         ctxt: &mut InteractionCommandParseCtxt<'_>,
+        _: Label,
     ) -> Result<Self, TagParseError> {
         let word = ctxt.next_option()?;
 
@@ -385,7 +393,7 @@ impl ImageUrl {
     }
 
     /// This only exists for raw message
-    async fn from_reply(ctxt: &mut RawMessageParseCtxt<'_>) -> Result<Self, TagParseError> {
+    async fn from_reply(ctxt: &mut RawMessageParseCtxt<'_>, _: Label) -> Result<Self, TagParseError> {
         let reply = ctxt
             .cx
             .data
@@ -473,12 +481,15 @@ impl ImageUrl {
         }
     }
 
-    async fn from_emoji_raw_message(ctxt: &mut RawMessageParseCtxt<'_>) -> Result<Self, TagParseError> {
-        let word = ctxt.next_word()?;
+    async fn from_emoji_raw_message(ctxt: &mut RawMessageParseCtxt<'_>, label: Label) -> Result<Self, TagParseError> {
+        let word = ctxt.next_word(label)?;
         Self::emoji(&mut ctxt.cx, word).await
     }
 
-    async fn from_emoji_command_option(ctxt: &mut InteractionCommandParseCtxt<'_>) -> Result<Self, TagParseError> {
+    async fn from_emoji_command_option(
+        ctxt: &mut InteractionCommandParseCtxt<'_>,
+        _: Label,
+    ) -> Result<Self, TagParseError> {
         let word = ctxt.next_option()?;
 
         if let CommandOptionValue::String(ref option) = word.value {
@@ -504,7 +515,7 @@ impl ImageUrl {
     }
 
     /// This only exists for raw message
-    async fn from_sticker(ctxt: &mut RawMessageParseCtxt<'_>) -> Result<Self, TagParseError> {
+    async fn from_sticker(ctxt: &mut RawMessageParseCtxt<'_>, _: Label) -> Result<Self, TagParseError> {
         Self::sticker(ctxt.cx.data.message.as_ref().unwrap().sticker_items.first())
     }
 
@@ -544,8 +555,8 @@ impl Display for ImageUrl {
 }
 
 impl ParseArgument for ImageUrl {
-    async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>) -> Result<Self, TagParseError> {
-        async fn combined_parsers(ctxt: &mut RawMessageParseCtxt<'_>) -> Result<ImageUrl, TagParseError> {
+    async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>, label: Label) -> Result<Self, TagParseError> {
+        async fn combined_parsers(ctxt: &mut RawMessageParseCtxt<'_>, label: Label) -> Result<ImageUrl, TagParseError> {
             macro_rules! handle {
                 ($v:expr) => {
                     match $v {
@@ -557,17 +568,17 @@ impl ParseArgument for ImageUrl {
                 };
             }
 
-            handle!(commit_if_ok!(ctxt, ImageUrl::from_mention_raw_message));
-            handle!(commit_if_ok!(ctxt, ImageUrl::from_url_argument_raw_message));
-            handle!(commit_if_ok!(ctxt, ImageUrl::from_attachment_raw_message));
-            handle!(commit_if_ok!(ctxt, ImageUrl::from_reply));
-            handle!(commit_if_ok!(ctxt, ImageUrl::from_emoji_raw_message));
-            handle!(commit_if_ok!(ctxt, ImageUrl::from_sticker));
+            handle!(commit_if_ok!(ctxt, ImageUrl::from_mention_raw_message, label));
+            handle!(commit_if_ok!(ctxt, ImageUrl::from_url_argument_raw_message, label));
+            handle!(commit_if_ok!(ctxt, ImageUrl::from_attachment_raw_message, label));
+            handle!(commit_if_ok!(ctxt, ImageUrl::from_reply, label));
+            handle!(commit_if_ok!(ctxt, ImageUrl::from_emoji_raw_message, label));
+            handle!(commit_if_ok!(ctxt, ImageUrl::from_sticker, label));
             handle!(ImageUrl::from_channel_history(ctxt.cx.assyst(), ctxt.cx.data.channel_id).await);
             Err(TagParseError::NoImageFound)
         }
 
-        let ImageUrl(mut url) = combined_parsers(ctxt).await?;
+        let ImageUrl(mut url) = combined_parsers(ctxt, label).await?;
 
         // tenor urls only typically return a png, so this code visits the url
         // and extracts the appropriate GIF url from the page.
@@ -593,10 +604,10 @@ impl ParseArgument for ImageUrl {
                 };
             }
 
-            handle!(commit_if_ok!(ctxt, ImageUrl::from_attachment_interaction_command));
-            handle!(commit_if_ok!(ctxt, ImageUrl::from_mention_command_option));
-            handle!(commit_if_ok!(ctxt, ImageUrl::from_url_argument_command_option));
-            handle!(commit_if_ok!(ctxt, ImageUrl::from_emoji_command_option));
+            handle!(commit_if_ok!(ctxt, ImageUrl::from_attachment_interaction_command, None));
+            handle!(commit_if_ok!(ctxt, ImageUrl::from_mention_command_option, None));
+            handle!(commit_if_ok!(ctxt, ImageUrl::from_url_argument_command_option, None));
+            handle!(commit_if_ok!(ctxt, ImageUrl::from_emoji_command_option, None));
             handle!(ImageUrl::from_channel_history(ctxt.cx.assyst(), ctxt.cx.data.channel_id).await);
             Err(TagParseError::NoImageFound)
         }
@@ -623,8 +634,8 @@ impl ParseArgument for ImageUrl {
 pub struct Image(pub Vec<u8>);
 
 impl ParseArgument for Image {
-    async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>) -> Result<Self, TagParseError> {
-        let ImageUrl(url) = ImageUrl::parse_raw_message(ctxt).await?;
+    async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>, label: Label) -> Result<Self, TagParseError> {
+        let ImageUrl(url) = ImageUrl::parse_raw_message(ctxt, label).await?;
 
         let data =
             downloader::download_content(ctxt.cx.assyst(), &url, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES, true).await?;

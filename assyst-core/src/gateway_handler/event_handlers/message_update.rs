@@ -54,7 +54,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: MessageUpdate) {
                             ErrorSeverity::Low => debug!("{err:?}"),
                             ErrorSeverity::High => match err {
                                 // if invalid args: report usage to user
-                                ExecutionError::Parse(TagParseError::ArgsExhausted) => {
+                                ExecutionError::Parse(TagParseError::ArgsExhausted(_)) => {
                                     let _ = ctxt
                                         .cx
                                         .reply(format!(

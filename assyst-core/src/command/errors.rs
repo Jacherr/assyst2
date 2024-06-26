@@ -9,6 +9,8 @@ use twilight_model::channel::message::sticker::StickerFormatType;
 use crate::downloader::DownloadError;
 use crate::gateway_handler::message_parser::error::{ErrorSeverity, GetErrorSeverity};
 
+use super::Label;
+
 #[derive(Debug)]
 pub enum ExecutionError {
     Parse(TagParseError),
@@ -68,11 +70,13 @@ impl Display for MetadataCheckError {
 impl std::error::Error for MetadataCheckError {}
 
 /// No arguments left
-pub struct ArgsExhausted;
+// (name, type), None for arguments we don't know of
+#[derive(Clone, Debug)]
+pub struct ArgsExhausted(pub Label);
 
 #[derive(Debug)]
 pub enum TagParseError {
-    ArgsExhausted,
+    ArgsExhausted(ArgsExhausted),
     ParseIntError(ParseIntError),
     ParseFloatError(ParseFloatError),
     ParseToMillisError(ParseToMillisError),
@@ -124,7 +128,12 @@ impl From<reqwest::Error> for TagParseError {
 impl Display for TagParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TagParseError::ArgsExhausted => f.write_str("an argument is required but none were found"),
+            TagParseError::ArgsExhausted(ArgsExhausted(Some((name, _)))) => {
+                write!(f, "the argument '{name}' is required but was not found")
+            },
+            TagParseError::ArgsExhausted(ArgsExhausted(None)) => {
+                f.write_str("an argument is required but none were found")
+            },
             TagParseError::ParseIntError(err) => write!(f, "failed to parse an argument as a whole number: {err}"),
             TagParseError::ParseFloatError(err) => write!(f, "failed to parse an argument as a decimal number: {err}"),
             TagParseError::ParseToMillisError(err) => write!(f, "failed to parse an argument as time: {err}"),
@@ -191,8 +200,8 @@ impl From<ParseToMillisError> for TagParseError {
 }
 
 impl From<ArgsExhausted> for TagParseError {
-    fn from(_: ArgsExhausted) -> Self {
-        Self::ArgsExhausted
+    fn from(value: ArgsExhausted) -> Self {
+        Self::ArgsExhausted(value)
     }
 }
 impl From<ParseIntError> for TagParseError {
