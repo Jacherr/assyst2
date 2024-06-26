@@ -46,15 +46,20 @@ impl WsiHandler {
         let socket = socket.to_owned();
 
         spawn(async move {
+            let mut retries = 0;
             loop {
                 let stream = match TcpStream::connect(&socket).await {
                     Ok(stream) => stream,
                     Err(e) => {
+                        if retries > CONFIG.dev.wsi_retry_limit {
+                            break;
+                        }
                         err!(
                             "Failed to connect to WSI server ({}), attempting reconnection in 10 sec...",
                             e.to_string()
                         );
                         sleep(Duration::from_secs(10)).await;
+                        retries += 1;
                         continue;
                     },
                 };

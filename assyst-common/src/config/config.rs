@@ -100,4 +100,5 @@ pub struct DevAttributes {
     pub dev_guild: u64,
     pub dev_channel: u64,
     pub dev_message: bool,
+    pub wsi_retry_limit: u64,
 }

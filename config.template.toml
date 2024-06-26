@@ -88,3 +88,6 @@ dev_guild = 0
 
 # The channel to send the dev message in.
 dev_channel = 0
+
+# The amount of times we try connecting to WSI before giving up after failure.
+wsi_retry_limit = 50
