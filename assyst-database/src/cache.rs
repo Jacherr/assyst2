@@ -67,3 +67,9 @@ impl DatabaseCache {
         size
     }
 }
+
+impl Default for DatabaseCache {
+    fn default() -> Self {
+        Self::new()
+    }
+}

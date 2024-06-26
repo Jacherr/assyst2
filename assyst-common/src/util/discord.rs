@@ -53,7 +53,7 @@ pub fn id_from_mention(word: &str) -> Option<u64> {
     USER_MENTION
         .captures(word)
         .and_then(|user_id_capture| user_id_capture.get(1))
-        .and_then(|id| Some(id.as_str()))
+        .map(|id| id.as_str())
         .and_then(|id| id.parse::<u64>().ok())
 }
 

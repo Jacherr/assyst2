@@ -68,11 +68,11 @@ impl FlagDecode for RustFlags {
 
         let raw_decode = flags_from_str(input, valid_flags)?;
         let result = Self {
-            miri: raw_decode.get("miri").is_some(),
-            asm: raw_decode.get("asm").is_some(),
-            release: raw_decode.get("release").is_some(),
-            clippy: raw_decode.get("clippy").is_some(),
-            bench: raw_decode.get("bench").is_some(),
+            miri: raw_decode.contains_key("miri"),
+            asm: raw_decode.contains_key("asm"),
+            release: raw_decode.contains_key("release"),
+            clippy: raw_decode.contains_key("clippy"),
+            bench: raw_decode.contains_key("bench"),
         };
 
         Ok(result)
@@ -94,7 +94,7 @@ impl FlagDecode for ColourRemoveAllFlags {
 
         let raw_decode = flags_from_str(input, valid_flags)?;
         let result = Self {
-            i_am_sure: raw_decode.get("i-am-sure").is_some(),
+            i_am_sure: raw_decode.contains_key("i-am-sure"),
         };
 
         Ok(result)
@@ -120,8 +120,7 @@ impl FlagDecode for BadTranslateFlags {
 
         let count = raw_decode
             .get("count")
-            .map(|x| x.clone().map(|y| y.parse::<u64>()))
-            .flatten();
+            .and_then(|x| x.clone().map(|y| y.parse::<u64>()));
 
         let count = if let Some(inner) = count {
             Some(inner.context("Failed to parse translation count")?)
@@ -130,7 +129,7 @@ impl FlagDecode for BadTranslateFlags {
         };
 
         let result = Self {
-            chain: raw_decode.get("chain").is_some(),
+            chain: raw_decode.contains_key("chain"),
             count,
         };
 
@@ -160,17 +159,16 @@ impl FlagDecode for ChargeFlags {
         let raw_decode = flags_from_str(input, valid_flags)?;
         let opt = raw_decode
             .get("opt")
-            .map(|x| x.as_deref())
-            .flatten()
+            .and_then(|x| x.as_deref())
             .map(|x| x.parse::<u64>())
             .unwrap_or(Ok(0))
             .context("Failed to parse optimisation level")?;
 
         let result = Self {
-            verbose: raw_decode.get("verbose").is_some(),
-            llir: raw_decode.get("llir").is_some(),
+            verbose: raw_decode.contains_key("verbose"),
+            llir: raw_decode.contains_key("llir"),
             opt,
-            valgrind: raw_decode.get("valgrind").is_some(),
+            valgrind: raw_decode.contains_key("valgrind"),
         };
 
         if result.llir && result.valgrind {
@@ -195,7 +193,7 @@ impl FlagDecode for DownloadFlags {
 
         let raw_decode = flags_from_str(input, valid_flags)?;
         let result = Self {
-            audio: raw_decode.get("audio").is_some(),
+            audio: raw_decode.contains_key("audio"),
             quality: raw_decode
                 .get("quality")
                 .unwrap_or(&None)

@@ -284,6 +284,7 @@ impl<'a, T: Clone> ParseCtxt<'a, T> {
 /// This used to be a function, however due to compiler bugs and the inability to properly express
 /// this pattern with bounds, this was ultimately just made into a macro where no such bounds need
 /// to be specified.
+#[allow(clippy::crate_in_macro_def)]
 #[macro_export]
 macro_rules! commit_if_ok {
     ($ctxt:expr, $f:expr, $label:expr) => {{

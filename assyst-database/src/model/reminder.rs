@@ -49,7 +49,7 @@ impl Reminder {
         let query = r#"DELETE FROM reminders WHERE user_id = $1 AND id = $2 RETURNING *"#;
 
         sqlx::query(query)
-            .bind(self.user_id as i64)
+            .bind(self.user_id)
             .bind(self.id)
             .fetch_all(&handler.pool)
             .await

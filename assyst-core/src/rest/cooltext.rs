@@ -4,7 +4,7 @@ use anyhow::bail;
 use reqwest::ClientBuilder;
 use serde::Deserialize;
 
-static COOLTEXT_URL: &'static str = "https://cooltext.com/PostChange";
+static COOLTEXT_URL: &str = "https://cooltext.com/PostChange";
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]

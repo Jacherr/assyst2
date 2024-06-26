@@ -20,7 +20,7 @@ use crate::gateway_handler::message_parser::error::{ErrorSeverity, GetErrorSever
 use super::after_command_execution_success;
 
 fn parse_subcommand_data(data: &DiscordCommandData) -> Option<(String, CommandOptionValue)> {
-    if let Some(option_zero) = data.options.get(0)
+    if let Some(option_zero) = data.options.first()
         && let CommandOptionValue::SubCommand(_) = option_zero.value
     {
         Some((option_zero.name.clone(), option_zero.value.clone()))
@@ -103,15 +103,10 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
                 },
                 calling_prefix: "/".to_owned(),
                 message: None,
-                interaction_subcommand: interaction_subcommand,
+                interaction_subcommand,
                 channel_id: interaction.channel.unwrap().id,
                 guild_id: interaction.guild_id,
-                author: interaction
-                    .member
-                    .map(|x| x.user)
-                    .flatten()
-                    .or(interaction.user)
-                    .unwrap(),
+                author: interaction.member.and_then(|x| x.user).or(interaction.user).unwrap(),
                 interaction_token: Some(interaction.token),
                 interaction_id: Some(interaction.id),
                 interaction_attachments: command_data.resolved.map(|x| x.attachments).unwrap_or(HashMap::new()),
@@ -134,7 +129,6 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
                 "Received interaction for non-existent command: {}, ignoring",
                 command_data.name
             );
-            return;
         }
     }
 }

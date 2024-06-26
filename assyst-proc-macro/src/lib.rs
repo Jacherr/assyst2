@@ -8,7 +8,7 @@ use quote::{quote, ToTokens};
 use syn::punctuated::Punctuated;
 use syn::token::Bracket;
 use syn::{
-    parse_macro_input, parse_quote, Expr, ExprArray, ExprLit, FnArg, Ident, Item, Lit, LitBool, LitStr, Meta, Pat,
+    parse_macro_input, Expr, ExprArray, ExprLit, FnArg, Ident, Item, Lit, LitBool, LitStr, Meta, Pat,
     PatType, Token, Type,
 };
 

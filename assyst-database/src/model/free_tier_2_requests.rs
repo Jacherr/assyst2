@@ -21,7 +21,7 @@ impl FreeTier2Requests {
         let query = "insert into free_tier1_requests values($1, $2) on conflict (user_id) do update set count = free_tier1_requests.count + $2 where free_tier1_requests.user_id = $1";
 
         sqlx::query(query)
-            .bind(self.user_id as i64)
+            .bind(self.user_id)
             .bind(change_amount)
             .execute(&handler.pool)
             .await?;

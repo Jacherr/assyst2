@@ -141,7 +141,7 @@ impl Display for TagParseError {
             TagParseError::TwilightDeserialize(err) => write!(f, "failed to parse a response from discord: {err}"),
             TagParseError::DownloadError(err) => write!(f, "failed to download media: {err}"),
             TagParseError::UnsupportedSticker(sticker) => write!(f, "an unsupported sticker was found: {sticker:?}"),
-            TagParseError::Reqwest(err) => write!(f, "failed to send a request: {}", err.to_string()),
+            TagParseError::Reqwest(err) => write!(f, "failed to send a request: {err}"),
             TagParseError::NoAttachment => f.write_str("an attachment was expected but none were found"),
             TagParseError::NoMention => f.write_str("a mention argument was expected but none were found"),
             TagParseError::NoUrl => f.write_str("a URL argument was expected but none were found"),
@@ -169,7 +169,7 @@ impl Display for TagParseError {
             TagParseError::InteractionCommandIsBaseSubcommand => {
                 f.write_str("Interaction subcommand is base subcommand")
             },
-            TagParseError::FlagParseError(x) => write!(f, "Error parsing command flags ({})", x.to_string()),
+            TagParseError::FlagParseError(x) => write!(f, "Error parsing command flags ({x})"),
         }
     }
 }

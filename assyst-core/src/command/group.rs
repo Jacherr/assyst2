@@ -1,6 +1,7 @@
 use super::errors::{ExecutionError, TagParseError};
 use super::{InteractionCommandParseCtxt, RawMessageParseCtxt, TCommand};
 
+#[allow(clippy::crate_in_macro_def, clippy::deprecated_cfg_attr)]
 // Helper macro that provides defaults
 // cfg_attr is needed because of https://github.com/rust-lang/rust/issues/74087
 #[cfg_attr(rustfmt, rustfmt::skip)]
@@ -23,6 +24,8 @@ macro_rules! defaults {
     (send_processing) => { false };
 }
 
+
+#[allow(clippy::crate_in_macro_def)]
 #[macro_export]
 macro_rules! define_commandgroup {
     (

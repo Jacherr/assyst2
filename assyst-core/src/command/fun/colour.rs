@@ -126,7 +126,7 @@ pub async fn add_default(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
                     .assyst()
                     .http_client
                     .create_role(Id::<GuildMarker>::new(id))
-                    .name(&entry.0)
+                    .name(entry.0)
                     .color(entry.1)
                     .await
                     .context(format!("Failed to create colour role {}", entry.0))?

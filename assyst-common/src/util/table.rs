@@ -28,7 +28,7 @@ pub fn key_value(input: &[(impl AsRef<str>, impl AsRef<str>)]) -> String {
 /// Generates a table given a list of tuples containing strings
 pub fn generate_table<T: AsRef<str>>(input: &[(T, T)]) -> String {
     let longest: &str = input.iter().fold(input[0].0.as_ref(), |previous, (current, _)| {
-        get_longer_str(previous.as_ref(), current.as_ref())
+        get_longer_str(previous, current.as_ref())
     });
 
     input

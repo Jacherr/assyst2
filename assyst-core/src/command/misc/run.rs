@@ -113,19 +113,17 @@ pub async fn charge(ctxt: CommandCtxt<'_>, script: Codeblock, flags: ChargeFlags
         if result.exit_code.code() != Some(0) {
             ctxt.reply(format!("Compilation failed: {}", stderr.codeblock("")))
                 .await?;
+        } else if stdout.split("\n").count() < 100 {
+            ctxt.reply(stdout.codeblock("llvm").to_string()).await?;
         } else {
-            if stdout.split("\n").count() < 100 {
-                ctxt.reply(format!("{}", stdout.codeblock("llvm"))).await?;
-            } else {
-                ctxt.reply(MessageBuilder {
-                    content: None,
-                    attachment: Some(Attachment {
-                        name: "out.txt".into(),
-                        data: stdout.as_bytes().to_vec(),
-                    }),
-                })
-                .await?;
-            }
+            ctxt.reply(MessageBuilder {
+                content: None,
+                attachment: Some(Attachment {
+                    name: "out.txt".into(),
+                    data: stdout.as_bytes().to_vec(),
+                }),
+            })
+            .await?;
         }
     }
 
