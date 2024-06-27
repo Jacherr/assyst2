@@ -8,8 +8,7 @@ use quote::{quote, ToTokens};
 use syn::punctuated::Punctuated;
 use syn::token::Bracket;
 use syn::{
-    parse_macro_input, Expr, ExprArray, ExprLit, FnArg, Ident, Item, Lit, LitBool, LitStr, Meta, Pat,
-    PatType, Token, Type,
+    parse_macro_input, parse_quote, Expr, ExprArray, ExprLit, FnArg, Ident, Item, Lit, LitBool, LitStr, Meta, Pat, PatType, Token, Type
 };
 
 struct CommandAttributes(syn::punctuated::Punctuated<syn::Meta, Token![,]>);
@@ -71,6 +70,7 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
 
     let mut parse_idents = Vec::new();
     let mut parse_exprs = Vec::new();
+    let mut parse_usage = Vec::new();
     let mut interaction_parse_exprs = Vec::new();
     let mut command_option_exprs = Vec::new();
 
@@ -94,6 +94,7 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
 
                 parse_idents.push(Ident::new(&format!("p{index}"), Span::call_site()));
                 parse_exprs.push(quote!(<#ty>::parse_raw_message(&mut ctxt, Some((stringify!(#pat).to_string(), stringify!(#ty).to_string()))).await));
+                parse_usage.push(quote!(<#ty as crate::command::arguments::ParseArgument>::usage(stringify!(#pat))));
                 interaction_parse_exprs.push(quote!(<#ty>::parse_command_option(&mut ctxt).await));
             },
         }
@@ -106,7 +107,11 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
     let access = fields.remove("access").expect("missing access");
     let category = fields.remove("category").expect("missing category");
     let examples = fields.remove("examples").unwrap_or_else(empty_array_expr);
-    let usage = fields.remove("usage").expect("missing usage");
+    let usage: Expr = fields.remove("usage").map(|v| parse_quote!(String::from(#v))).unwrap_or_else(|| {
+        parse_quote! {
+            vec![#(#parse_usage),*].join(" ")
+        }
+    });
     let send_processing = fields.remove("send_processing").unwrap_or_else(false_expr);
     let age_restricted = fields.remove("age_restricted").unwrap_or_else(false_expr);
     let flag_descriptions = fields.remove("flag_descriptions").unwrap_or_else(empty_array_expr);
@@ -133,7 +138,7 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
                     aliases: &#aliases,
                     category: #category,
                     examples: &#examples,
-                    usage: #usage,
+                    usage: format!("{}", #usage),
                     send_processing: #send_processing,
                     age_restricted: #age_restricted,
                     flag_descriptions: descriptions

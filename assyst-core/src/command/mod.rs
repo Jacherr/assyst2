@@ -97,7 +97,7 @@ pub struct CommandMetadata {
     pub access: Availability,
     pub category: Category,
     pub examples: &'static [&'static str],
-    pub usage: &'static str,
+    pub usage: String, // not &str because usage generation reasons
     /// Whether to send a "Processing..." reply when the command starts executing
     /// or to send a prelim response to an interaction (a.k.a., Assyst is thinking...)
     pub send_processing: bool,

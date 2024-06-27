@@ -27,7 +27,7 @@ pub mod tag;
     cooldown = Duration::from_secs(2),
     access = Availability::Public,
     category = Category::Misc,
-    usage = "<url>",
+    // usage = "<url>",
     examples = ["https://link.to.my/image.png"]
 )]
 pub async fn enlarge(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {

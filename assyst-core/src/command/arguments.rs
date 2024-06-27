@@ -27,6 +27,9 @@ pub trait ParseArgument: Sized {
     /// Parses `Self`, given a command, where the source is an interaction command.
     async fn parse_command_option(ctxt: &mut InteractionCommandParseCtxt<'_>) -> Result<Self, TagParseError>;
     fn as_command_option(name: &str) -> CommandOption;
+    fn usage(name: &str) -> String {
+        format!("<{name}>")
+    }
 }
 
 impl ParseArgument for u64 {
@@ -123,6 +126,12 @@ impl<T: ParseArgument> ParseArgument for Option<T> {
         option.required = Some(false);
         option
     }
+
+    fn usage(name: &str) -> String {
+        let as_required = T::usage(name);
+        // this is hacky maybe
+        return format!("[{}]", &as_required[1..as_required.len() - 1]);
+    }
 }
 
 impl ParseArgument for Vec<Word> {
@@ -151,6 +160,10 @@ impl ParseArgument for Vec<Word> {
 
     fn as_command_option(name: &str) -> CommandOption {
         StringBuilder::new(name, "text input").required(true).build()
+    }
+
+    fn usage(name: &str) -> String {
+        format!("<{name}[]>")
     }
 }
 
@@ -274,6 +287,10 @@ impl ParseArgument for Rest {
 
     fn as_command_option(name: &str) -> CommandOption {
         StringBuilder::new(name, "text input").required(true).build()
+    }
+
+    fn usage(name: &str) -> String {
+        format!("<...{name}>")
     }
 }
 

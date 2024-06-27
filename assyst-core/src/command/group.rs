@@ -72,7 +72,7 @@ macro_rules! define_commandgroup {
                         examples: $crate::defaults!(examples $(&$examples)?),
                         name: stringify!($groupname),
                         age_restricted: $crate::defaults!(age_restricted $($age_restricted)?),
-                        usage: $crate::defaults!(usage $($usage)?),
+                        usage: $crate::defaults!(usage $($usage)?).to_string(),
                         send_processing: $crate::defaults!(send_processing $($send_processing)?),
                         flag_descriptions: std::collections::HashMap::new()
                     })
