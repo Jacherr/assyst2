@@ -1,5 +1,8 @@
+use std::str::FromStr;
 use std::time::Duration;
 
+use anyhow::bail;
+use assyst_common::markdown::{self, Markdown};
 use assyst_common::util::format_duration;
 use assyst_proc_macro::command;
 
@@ -8,7 +11,7 @@ use super::flags::DownloadFlags;
 use super::CommandCtxt;
 
 use crate::command::{Availability, Category};
-use crate::rest::cooltext::burn_text;
+use crate::rest::cooltext::{burn_text, Style};
 use crate::rest::r34::get_random_r34;
 use crate::rest::web_media_download::{download_web_media, WebDownloadOpts};
 
@@ -26,6 +29,35 @@ pub async fn burntext(ctxt: CommandCtxt<'_>, text: Rest) -> anyhow::Result<()> {
     let result = burn_text(&text.0).await?;
 
     ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "make some cool text",
+    access = Availability::Public,
+    cooldown = Duration::from_secs(2),
+    category = Category::Services,
+    usage = "[style] [text]",
+    examples = ["burning hello", "saint fancy"],
+    send_processing = true
+)]
+pub async fn cooltext(ctxt: CommandCtxt<'_>, style: Word, text: Rest) -> anyhow::Result<()> {
+    let s = Style::from_str(style.0.as_str());
+    if let Ok(v) = s {
+        let result = crate::rest::cooltext::cooltext(v, text.0.as_str()).await?;
+        ctxt.reply(result).await?;
+    } else {
+        bail!(
+            "unknown style {}, available styles are: {}",
+            style.0,
+            Style::list()
+                .iter()
+                .map(|x| x.to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
+        )
+    }
 
     Ok(())
 }
