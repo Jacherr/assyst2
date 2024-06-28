@@ -2,7 +2,6 @@ use std::str::FromStr;
 use std::time::Duration;
 
 use anyhow::bail;
-use assyst_common::markdown::{self, Markdown};
 use assyst_common::util::format_duration;
 use assyst_proc_macro::command;
 

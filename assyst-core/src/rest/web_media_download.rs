@@ -1,4 +1,3 @@
-use std::cell::LazyCell;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
@@ -20,8 +19,9 @@ use crate::downloader::{download_content, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES};
 pub const INSTANCES_ROUTE: &str = "https://instances.hyper.lol/instances.json";
 
 pub const TEST_URL: &str = "https://www.youtube.com/watch?v=sbvp3kuU2ak";
-pub const TEST_URL_TIMEOUT: LazyCell<Duration> = LazyCell::new(|| Duration::from_secs(5));
 pub const TEST_SCORE_THRESHOLD: f32 = 90.0;
+
+pub static TEST_URL_TIMEOUT: Duration = Duration::from_secs(10);
 
 #[derive(Default)]
 pub struct WebDownloadOpts {
@@ -77,12 +77,12 @@ async fn test_route(assyst: ThreadSafeAssyst, url: &str) -> bool {
 
     let elapsed = start.elapsed();
 
-    if success && elapsed < *TEST_URL_TIMEOUT {
+    if success && elapsed < TEST_URL_TIMEOUT {
         debug!(
             "Web download URL {url} took {} to download test media",
             format_duration(&elapsed)
         );
-    } else if elapsed < *TEST_URL_TIMEOUT {
+    } else if elapsed < TEST_URL_TIMEOUT {
         let err = res.unwrap_err();
         debug!(
             "Web download URL {url} failed to download test media ({})",
@@ -90,7 +90,7 @@ async fn test_route(assyst: ThreadSafeAssyst, url: &str) -> bool {
         );
     }
 
-    success && (elapsed < *TEST_URL_TIMEOUT)
+    success && (elapsed < TEST_URL_TIMEOUT)
 }
 
 /// Always returns the main API instance (api.cobalt.tools) at the minimum. \
@@ -109,20 +109,19 @@ pub async fn get_web_download_api_urls(assyst: ThreadSafeAssyst) -> anyhow::Resu
 
     let test_urls = json
         .iter()
-        .map(|entry: &InstancesQueryResult| {
+        .filter_map(|entry: &InstancesQueryResult| {
             if (entry.protocol == "https" && entry.score >= TEST_SCORE_THRESHOLD) || (entry.api == "api.cobalt.tools") {
-                format!("https://{}/api/json", entry.api)
+                Some(format!("https://{}/api/json", entry.api))
             } else {
-                String::new()
+                None
             }
         })
-        .filter(|x| !x.is_empty())
         .map(|url| {
             debug!("Testing web download API URL {}", url);
 
             let a = assyst.clone();
             timeout(
-                *TEST_URL_TIMEOUT,
+                TEST_URL_TIMEOUT,
                 tokio::spawn(async move {
                     if url != "https://api.cobalt.tools/api/json" {
                         let res = test_route(a, &url).await;
@@ -147,7 +146,7 @@ pub async fn get_web_download_api_urls(assyst: ThreadSafeAssyst) -> anyhow::Resu
     Ok(valid_urls)
 }
 
-/// Attempts to download web media. Will try all APIs in the event of valiure, unless
+/// Attempts to download web media. Will try all APIs in the event of faliure, unless
 /// `opts.api_url_override` is set.
 pub async fn download_web_media(assyst: ThreadSafeAssyst, url: &str, opts: WebDownloadOpts) -> anyhow::Result<Vec<u8>> {
     let encoded_url = urlencoding::encode(url).to_string();
@@ -200,10 +199,6 @@ pub async fn download_web_media(assyst: ThreadSafeAssyst, url: &str, opts: WebDo
                             let try_json = from_str::<WebDownloadError>(&e);
                             match try_json {
                                 Ok(j) => {
-                                    // some errors we can break on because they probably affect all instances (i.e.,
-                                    // could not find info about link)
-                                    let mut breakable = false;
-
                                     let mut e = j.text;
                                     if e.contains("i couldn't process your request :(") {
                                         e = "The web downloader could not process your request. Please try again later."
@@ -213,14 +208,9 @@ pub async fn download_web_media(assyst: ThreadSafeAssyst, url: &str, opts: WebDo
                                     } else if e.contains("couldn't get this youtube video because it requires sign in")
                                     {
                                         e = "YouTube has blocked video downloading. Please try again later.".to_owned()
-                                    } else if e.contains("i couldn't find anything about this link") {
-                                        breakable = true;
                                     }
 
                                     err = format!("Download request failed: {}", e);
-                                    if breakable {
-                                        break;
-                                    }
                                 },
                                 Err(d_e) => err = format!("Download request failed: {} (raw error: {})", d_e, e),
                             }

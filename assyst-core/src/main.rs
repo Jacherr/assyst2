@@ -23,6 +23,7 @@ use command::registry::register_interaction_commands;
 use gateway_handler::handle_raw_event;
 use gateway_handler::incoming_event::IncomingEvent;
 use rest::web_media_download::get_web_download_api_urls;
+use task::tasks::refresh_web_download_urls::refresh_web_download_urls;
 use task::tasks::reminders::handle_reminders;
 use tokio::spawn;
 use tracing::{debug, info, trace};
@@ -123,6 +124,13 @@ async fn main() {
     } else {
         info!("Reminder processing disabled in config.dev.disable_reminder_check: not registering task");
     }
+
+    assyst.register_task(Task::new_delayed(
+        assyst.clone(),
+        Duration::from_secs(60 * 10),
+        Duration::from_secs(60 * 10),
+        function_task_callback!(refresh_web_download_urls),
+    ));
 
     info!("Starting assyst-webserver");
     assyst_webserver::run(

@@ -122,6 +122,8 @@ pub async fn get_languages(client: &Client) -> Result<Vec<(Box<str>, Box<str>)>,
         .map_err(TranslateError::Reqwest)
 }
 
+// used in btchannel later
+#[allow(unused)]
 pub async fn validate_language(client: &Client, provided_language: &str) -> Result<bool, TranslateError> {
     let languages = get_languages(client).await?;
     Ok(languages.iter().any(|(language, _)| &**language == provided_language))
