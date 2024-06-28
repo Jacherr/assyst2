@@ -60,7 +60,7 @@ pub async fn cooltext(style: &str, text: &str) -> anyhow::Result<Vec<u8>> {
     let client = ClientBuilder::new().danger_accept_invalid_certs(true).build().unwrap();
     let styled = STYLES
         .iter()
-        .find_map(|(x, y)| if *x == style.to_lowercase() { Some(y) } else { None })
+        .find_map(|(x, y)| if x.eq_ignore_ascii_case(style) { Some(y) } else { None })
         .ok_or(anyhow::anyhow!("unknown style {style}"))?;
 
     let cool_text_response = client
@@ -72,6 +72,7 @@ pub async fn cooltext(style: &str, text: &str) -> anyhow::Result<Vec<u8>> {
             ("FileFormat", "6"),
             ("Integer13", "on"),
             ("Integer12", "on"),
+            ("Boolean1", "on"),
             ("BackgroundColor_color", "#FFFFFF"),
         ])
         .header("content-length", "0")
