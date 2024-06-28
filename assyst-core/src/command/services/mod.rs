@@ -1,4 +1,3 @@
-use std::str::FromStr;
 use std::time::Duration;
 
 use anyhow::bail;
@@ -10,7 +9,7 @@ use super::flags::DownloadFlags;
 use super::CommandCtxt;
 
 use crate::command::{Availability, Category};
-use crate::rest::cooltext::{burn_text, Style};
+use crate::rest::cooltext::{burn_text, STYLES};
 use crate::rest::r34::get_random_r34;
 use crate::rest::web_media_download::{download_web_media, WebDownloadOpts};
 
@@ -37,24 +36,19 @@ pub async fn burntext(ctxt: CommandCtxt<'_>, text: Rest) -> anyhow::Result<()> {
     access = Availability::Public,
     cooldown = Duration::from_secs(2),
     category = Category::Services,
-    usage = "[style] [text]",
+    // usage = "[style] [text]",
     examples = ["burning hello", "saint fancy"],
     send_processing = true
 )]
 pub async fn cooltext(ctxt: CommandCtxt<'_>, style: Word, text: Rest) -> anyhow::Result<()> {
-    let s = Style::from_str(style.0.as_str());
-    if let Ok(v) = s {
-        let result = crate::rest::cooltext::cooltext(v, text.0.as_str()).await?;
-        ctxt.reply(result).await?;
+    let result = crate::rest::cooltext::cooltext(&style.0, text.0.as_str()).await;
+    if let Ok(r) = result {
+        ctxt.reply(r).await?;
     } else {
         bail!(
             "unknown style {}, available styles are: {}",
             style.0,
-            Style::list()
-                .iter()
-                .map(|x| x.to_string())
-                .collect::<Vec<_>>()
-                .join(", ")
+            STYLES.iter().map(|(v, _)| *v).collect::<Vec<_>>().join(", ")
         )
     }
 
