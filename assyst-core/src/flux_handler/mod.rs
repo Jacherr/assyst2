@@ -104,7 +104,7 @@ impl FluxHandler {
         defers.push(FileDeletionDefer(output_file_path.clone()));
 
         let flux_workspace_root = if CONFIG.dev.flux_workspace_root_path_override.is_empty() {
-            FLUX_PATH.to_owned()
+            FLUX_DIR.to_owned()
         } else {
             CONFIG.dev.flux_workspace_root_path_override.clone()
         };
