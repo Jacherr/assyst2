@@ -7,7 +7,7 @@ use twilight_model::application::command::Command as InteractionCommand;
 use crate::assyst::ThreadSafeAssyst;
 use crate::command::CommandMetadata;
 
-use super::{fun, misc, services, wsi, TCommand};
+use super::{fun, image, misc, services, TCommand};
 
 macro_rules! declare_commands {
     ($($name:path),*) => {
@@ -36,12 +36,12 @@ declare_commands!(
     services::cooltext_command,
     services::download_command,
     services::r34_command,
-    wsi::ahshit_command,
-    wsi::aprilfools_command,
-    wsi::bloom_command,
-    wsi::blur_command,
-    wsi::caption_command,
-    wsi::resize_command
+    image::ahshit_command,
+    image::aprilfools_command,
+    image::bloom_command,
+    image::blur_command,
+    image::caption_command,
+    image::resize_command
 );
 
 static COMMANDS: OnceLock<HashMap<&'static str, TCommand>> = OnceLock::new();

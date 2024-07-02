@@ -5,5 +5,9 @@
     "[toml]": {
         "editor.defaultFormatter": "tamasfe.even-better-toml"
     },
-    "rust-analyzer.check.command": "clippy"
+    "rust-analyzer.check.command": "clippy",
+    "terminal.integrated.env.linux": {
+        "GTK_PATH": null,
+        "GIO_MODULE_DIR": null,
+    },
 }

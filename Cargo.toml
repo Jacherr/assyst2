@@ -12,4 +12,5 @@ members = [
     "assyst-database",
     "assyst-proc-macro",
 ]
+exclude = ["flux"]
 resolver = "2"

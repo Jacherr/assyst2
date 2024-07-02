@@ -21,7 +21,7 @@ pub const INSTANCES_ROUTE: &str = "https://instances.hyper.lol/instances.json";
 pub const TEST_URL: &str = "https://www.youtube.com/watch?v=sbvp3kuU2ak";
 pub const TEST_SCORE_THRESHOLD: f32 = 90.0;
 
-pub static TEST_URL_TIMEOUT: Duration = Duration::from_secs(10);
+pub static TEST_URL_TIMEOUT: Duration = Duration::from_secs(15);
 
 #[derive(Default)]
 pub struct WebDownloadOpts {

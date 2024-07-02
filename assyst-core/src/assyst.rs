@@ -1,10 +1,10 @@
 use crate::command_ratelimits::CommandRatelimits;
+use crate::flux_handler::FluxHandler;
 use crate::persistent_cache_handler::PersistentCacheHandler;
 use crate::replies::Replies;
 use crate::rest::patreon::Patron;
 use crate::rest::rest_cache_handler::RestCacheHandler;
 use crate::task::Task;
-use crate::wsi_handler::WsiHandler;
 use assyst_common::config::CONFIG;
 use assyst_common::metrics_handler::MetricsHandler;
 use assyst_common::pipe::CACHE_PIPE_PATH;
@@ -26,7 +26,7 @@ pub struct Assyst {
     /// Handler for the Assyst database. RwLocked to allow concurrent reads.
     pub database_handler: Arc<DatabaseHandler>,
     /// Handler for WSI.
-    pub wsi_handler: WsiHandler,
+    pub wsi_handler: FluxHandler,
     /// Handler for the REST cache.
     pub rest_cache_handler: RestCacheHandler,
     /// HTTP client for Discord. Handles all HTTP requests to Discord, storing stateful information
@@ -70,7 +70,7 @@ impl Assyst {
             tasks: Mutex::new(vec![]),
             shard_count,
             replies: Replies::new(),
-            wsi_handler: WsiHandler::new(database_handler.clone(), premium_users.clone()),
+            wsi_handler: FluxHandler::new(database_handler.clone(), premium_users.clone()),
             rest_cache_handler: RestCacheHandler::new(http_client.clone()),
             command_ratelimits: CommandRatelimits::new(),
         })

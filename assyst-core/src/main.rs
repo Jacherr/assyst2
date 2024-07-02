@@ -20,6 +20,7 @@ use assyst_common::pipe::{Pipe, GATEWAY_PIPE_PATH};
 use assyst_common::util::tracing_init;
 use assyst_common::{err, ok_or_break};
 use command::registry::register_interaction_commands;
+use flux_handler::FluxHandler;
 use gateway_handler::handle_raw_event;
 use gateway_handler::incoming_event::IncomingEvent;
 use rest::web_media_download::get_web_download_api_urls;
@@ -35,12 +36,12 @@ mod assyst;
 mod command;
 mod command_ratelimits;
 mod downloader;
+mod flux_handler;
 mod gateway_handler;
 mod persistent_cache_handler;
 mod replies;
 mod rest;
 mod task;
-mod wsi_handler;
 
 // Jemallocator is probably unnecessary for the average instance,
 // but when handling hundreds of events per second the performance improvement
@@ -128,9 +129,10 @@ async fn main() {
     assyst.register_task(Task::new_delayed(
         assyst.clone(),
         Duration::from_secs(60 * 10),
-        Duration::from_secs(60 * 10),
+        Duration::from_secs(30),
         function_task_callback!(refresh_web_download_urls),
     ));
+    info!("Registered web download url refreshing task");
 
     info!("Starting assyst-webserver");
     assyst_webserver::run(
@@ -142,6 +144,10 @@ async fn main() {
 
     info!("Registering interaction commands");
     register_interaction_commands(assyst.clone()).await.unwrap();
+
+    info!("Compiling Flux...");
+    FluxHandler::compile_flux().await.unwrap();
+    info!("Flux is compiled");
 
     let a = assyst.clone();
 
@@ -192,8 +198,9 @@ async fn main() {
     debug!(?web_download_urls);
     a.rest_cache_handler.set_web_download_urls(web_download_urls);
 
-    // todo: connect to slash client
-    loop {}
+    loop {
+        std::thread::sleep(Duration::from_secs(1));
+    }
 }
 
 #[cfg(test)]

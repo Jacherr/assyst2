@@ -4,13 +4,14 @@ use anyhow::Context;
 use assyst_proc_macro::command;
 
 use super::arguments::{Image, Rest, Word};
+use super::flags::BloomFlags;
 use crate::command::{Availability, Category, CommandCtxt};
 
 #[command(
     description = "ah shit here we go again",
     cooldown = Duration::from_secs(2),
     access = Availability::Public,
-    category = Category::Wsi,
+    category = Category::Image,
     usage = "[image]",
     examples = ["https://link.to.my/image.png"],
     send_processing = true
@@ -27,16 +28,13 @@ pub async fn ahshit(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> 
     description = "april fools!!!!",
     cooldown = Duration::from_secs(2),
     access = Availability::Public,
-    category = Category::Wsi,
+    category = Category::Image,
     usage = "[image]",
     examples = ["https://link.to.my/image.png"],
     send_processing = true
 )]
 pub async fn aprilfools(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt
-        .wsi_handler()
-        .aprilfools(source.0, ctxt.data.author.id.get())
-        .await?;
+    let result = ctxt.wsi_handler().aprilfools(source.0).await?;
 
     ctxt.reply(result).await?;
 
@@ -47,15 +45,26 @@ pub async fn aprilfools(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<
     description = "bloom an image",
     cooldown = Duration::from_secs(2),
     access = Availability::Public,
-    category = Category::Wsi,
-    usage = "[image] <radius>",
-    examples = ["https://link.to.my/image.png"],
-    send_processing = true
+    category = Category::Image,
+    usage = "[image] <flags>",
+    examples = ["https://link.to.my/image.png", "https://link.to.my/image.png --brightness 100 --sharpness 25 --radius 10"],
+    send_processing = true,
+    flag_descriptions = [
+        ("radius", "Bloom radius as a number"),
+        ("brightness", "Bloom brightness as a number"),
+        ("sharpness", "Bloom sharpness as a number"),
+    ]
 )]
-pub async fn bloom(ctxt: CommandCtxt<'_>, source: Image, radius: Option<u64>) -> anyhow::Result<()> {
+pub async fn bloom(ctxt: CommandCtxt<'_>, source: Image, flags: BloomFlags) -> anyhow::Result<()> {
     let result = ctxt
         .wsi_handler()
-        .bloom(source.0, radius.unwrap_or(5) as usize, ctxt.data.author.id.get())
+        .bloom(
+            source.0,
+            flags.radius,
+            flags.sharpness,
+            flags.brightness,
+            ctxt.data.author.id.get(),
+        )
         .await?;
 
     ctxt.reply(result).await?;
@@ -67,7 +76,7 @@ pub async fn bloom(ctxt: CommandCtxt<'_>, source: Image, radius: Option<u64>) ->
     description = "blur an image",
     cooldown = Duration::from_secs(2),
     access = Availability::Public,
-    category = Category::Wsi,
+    category = Category::Image,
     usage = "[image] <radius>",
     examples = ["https://link.to.my/image.png"],
     send_processing = true
@@ -75,7 +84,7 @@ pub async fn bloom(ctxt: CommandCtxt<'_>, source: Image, radius: Option<u64>) ->
 pub async fn blur(ctxt: CommandCtxt<'_>, source: Image, strength: Option<f32>) -> anyhow::Result<()> {
     let result = ctxt
         .wsi_handler()
-        .blur(source.0, strength.unwrap_or(1.0), ctxt.data.author.id.get())
+        .blur(source.0, strength, ctxt.data.author.id.get())
         .await?;
 
     ctxt.reply(result).await?;
@@ -87,7 +96,7 @@ pub async fn blur(ctxt: CommandCtxt<'_>, source: Image, strength: Option<f32>) -
     description = "add a caption to an image",
     cooldown = Duration::from_secs(2),
     access = Availability::Public,
-    category = Category::Wsi,
+    category = Category::Image,
     usage = "[image] [caption]",
     examples = ["https://link.to.my/image.png hello there"],
     send_processing = true
@@ -107,7 +116,7 @@ pub async fn caption(ctxt: CommandCtxt<'_>, source: Image, text: Rest) -> anyhow
     description = "resize an image based on scale or WxH (default 2x)",
     cooldown = Duration::from_secs(2),
     access = Availability::Public,
-    category = Category::Wsi,
+    category = Category::Image,
     usage = "[image] <scale>",
     examples = ["https://link.to.my/image.png", "https://link.to.my/image.png 128x128", "https://link.to.my/image.png 2"],
     send_processing = true

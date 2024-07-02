@@ -34,7 +34,7 @@ use std::time::{Duration, Instant};
 
 use super::gateway_handler::reply as gateway_reply;
 use crate::assyst::ThreadSafeAssyst;
-use crate::wsi_handler::WsiHandler;
+use crate::flux_handler::FluxHandler;
 use assyst_common::config::CONFIG;
 use async_trait::async_trait;
 use errors::TagParseError;
@@ -56,12 +56,12 @@ pub mod errors;
 pub mod flags;
 pub mod fun;
 pub mod group;
+pub mod image;
 pub mod messagebuilder;
 pub mod misc;
 pub mod registry;
 pub mod services;
 pub mod source;
-pub mod wsi;
 
 /// Defines who can use a command in a server.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -142,7 +142,7 @@ pub struct CommandInteractionInfo {
 pub enum Category {
     Fun,
     Makesweet,
-    Wsi,
+    Image,
     Misc,
     Services,
     None(String),
@@ -156,7 +156,7 @@ impl Display for Category {
             match self {
                 Self::Fun => "fun",
                 Self::Makesweet => "makesweet",
-                Self::Wsi => "wsi",
+                Self::Image => "image",
                 Self::Misc => "misc",
                 Self::Services => "services",
                 Self::None(t) => &**t,
@@ -170,7 +170,7 @@ impl From<String> for Category {
         match &*v {
             "fun" => Category::Fun,
             "misc" => Category::Misc,
-            "wsi" => Category::Wsi,
+            "image" => Category::Image,
             "makesweet" => Category::Makesweet,
             t => Category::None(t.to_string()),
         }
@@ -382,7 +382,7 @@ impl<'a> CommandCtxt<'a> {
         self.data.assyst
     }
 
-    pub fn wsi_handler(&self) -> &'a WsiHandler {
+    pub fn wsi_handler(&self) -> &'a FluxHandler {
         &self.data.assyst.wsi_handler
     }
 }

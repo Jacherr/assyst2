@@ -9,8 +9,6 @@
 proxy = []
 # URL for Filer, the Assyst CDN.
 filer = ""
-# URL for the WSI TCP server.
-wsi = ""
 # Bad translation URL.
 bad_translation = ""
 
@@ -89,5 +87,5 @@ dev_guild = 0
 # The channel to send the dev message in.
 dev_channel = 0
 
-# The amount of times we try connecting to WSI before giving up after failure.
-wsi_retry_limit = 50
+# Override the path to the Flux executable. Useful when doing dev work on Flux. Leave blank for default.
+flux_executable_path_override = ""

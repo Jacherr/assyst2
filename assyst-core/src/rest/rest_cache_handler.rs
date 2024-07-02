@@ -42,7 +42,7 @@ impl RestCacheHandler {
             guild_upload_limits: default_cache(),
             channel_nsfw_status: default_cache(),
             guild_owners: default_cache(),
-            web_download_urls: default_cache(),
+            web_download_urls: Cache::builder().build(),
         }
     }
 

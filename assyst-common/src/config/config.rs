@@ -17,7 +17,6 @@ pub struct Urls {
     pub proxy: Vec<String>,
     pub filer: String,
     pub eval: String,
-    pub wsi: String,
     pub bad_translation: String,
 }
 
@@ -100,5 +99,5 @@ pub struct DevAttributes {
     pub dev_guild: u64,
     pub dev_channel: u64,
     pub dev_message: bool,
-    pub wsi_retry_limit: u64,
+    pub flux_workspace_root_path_override: String,
 }

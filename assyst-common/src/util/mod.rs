@@ -1,6 +1,8 @@
 use std::borrow::Cow;
+use std::hash::{DefaultHasher, Hash, Hasher};
 use std::time::Duration;
 
+use rand::Rng;
 use time::format_description;
 use tracing::info;
 use tracing_subscriber::fmt::time::UtcTime;
@@ -53,9 +55,7 @@ pub fn parse_to_millis(input: &str) -> Result<u64, ParseToMillisError> {
             .parse::<u64>()
             .map_err(|_| ParseToMillisError::ParseIntError)?;
 
-        let unit: u64 = unit_to_ms(&current[2])
-            .try_into()
-            .map_err(|_| ParseToMillisError::Overflow)?;
+        let unit: u64 = unit_to_ms(&current[2]);
 
         let ms = amount.checked_mul(unit).ok_or(ParseToMillisError::Overflow)?;
 
@@ -138,4 +138,12 @@ pub fn string_from_likely_utf8(bytes: Vec<u8>) -> String {
         // Unlucky, data was invalid UTF-8, so try again but use lossy decoding this time.
         String::from_utf8_lossy(err.as_bytes()).into_owned()
     })
+}
+
+/// Hashes a buffer. Appends a random string.
+pub fn hash_buffer(buf: &[u8]) -> String {
+    let mut body_hasher = DefaultHasher::new();
+    buf.hash(&mut body_hasher);
+    let rand = rand::thread_rng().gen::<usize>();
+    format!("{:x}{:x}", body_hasher.finish(), rand)
 }
