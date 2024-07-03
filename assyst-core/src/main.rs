@@ -129,7 +129,7 @@ async fn main() {
     assyst.register_task(Task::new_delayed(
         assyst.clone(),
         Duration::from_secs(60 * 10),
-        Duration::from_secs(30),
+        Duration::from_secs(60 * 10),
         function_task_callback!(refresh_web_download_urls),
     ));
     info!("Registered web download url refreshing task");

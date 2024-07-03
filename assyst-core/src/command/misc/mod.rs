@@ -3,7 +3,7 @@ use std::time::{Duration, Instant};
 use crate::command::Availability;
 use crate::rest::eval::fake_eval;
 
-use super::arguments::{Image, ImageUrl, Rest, Word};
+use super::arguments::{Image, ImageUrl, Rest, RestNoFlags, Word};
 use super::{Category, CommandCtxt};
 
 use anyhow::Context;
@@ -89,7 +89,7 @@ pub async fn ping(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
     usage = "[script]",
     examples = ["rm -rf /*"]
 )]
-pub async fn exec(ctxt: CommandCtxt<'_>, script: Rest) -> anyhow::Result<()> {
+pub async fn exec(ctxt: CommandCtxt<'_>, script: RestNoFlags) -> anyhow::Result<()> {
     let result = exec_sync(&script.0)?;
 
     let mut output = "".to_owned();
@@ -113,7 +113,7 @@ pub async fn exec(ctxt: CommandCtxt<'_>, script: Rest) -> anyhow::Result<()> {
     usage = "[script]",
     examples = ["1"]
 )]
-pub async fn eval(ctxt: CommandCtxt<'_>, script: Rest) -> anyhow::Result<()> {
+pub async fn eval(ctxt: CommandCtxt<'_>, script: RestNoFlags) -> anyhow::Result<()> {
     let result = fake_eval(ctxt.assyst(), script.0, true, ctxt.data.message, Vec::new())
         .await
         .context("Evaluation failed")?;

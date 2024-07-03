@@ -294,6 +294,48 @@ impl ParseArgument for Rest {
     }
 }
 
+/// The rest of a message as an argument, and asserts that there is no following flag argument. This
+/// should be the last argument if used.
+#[derive(Debug)]
+pub struct RestNoFlags(pub String);
+
+impl ParseArgument for RestNoFlags {
+    async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>, label: Label) -> Result<Self, TagParseError> {
+        if let Some(m) = ctxt.cx.data.message {
+            if let Some(ref r) = m.referenced_message {
+                Ok(Self(r.content.clone()))
+            } else {
+                Ok(Self(ctxt.rest_all(label)))
+            }
+        } else {
+            Ok(Self(ctxt.rest_all(label)))
+        }
+    }
+
+    async fn parse_command_option(ctxt: &mut InteractionCommandParseCtxt<'_>) -> Result<Self, TagParseError> {
+        // treat Rest as same as Word because there is no option type which is just one whitespace-delimited
+        // word
+        let word = ctxt.next_option()?;
+
+        if let CommandOptionValue::String(ref option) = word.value {
+            Ok(RestNoFlags(option.clone()))
+        } else {
+            Err(TagParseError::MismatchedCommandOptionType((
+                "String (Rest)".to_owned(),
+                word.value.clone(),
+            )))
+        }
+    }
+
+    fn as_command_option(name: &str) -> CommandOption {
+        StringBuilder::new(name, "text input").required(true).build()
+    }
+
+    fn usage(name: &str) -> String {
+        format!("<...{name}>")
+    }
+}
+
 pub struct ImageUrl(pub String);
 
 impl ImageUrl {
