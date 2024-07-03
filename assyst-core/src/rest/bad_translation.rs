@@ -20,7 +20,11 @@ pub enum TranslateError {
 impl Display for TranslateError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TranslateError::Reqwest(_) => write!(f, "A network error occurred"),
+            TranslateError::Reqwest(e) => write!(
+                f,
+                "A network error occurred: {}",
+                e.to_string().replace(&CONFIG.urls.bad_translation, "[bt]")
+            ),
             TranslateError::Raw(s) => write!(f, "{}", s),
         }
     }

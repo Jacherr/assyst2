@@ -130,7 +130,7 @@ impl<T: ParseArgument> ParseArgument for Option<T> {
     fn usage(name: &str) -> String {
         let as_required = T::usage(name);
         // this is hacky maybe
-        return format!("[{}]", &as_required[1..as_required.len() - 1]);
+        format!("[{}]", &as_required[1..as_required.len() - 1])
     }
 }
 

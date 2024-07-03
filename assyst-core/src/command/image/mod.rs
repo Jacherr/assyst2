@@ -34,7 +34,10 @@ pub async fn ahshit(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> 
     send_processing = true
 )]
 pub async fn aprilfools(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt.wsi_handler().aprilfools(source.0).await?;
+    let result = ctxt
+        .wsi_handler()
+        .aprilfools(source.0, ctxt.data.author.id.get())
+        .await?;
 
     ctxt.reply(result).await?;
 

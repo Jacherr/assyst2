@@ -65,10 +65,6 @@ impl Replies {
         self.1.insert(id, ());
     }
 
-    pub fn remove_interaction_command(&self, id: u64) -> Option<()> {
-        self.1.remove(&id)
-    }
-
     pub fn get_interaction_command(&self, id: u64) -> Option<()> {
         self.1.get(&id)
     }

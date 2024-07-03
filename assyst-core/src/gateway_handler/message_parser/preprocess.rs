@@ -14,10 +14,6 @@ use crate::gateway_handler::message_parser::error::PreParseError;
 pub struct PreprocessResult {
     /// The command prefix used in this message.
     pub prefix: String,
-    /// The owner of the guild, if the command was ran in a guild.
-    pub guild_owner: Option<u64>,
-    /// If the command was ran in the bot's DMs.
-    pub is_in_dm: bool,
     /// Time taken to determine the prefix.
     pub prefixing_determinism_time: Duration,
 }
@@ -140,24 +136,8 @@ pub async fn preprocess(assyst: ThreadSafeAssyst, message: &Message) -> Result<P
         return Err(PreParseError::UserGloballyBlacklisted(message.author.id.get()));
     }
 
-    // fetch guild command restrictions and check the ones we can (any that have "all" feature
-    // restriction) - server owner bypasses all restrictions so we check if user owns the server here
-    let guild_owner = if !is_in_dm {
-        Some(
-            assyst
-                .rest_cache_handler
-                .get_guild_owner(message.guild_id.unwrap().get())
-                .await
-                .map_err(|x| PreParseError::Failure(format!("failed to get guild owner: {x}")))?,
-        )
-    } else {
-        None
-    };
-
     Ok(PreprocessResult {
         prefix: parsed_prefix,
-        guild_owner,
-        is_in_dm,
         prefixing_determinism_time: prefix_time,
     })
 }

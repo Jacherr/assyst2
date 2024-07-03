@@ -11,20 +11,23 @@ impl FluxHandler {
     pub async fn ahshit(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
         let tier = self.get_request_tier(user_id).await?;
 
-        let mut request = FluxRequest::new_with_input_and_limits(media, &LIMITS[tier]);
+        let limits = &LIMITS[tier];
+        let mut request = FluxRequest::new_with_input_and_limits(media, limits);
         request.operation("ah-shit".to_owned(), HashMap::new());
         request.output();
 
-        self.run_flux(request).await
+        self.run_flux(request, limits.time).await
     }
 
-    pub async fn aprilfools(&self, media: Vec<u8>) -> FluxResult {
+    pub async fn aprilfools(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+
         let mut request = FluxRequest::new();
         request.input(media);
         request.operation("april-fools".to_owned(), HashMap::new());
         request.output();
 
-        self.run_flux(request).await
+        self.run_flux(request, LIMITS[tier].time).await
     }
 
     pub async fn bloom(
@@ -37,7 +40,8 @@ impl FluxHandler {
     ) -> FluxResult {
         let tier = self.get_request_tier(user_id).await?;
 
-        let mut request = FluxRequest::new_with_input_and_limits(media, &LIMITS[tier]);
+        let limits = &LIMITS[tier];
+        let mut request = FluxRequest::new_with_input_and_limits(media, limits);
 
         let mut options = HashMap::new();
         if let Some(r) = radius {
@@ -53,13 +57,14 @@ impl FluxHandler {
         request.operation("bloom".to_owned(), options);
         request.output();
 
-        self.run_flux(request).await
+        self.run_flux(request, limits.time).await
     }
 
     pub async fn blur(&self, media: Vec<u8>, power: Option<f32>, user_id: u64) -> FluxResult {
         let tier = self.get_request_tier(user_id).await?;
 
-        let mut request = FluxRequest::new_with_input_and_limits(media, &LIMITS[tier]);
+        let limits = &LIMITS[tier];
+        let mut request = FluxRequest::new_with_input_and_limits(media, limits);
 
         let mut options = HashMap::new();
         if let Some(p) = power {
@@ -69,13 +74,14 @@ impl FluxHandler {
         request.operation("blur".to_owned(), options);
         request.output();
 
-        self.run_flux(request).await
+        self.run_flux(request, limits.time).await
     }
 
     pub async fn caption(&self, media: Vec<u8>, text: String, user_id: u64) -> FluxResult {
         let tier = self.get_request_tier(user_id).await?;
 
-        let mut request = FluxRequest::new_with_input_and_limits(media, &LIMITS[tier]);
+        let limits = &LIMITS[tier];
+        let mut request = FluxRequest::new_with_input_and_limits(media, limits);
 
         let mut options = HashMap::new();
         options.insert("text".to_owned(), text);
@@ -83,13 +89,14 @@ impl FluxHandler {
         request.operation("caption".to_owned(), options);
         request.output();
 
-        self.run_flux(request).await
+        self.run_flux(request, limits.time).await
     }
 
     pub async fn resize_absolute(&self, media: Vec<u8>, width: u32, height: u32, user_id: u64) -> FluxResult {
         let tier = self.get_request_tier(user_id).await?;
 
-        let mut request = FluxRequest::new_with_input_and_limits(media, &LIMITS[tier]);
+        let limits = &LIMITS[tier];
+        let mut request = FluxRequest::new_with_input_and_limits(media, limits);
 
         let mut options = HashMap::new();
         options.insert("width".to_owned(), width.to_string());
@@ -98,13 +105,14 @@ impl FluxHandler {
         request.operation("resize".to_owned(), options);
         request.output();
 
-        self.run_flux(request).await
+        self.run_flux(request, limits.time).await
     }
 
     pub async fn resize_scale(&self, media: Vec<u8>, scale: f32, user_id: u64) -> FluxResult {
         let tier = self.get_request_tier(user_id).await?;
 
-        let mut request = FluxRequest::new_with_input_and_limits(media, &LIMITS[tier]);
+        let limits = &LIMITS[tier];
+        let mut request = FluxRequest::new_with_input_and_limits(media, limits);
 
         let mut options = HashMap::new();
         options.insert("scale".to_owned(), scale.to_string());
@@ -112,6 +120,6 @@ impl FluxHandler {
         request.operation("resize".to_owned(), options);
         request.output();
 
-        self.run_flux(request).await
+        self.run_flux(request, limits.time).await
     }
 }

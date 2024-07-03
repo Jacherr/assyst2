@@ -7,10 +7,13 @@ use assyst_database::model::free_tier_2_requests::FreeTier2Requests;
 use assyst_database::DatabaseHandler;
 use flux_request::{FluxRequest, FluxStep};
 use jobs::FluxResult;
+use libc::pid_t;
 use std::sync::{Arc, Mutex};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::fs;
 use tokio::process::Command;
+use tokio::signal::unix::Signal;
+use tokio::time::timeout;
 
 pub mod flux_request;
 pub mod jobs;
@@ -39,7 +42,7 @@ impl FluxHandler {
         }
     }
 
-    pub async fn run_flux(&self, request: FluxRequest) -> FluxResult {
+    pub async fn run_flux(&self, request: FluxRequest, time_limit: Duration) -> FluxResult {
         let mut input_file_paths: Vec<String> = vec![];
         let mut output_file_path: String = String::new();
         let mut args: Vec<String> = vec![];
@@ -113,7 +116,21 @@ impl FluxHandler {
         command.args(args);
         command.current_dir(flux_workspace_root);
         command.env("LD_LIBRARY_PATH", LD_LIBRARY_PATH);
-        let output = command.output().await.context("Failed to execute flux")?;
+        let spawn = command.spawn().context("Failed to execute flux")?;
+        let id = spawn.id();
+        let output = timeout(time_limit, spawn.wait_with_output()).await;
+
+        let output = (match output {
+            Ok(o) => o,
+            Err(_) => {
+                // send SIGTERM to flux to clean up child processes
+                if let Some(id) = id {
+                    unsafe { libc::kill(id as pid_t, libc::SIGTERM) };
+                };
+                bail!("The operation timed out");
+            },
+        })
+        .context("Failed to execute flux")?;
 
         if !output.status.success() {
             bail!(
