@@ -146,7 +146,9 @@ async fn main() {
     register_interaction_commands(assyst.clone()).await.unwrap();
 
     info!("Compiling Flux...");
-    FluxHandler::compile_flux().await.unwrap();
+    if let Err(e) = FluxHandler::compile_flux().await {
+        err!("Failed to compile flux: {e}");
+    }
     info!("Flux is compiled");
 
     let a = assyst.clone();
