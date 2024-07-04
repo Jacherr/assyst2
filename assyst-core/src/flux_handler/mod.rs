@@ -12,7 +12,6 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::fs;
 use tokio::process::Command;
-use tokio::signal::unix::Signal;
 use tokio::time::timeout;
 
 pub mod flux_request;

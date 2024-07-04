@@ -7,9 +7,10 @@ pub struct ReplyInUse {
     /// The message ID of this reply
     pub message_id: u64,
     /// Whether the reply has any attachments.
-    pub has_attachments: bool,
+    pub _has_attachments: bool,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone)]
 pub enum ReplyState {
     Processing,
@@ -19,7 +20,7 @@ pub enum ReplyState {
 #[derive(Debug, Clone)]
 pub struct Reply {
     pub state: ReplyState,
-    pub created: Instant,
+    pub _created: Instant,
 }
 
 impl Reply {

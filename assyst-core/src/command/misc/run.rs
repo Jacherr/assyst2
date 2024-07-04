@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use anyhow::Context;
 use assyst_common::markdown::Markdown;
@@ -8,6 +8,7 @@ use dash_rt::format_value;
 use dash_vm::eval::EvalError;
 use dash_vm::value::Root;
 use dash_vm::Vm;
+use tokio::fs;
 
 use crate::command::arguments::Codeblock;
 use crate::command::flags::{ChargeFlags, RustFlags};
@@ -209,6 +210,119 @@ pub async fn dash(ctxt: CommandCtxt<'_>, script: Codeblock) -> anyhow::Result<()
     Ok(())
 }
 
+const RUSTC_BOILERPLATE: &str = r##"#![feature(rustc_private)]
+
+extern crate rustc_ast_pretty;
+extern crate rustc_driver;
+extern crate rustc_error_codes;
+extern crate rustc_errors;
+extern crate rustc_hash;
+extern crate rustc_hir;
+extern crate rustc_interface;
+extern crate rustc_session;
+extern crate rustc_span;
+extern crate rustc_middle;
+
+use std::{path, process, str, sync::Arc};
+
+use rustc_ast_pretty::pprust::item_to_string;
+use rustc_errors::registry;
+use rustc_session::config;
+
+fn run<F>(script: &'static str, f: F) where F: FnOnce(rustc_middle::ty::TyCtxt) + Send + Sync {
+let out = process::Command::new("rustc")
+        .arg("--print=sysroot")
+        .current_dir(".")
+        .output()
+        .unwrap();
+    let sysroot = str::from_utf8(&out.stdout).unwrap().trim();
+    let config = rustc_interface::Config {
+        opts: config::Options {
+            maybe_sysroot: Some(path::PathBuf::from(sysroot)),
+            ..config::Options::default()
+        },
+        input: config::Input::Str {
+            name: rustc_span::FileName::Custom("main.rs".to_string()),
+            input: script.to_string(),
+        },
+        crate_cfg: Vec::new(),
+        crate_check_cfg: Vec::new(),
+        output_dir: None,
+        output_file: None,
+        file_loader: None,
+        locale_resources: rustc_driver::DEFAULT_LOCALE_RESOURCES,
+        lint_caps: rustc_hash::FxHashMap::default(),
+        psess_created: None,
+        register_lints: None,
+        override_queries: None,
+        make_codegen_backend: None,
+        registry: registry::Registry::new(rustc_errors::codes::DIAGNOSTICS),
+        expanded_args: Vec::new(),
+        ice_file: None,
+        hash_untracked_state: None,
+        using_internal_features: Arc::default(),
+    };
+    rustc_interface::run_compiler(config, |compiler| {
+        compiler.enter(|queries| {
+            // Analyze the crate and inspect the types under the cursor.
+            queries.global_ctxt().unwrap().enter(f)
+        });
+    });
+}
+
+fn main() {
+    {{code}}
+}"##;
+
+#[command(
+    description = "execute some rustc",
+    cooldown = Duration::from_millis(100),
+    access = Availability::Dev,
+    category = Category::Misc,
+    usage = "[script]",
+    examples = ["run(\"fn main() {}\", |tcx| "],
+    send_processing = true,
+)]
+pub async fn rustc(ctxt: CommandCtxt<'_>, script: Codeblock) -> anyhow::Result<()> {
+    exec_sync("rustup component add rust-src rustc-dev llvm-tools-preview")
+        .context("Failed to install rustc components")?;
+
+    let script = RUSTC_BOILERPLATE.replace("{code}", &script.0);
+    let file_path = format!("/tmp/{}", SystemTime::now().duration_since(UNIX_EPOCH)?.as_micros());
+    let executable_path = format!("{file_path}.o");
+    let _defer = ExecutableDeletionDefer(file_path.clone());
+
+    fs::write(&file_path, script).await?;
+
+    let result = exec_sync(&format!("rustc {file_path} -o {file_path}.o"))?;
+
+    if !result.exit_code.success() {
+        ctxt.reply(format!("Failed to compile script: {}", result.stderr.codeblock("rs")))
+            .await?;
+        return Ok(());
+    }
+
+    let _defer2 = ExecutableDeletionDefer(executable_path.clone());
+
+    let result = exec_sync(&format!("cd /tmp && {executable_path}"))?;
+
+    if !result.exit_code.success() {
+        ctxt.reply(format!("Failed to execute script: {}", result.stderr.codeblock("rs")))
+            .await?;
+        return Ok(());
+    }
+
+    let mut output = "".to_owned();
+    if !result.stdout.is_empty() {
+        output = format!("`stdout`: ```{}```\n", result.stdout);
+    }
+    if !result.stderr.is_empty() {
+        output = format!("{}`stderr`: ```{}```", output, result.stderr);
+    }
+
+    ctxt.reply(output).await
+}
+
 define_commandgroup! {
     name: run,
     access: Availability::Public,
@@ -218,6 +332,7 @@ define_commandgroup! {
     commands: [
         "charge" => charge,
         "rust" => rust,
-        "dash" => dash
+        "dash" => dash,
+        "rustc" => rustc
     ]
 }

@@ -149,9 +149,9 @@ async fn create_message(ctxt: &CommandCtxt<'_>, builder: MessageBuilder) -> anyh
         Reply {
             state: ReplyState::InUse(ReplyInUse {
                 message_id: reply.id.get(),
-                has_attachments: !reply.attachments.is_empty(),
+                _has_attachments: !reply.attachments.is_empty(),
             }),
-            created: Instant::now(),
+            _created: Instant::now(),
         },
     );
 
