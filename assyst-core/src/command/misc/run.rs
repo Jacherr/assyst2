@@ -280,7 +280,7 @@ fn main() {
     access = Availability::Dev,
     category = Category::Misc,
     usage = "[script]",
-    examples = ["run(\"fn main() {}\", |tcx| "],
+    examples = ["run(\"fn main() {}\", |tcx| { dbg!(tcx.hir().root_module()); });"],
     send_processing = true,
 )]
 pub async fn rustc(ctxt: CommandCtxt<'_>, script: Codeblock) -> anyhow::Result<()> {
