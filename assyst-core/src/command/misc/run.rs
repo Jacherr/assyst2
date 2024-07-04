@@ -60,7 +60,7 @@ pub async fn charge(ctxt: CommandCtxt<'_>, script: Codeblock, flags: ChargeFlags
     };
 
     if flags.llir {
-        flags_string += " --print-llir-only --no-timings"
+        flags_string += " --print-llir-only"
     }
 
     flags_string += &format!(" -O{}", flags.opt);
