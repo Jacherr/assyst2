@@ -148,3 +148,18 @@ pub fn exec_sync(command: &str) -> Result<CommandOutput, std::io::Error> {
         exit_code: output.status,
     })
 }
+
+/// Executes a bash command
+pub fn exec_sync_in_dir(command: &str, dir: &str) -> Result<CommandOutput, std::io::Error> {
+    let mut cmd = Command::new("bash");
+    cmd.current_dir(dir);
+    cmd.args(["-c", command]);
+
+    let output = cmd.output()?;
+
+    Ok(CommandOutput {
+        stdout: String::from_utf8_lossy(&output.stdout).to_string(),
+        stderr: String::from_utf8_lossy(&output.stderr).to_string(),
+        exit_code: output.status,
+    })
+}

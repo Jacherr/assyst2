@@ -1,20 +1,23 @@
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant};
 
 use anyhow::Context;
 use assyst_common::markdown::Markdown;
-use assyst_common::util::process::{exec_sync, CommandOutput};
+use assyst_common::util::process::{exec_sync, exec_sync_in_dir, CommandOutput};
 use assyst_proc_macro::command;
 use dash_rt::format_value;
 use dash_vm::eval::EvalError;
 use dash_vm::value::Root;
 use dash_vm::Vm;
+use serde::Deserialize;
 use tokio::fs;
+use toml::from_str;
 
 use crate::command::arguments::Codeblock;
 use crate::command::flags::{ChargeFlags, RustFlags};
 use crate::command::messagebuilder::{Attachment, MessageBuilder};
 use crate::command::{Availability, Category, CommandCtxt};
 use crate::define_commandgroup;
+use crate::downloader::download_content;
 use crate::rest::rust::{run_benchmark, run_binary, run_clippy, run_godbolt, run_miri, OptimizationLevel};
 
 struct ExecutableDeletionDefer(String);
@@ -225,7 +228,6 @@ extern crate rustc_middle;
 
 use std::{path, process, str, sync::Arc};
 
-use rustc_ast_pretty::pprust::item_to_string;
 use rustc_errors::registry;
 use rustc_session::config;
 
@@ -284,27 +286,100 @@ fn main() {
     send_processing = true,
 )]
 pub async fn rustc(ctxt: CommandCtxt<'_>, script: Codeblock) -> anyhow::Result<()> {
-    exec_sync("rustup component add rust-src rustc-dev llvm-tools-preview")
-        .context("Failed to install rustc components")?;
-
     let script = RUSTC_BOILERPLATE.replace("{code}", &script.0);
-    let file_path = format!("/tmp/{}", SystemTime::now().duration_since(UNIX_EPOCH)?.as_micros());
-    let executable_path = format!("{file_path}.o");
-    let _defer = ExecutableDeletionDefer(file_path.clone());
+    let project_dir = "/tmp/_assyst_rustc_dev";
 
-    fs::write(&file_path, script).await?;
+    if fs::metadata(project_dir).await.is_err() {
+        fs::create_dir(project_dir)
+            .await
+            .context("Failed to create project directory")?;
 
-    let result = exec_sync(&format!("rustc {file_path} -o {file_path}.o"))?;
+        exec_sync(&format!("cd {project_dir} && cargo init")).context("Failed to initialise rustc project")?;
+
+        // create copy of old
+        fs::copy(
+            format!("{project_dir}/Cargo.toml"),
+            format!("{project_dir}/_Cargo.toml"),
+        )
+        .await
+        .context("Failed to copy Cargo.toml")?;
+    }
+
+    // replace old config with fresh
+    fs::copy(
+        format!("{project_dir}/_Cargo.toml"),
+        format!("{project_dir}/Cargo.toml"),
+    )
+    .await
+    .context("Failed to copy _Cargo.toml")?;
+
+    // refresh dependencies each time in case they change
+    let deps = vec!["clippy_utils = { git = \"https://github.com/rust-lang/rust-clippy\" }"];
+    let mut cargo = fs::read_to_string(format!("{project_dir}/Cargo.toml"))
+        .await
+        .context("Failed to read Cargo.toml")?;
+
+    for dep in deps {
+        cargo += "\n";
+        cargo += dep;
+    }
+
+    fs::write(format!("{project_dir}/Cargo.toml"), cargo)
+        .await
+        .context("Failed to write dependencies to Cargo.toml")?;
+
+    let script_path = format!("{project_dir}/src/main.rs");
+    fs::write(script_path, script)
+        .await
+        .context("Failed to write main.rs")?;
+
+    // download toolchain so we use correct compiler for clippy_utils and other internal crates
+    let raw = download_content(
+        ctxt.assyst(),
+        "https://raw.githubusercontent.com/rust-lang/rust-clippy/master/rust-toolchain",
+        usize::MAX,
+        false,
+    )
+    .await
+    .context("Failed to download rust-toolchain")?;
+
+    let toolchain = String::from_utf8_lossy(&raw);
+    #[derive(Deserialize)]
+    struct Toolchain {
+        pub toolchain: Channel,
+    }
+    #[derive(Deserialize)]
+    struct Channel {
+        pub channel: String,
+    }
+
+    fs::write(format!("{project_dir}/rust-toolchain"), toolchain.to_string())
+        .await
+        .context("Failed to write rust-toolchain")?;
+
+    let channel = from_str::<Toolchain>(&toolchain)
+        .context("Failed to deserialize toolchain")?
+        .toolchain
+        .channel;
+
+    let result = exec_sync_in_dir(
+        &format!("rustup install {channel} && rustup component add rust-src rustc-dev llvm-tools-preview"),
+        &project_dir,
+    )?;
 
     if !result.exit_code.success() {
-        ctxt.reply(format!("Failed to compile script: {}", result.stderr.codeblock("rs")))
-            .await?;
+        ctxt.reply(format!(
+            "Failed to install components: {}",
+            result.stderr.codeblock("rs")
+        ))
+        .await?;
         return Ok(());
     }
 
-    let _defer2 = ExecutableDeletionDefer(executable_path.clone());
+    ctxt.reply("Compiling and executing...").await?;
 
-    let result = exec_sync(&format!("cd /tmp && {executable_path}"))?;
+    let result = exec_sync_in_dir(&format!("mold -run cargo +{channel} run -q"), &project_dir)
+        .context("Failed to execute binary")?;
 
     if !result.exit_code.success() {
         ctxt.reply(format!("Failed to execute script: {}", result.stderr.codeblock("rs")))

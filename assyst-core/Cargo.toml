@@ -40,3 +40,4 @@ twilight-util = { version = "=0.16.0-rc.1", features = ["builder"] }
 dash_vm = { git = "https://github.com/y21/dash" }
 dash_rt = { git = "https://github.com/y21/dash" }
 libc = "0.2.155"
+toml = "0.8.14"
