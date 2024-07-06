@@ -122,13 +122,13 @@ macro_rules! define_commandgroup {
                     #![allow(unreachable_code)]
                     match crate::command::group::execute_subcommand_raw_message(ctxt.fork(), Self::SUBCOMMANDS).await {
                         Ok(res) => Ok(res),
-                        Err(crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::InvalidSubcommand(_))
-                        | crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::ArgsExhausted(_))) => {
+                        Err(crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::InvalidSubcommand(s))
+                        | crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::SubcommandArgsExhausted(s))) => {
                             // No subcommand was found, call either the default if provided, or error out
                             $(
                                 return [<$default _command>].execute_raw_message(ctxt).await;
                             )?
-                            return Err(crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::InvalidSubcommand("unknown".to_owned())));
+                            return Err(crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::InvalidSubcommand(s)));
                         },
                         Err(err) => Err(err)
                     }
@@ -170,7 +170,7 @@ pub async fn execute_subcommand_raw_message(
     commands: &[(&str, TCommand)],
 ) -> Result<(), ExecutionError> {
     // todo: come up with better names for this?
-    let subcommand = ctxt.next_word(None).map_err(|err| ExecutionError::Parse(err.into()))?;
+    let subcommand = ctxt.next_word(None).map_err(|_| ExecutionError::Parse(TagParseError::SubcommandArgsExhausted("unknown".to_owned())))?;
 
     let command = find_subcommand(subcommand, commands).ok_or(ExecutionError::Parse(
         TagParseError::InvalidSubcommand(subcommand.to_owned()),

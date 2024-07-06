@@ -77,6 +77,7 @@ pub struct ArgsExhausted(pub Label);
 #[derive(Debug)]
 pub enum TagParseError {
     ArgsExhausted(ArgsExhausted),
+    SubcommandArgsExhausted(String),
     ParseIntError(ParseIntError),
     ParseFloatError(ParseFloatError),
     ParseToMillisError(ParseToMillisError),
@@ -134,6 +135,7 @@ impl Display for TagParseError {
             TagParseError::ArgsExhausted(ArgsExhausted(None)) => {
                 f.write_str("an argument is required but none were found")
             },
+            TagParseError::SubcommandArgsExhausted(_) => f.write_str("no valid subcommand was given"),
             TagParseError::ParseIntError(err) => write!(f, "failed to parse an argument as a whole number: {err}"),
             TagParseError::ParseFloatError(err) => write!(f, "failed to parse an argument as a decimal number: {err}"),
             TagParseError::ParseToMillisError(err) => write!(f, "failed to parse an argument as time: {err}"),
