@@ -41,6 +41,7 @@ declare_commands!(
     image::bloom_command,
     image::blur_command,
     image::caption_command,
+    image::flag_command,
     image::resize_command
 );
 

@@ -8,6 +8,7 @@ use assyst_database::DatabaseHandler;
 use flux_request::{FluxRequest, FluxStep};
 use jobs::FluxResult;
 use libc::pid_t;
+use std::process::Stdio;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::fs;
@@ -115,6 +116,8 @@ impl FluxHandler {
         command.args(args);
         command.current_dir(flux_workspace_root);
         command.env("LD_LIBRARY_PATH", LD_LIBRARY_PATH);
+        command.stdout(Stdio::piped());
+        command.stderr(Stdio::piped());
         let spawn = command.spawn().context("Failed to execute flux")?;
         let id = spawn.id();
         let output = timeout(time_limit, spawn.wait_with_output()).await;
@@ -146,7 +149,11 @@ impl FluxHandler {
     }
 
     pub async fn compile_flux() -> anyhow::Result<()> {
-        exec_sync(&format!("cd {FLUX_DIR} && cargo build --release")).context("Failed to compile flux")?;
+        exec_sync(&format!(
+            "cd {} && cargo build --release",
+            CONFIG.dev.flux_workspace_root_path_override
+        ))
+        .context("Failed to compile flux")?;
 
         Ok(())
     }

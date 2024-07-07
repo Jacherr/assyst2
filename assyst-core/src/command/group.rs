@@ -122,6 +122,7 @@ macro_rules! define_commandgroup {
                     #![allow(unreachable_code)]
                     match crate::command::group::execute_subcommand_raw_message(ctxt.fork(), Self::SUBCOMMANDS).await {
                         Ok(res) => Ok(res),
+                        #[allow(unused_variables)]
                         Err(crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::InvalidSubcommand(s))
                         | crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::SubcommandArgsExhausted(s))) => {
                             // No subcommand was found, call either the default if provided, or error out

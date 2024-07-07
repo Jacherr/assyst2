@@ -1,13 +1,12 @@
+use std::sync::LazyLock;
+
 use assyst_common::config::CONFIG;
 use assyst_common::BOT_ID;
-use lazy_static::lazy_static;
 use serde_json::json;
 
 use crate::assyst::ThreadSafeAssyst;
 
-lazy_static! {
-    pub static ref ROUTE: String = format!("https://top.gg/api/bots/{}/stats", BOT_ID);
-}
+static ROUTE: LazyLock<String> = LazyLock::new(|| format!("https://top.gg/api/bots/{BOT_ID}/stats"));
 
 pub async fn post_top_gg_stats(assyst: ThreadSafeAssyst) -> anyhow::Result<()> {
     let guild_count = assyst.metrics_handler.guilds.get();

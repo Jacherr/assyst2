@@ -382,8 +382,8 @@ impl<'a> CommandCtxt<'a> {
         self.data.assyst
     }
 
-    pub fn wsi_handler(&self) -> &'a FluxHandler {
-        &self.data.assyst.wsi_handler
+    pub fn flux_handler(&self) -> &'a FluxHandler {
+        &self.data.assyst.flux_handler
     }
 }
 

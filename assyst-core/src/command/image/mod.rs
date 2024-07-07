@@ -17,7 +17,7 @@ use crate::command::{Availability, Category, CommandCtxt};
     send_processing = true
 )]
 pub async fn ahshit(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt.wsi_handler().ahshit(source.0, ctxt.data.author.id.get()).await?;
+    let result = ctxt.flux_handler().ahshit(source.0, ctxt.data.author.id.get()).await?;
 
     ctxt.reply(result).await?;
 
@@ -35,7 +35,7 @@ pub async fn ahshit(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> 
 )]
 pub async fn aprilfools(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
     let result = ctxt
-        .wsi_handler()
+        .flux_handler()
         .aprilfools(source.0, ctxt.data.author.id.get())
         .await?;
 
@@ -60,7 +60,7 @@ pub async fn aprilfools(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<
 )]
 pub async fn bloom(ctxt: CommandCtxt<'_>, source: Image, flags: BloomFlags) -> anyhow::Result<()> {
     let result = ctxt
-        .wsi_handler()
+        .flux_handler()
         .bloom(
             source.0,
             flags.radius,
@@ -86,7 +86,7 @@ pub async fn bloom(ctxt: CommandCtxt<'_>, source: Image, flags: BloomFlags) -> a
 )]
 pub async fn blur(ctxt: CommandCtxt<'_>, source: Image, strength: Option<f32>) -> anyhow::Result<()> {
     let result = ctxt
-        .wsi_handler()
+        .flux_handler()
         .blur(source.0, strength, ctxt.data.author.id.get())
         .await?;
 
@@ -106,9 +106,26 @@ pub async fn blur(ctxt: CommandCtxt<'_>, source: Image, strength: Option<f32>) -
 )]
 pub async fn caption(ctxt: CommandCtxt<'_>, source: Image, text: Rest) -> anyhow::Result<()> {
     let result = ctxt
-        .wsi_handler()
+        .flux_handler()
         .caption(source.0, text.0, ctxt.data.author.id.get())
         .await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "put an image on a flag",
+    cooldown = Duration::from_secs(3),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image]",
+    examples = ["https://link.to.my/image.png"],
+    send_processing = true
+)]
+pub async fn flag(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
+    let result = ctxt.flux_handler().flag(source.0, ctxt.data.author.id.get()).await?;
 
     ctxt.reply(result).await?;
 
@@ -132,17 +149,17 @@ pub async fn resize(ctxt: CommandCtxt<'_>, source: Image, size: Option<Word>) ->
         let width = width.parse::<u32>().context("Invalid width")?;
         let height = height.parse::<u32>().context("Invalid height")?;
 
-        ctxt.wsi_handler()
+        ctxt.flux_handler()
             .resize_absolute(source.0, width, height, ctxt.data.author.id.get())
             .await?
     } else if let Some(i_size) = size {
         let scale = i_size.0.parse::<f32>().context("Invalid scale.")?;
 
-        ctxt.wsi_handler()
+        ctxt.flux_handler()
             .resize_scale(source.0, scale, ctxt.data.author.id.get())
             .await?
     } else {
-        ctxt.wsi_handler()
+        ctxt.flux_handler()
             .resize_scale(source.0, 2.0, ctxt.data.author.id.get())
             .await?
     };

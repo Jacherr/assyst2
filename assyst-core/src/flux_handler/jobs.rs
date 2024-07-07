@@ -92,6 +92,17 @@ impl FluxHandler {
         self.run_flux(request, limits.time).await
     }
 
+    pub async fn flag(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+
+        let limits = &LIMITS[tier];
+        let mut request = FluxRequest::new_with_input_and_limits(media, limits);
+        request.operation("flag".to_owned(), HashMap::new());
+        request.output();
+
+        self.run_flux(request, limits.time).await
+    }
+
     pub async fn resize_absolute(&self, media: Vec<u8>, width: u32, height: u32, user_id: u64) -> FluxResult {
         let tier = self.get_request_tier(user_id).await?;
 

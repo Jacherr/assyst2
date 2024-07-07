@@ -364,7 +364,7 @@ pub async fn rustc(ctxt: CommandCtxt<'_>, script: Codeblock) -> anyhow::Result<(
 
     let result = exec_sync_in_dir(
         &format!("rustup install {channel} && rustup component add rust-src rustc-dev llvm-tools-preview"),
-        &project_dir,
+        project_dir,
     )?;
 
     if !result.exit_code.success() {
@@ -378,7 +378,7 @@ pub async fn rustc(ctxt: CommandCtxt<'_>, script: Codeblock) -> anyhow::Result<(
 
     ctxt.reply("Compiling and executing...").await?;
 
-    let result = exec_sync_in_dir(&format!("mold -run cargo +{channel} run -q"), &project_dir)
+    let result = exec_sync_in_dir(&format!("mold -run cargo +{channel} run -q"), project_dir)
         .context("Failed to execute binary")?;
 
     if !result.exit_code.success() {

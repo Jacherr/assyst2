@@ -13,8 +13,8 @@ use crate::util::string_from_likely_utf8;
 
 pub mod pipe_server;
 
-pub static GATEWAY_PIPE_PATH: &str = "/tmp/assyst-gateway-com";
-pub static CACHE_PIPE_PATH: &str = "/tmp/assyst-cache-com";
+pub static GATEWAY_PIPE_PATH: &str = "/tmp/assyst2-gateway-com";
+pub static CACHE_PIPE_PATH: &str = "/tmp/assyst2-cache-com";
 
 static POLL_FREQUENCY: Duration = Duration::from_secs(10);
 

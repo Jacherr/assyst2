@@ -26,7 +26,7 @@ pub struct Assyst {
     /// Handler for the Assyst database. RwLocked to allow concurrent reads.
     pub database_handler: Arc<DatabaseHandler>,
     /// Handler for WSI.
-    pub wsi_handler: FluxHandler,
+    pub flux_handler: FluxHandler,
     /// Handler for the REST cache.
     pub rest_cache_handler: RestCacheHandler,
     /// HTTP client for Discord. Handles all HTTP requests to Discord, storing stateful information
@@ -70,7 +70,7 @@ impl Assyst {
             tasks: Mutex::new(vec![]),
             shard_count,
             replies: Replies::new(),
-            wsi_handler: FluxHandler::new(database_handler.clone(), premium_users.clone()),
+            flux_handler: FluxHandler::new(database_handler.clone(), premium_users.clone()),
             rest_cache_handler: RestCacheHandler::new(http_client.clone()),
             command_ratelimits: CommandRatelimits::new(),
         })
