@@ -5,7 +5,6 @@ members = [
     "assyst-core",
     "assyst-cache",
     "assyst-gateway",
-    "playground",
     "assyst-common",
     "assyst-tag",
     "assyst-webserver",
