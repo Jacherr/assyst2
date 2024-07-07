@@ -27,6 +27,15 @@ impl FluxRequest {
         new
     }
 
+    pub fn new_basic(input: Vec<u8>, limits: &LimitData, operation: &str) -> Self {
+        let mut new = Self(vec![]);
+        new.input(input);
+        new.limits(limits);
+        new.operation(operation.to_owned(), HashMap::new());
+        new.output();
+        new
+    }
+
     pub fn input(&mut self, input: Vec<u8>) {
         self.0.push(FluxStep::Input(input));
     }

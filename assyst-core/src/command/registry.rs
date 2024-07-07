@@ -38,6 +38,8 @@ declare_commands!(
     services::r34_command,
     image::ahshit_command,
     image::aprilfools_command,
+    image::back_tattoo_command,
+    image::billboard_command,
     image::bloom_command,
     image::blur_command,
     image::caption_command,

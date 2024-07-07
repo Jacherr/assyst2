@@ -45,6 +45,47 @@ pub async fn aprilfools(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<
 }
 
 #[command(
+    name = "backtattoo",
+    description = "put an image on a person's back",
+    cooldown = Duration::from_secs(3),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image]",
+    examples = ["https://link.to.my/image.png"],
+    send_processing = true
+)]
+pub async fn back_tattoo(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
+    let result = ctxt
+        .flux_handler()
+        .back_tattoo(source.0, ctxt.data.author.id.get())
+        .await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "put an image on a billboard",
+    cooldown = Duration::from_secs(3),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image]",
+    examples = ["https://link.to.my/image.png"],
+    send_processing = true
+)]
+pub async fn billboard(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
+    let result = ctxt
+        .flux_handler()
+        .billboard(source.0, ctxt.data.author.id.get())
+        .await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
     description = "bloom an image",
     cooldown = Duration::from_secs(2),
     access = Availability::Public,

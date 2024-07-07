@@ -10,24 +10,38 @@ pub type FluxResult = anyhow::Result<Vec<u8>>;
 impl FluxHandler {
     pub async fn ahshit(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
         let tier = self.get_request_tier(user_id).await?;
-
         let limits = &LIMITS[tier];
-        let mut request = FluxRequest::new_with_input_and_limits(media, limits);
-        request.operation("ah-shit".to_owned(), HashMap::new());
-        request.output();
+
+        let request = FluxRequest::new_basic(media, limits, "ah-shit");
 
         self.run_flux(request, limits.time).await
     }
 
     pub async fn aprilfools(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
         let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
 
-        let mut request = FluxRequest::new();
-        request.input(media);
-        request.operation("april-fools".to_owned(), HashMap::new());
-        request.output();
+        let request = FluxRequest::new_basic(media, limits, "april-fools");
 
-        self.run_flux(request, LIMITS[tier].time).await
+        self.run_flux(request, limits.time).await
+    }
+
+    pub async fn back_tattoo(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let request = FluxRequest::new_basic(media, limits, "back-tattoo");
+
+        self.run_flux(request, limits.time).await
+    }
+
+    pub async fn billboard(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let request = FluxRequest::new_basic(media, limits, "billboard");
+
+        self.run_flux(request, limits.time).await
     }
 
     pub async fn bloom(
@@ -94,11 +108,9 @@ impl FluxHandler {
 
     pub async fn flag(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
         let tier = self.get_request_tier(user_id).await?;
-
         let limits = &LIMITS[tier];
-        let mut request = FluxRequest::new_with_input_and_limits(media, limits);
-        request.operation("flag".to_owned(), HashMap::new());
-        request.output();
+
+        let request = FluxRequest::new_basic(media, limits, "flag");
 
         self.run_flux(request, limits.time).await
     }
