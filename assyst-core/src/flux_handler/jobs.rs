@@ -124,6 +124,15 @@ impl FluxHandler {
         self.run_flux(request, limits.time).await
     }
 
+    pub async fn deepfry(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let request = FluxRequest::new_basic(media, limits, "deepfry");
+
+        self.run_flux(request, limits.time).await
+    }
+
     pub async fn flag(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
         let tier = self.get_request_tier(user_id).await?;
         let limits = &LIMITS[tier];

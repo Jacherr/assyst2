@@ -3,6 +3,8 @@ use std::time::Duration;
 use anyhow::bail;
 use assyst_common::util::format_duration;
 use assyst_proc_macro::command;
+use rand::seq::SliceRandom;
+use rand::thread_rng;
 
 use super::arguments::{Rest, Word};
 use super::flags::DownloadFlags;
@@ -36,18 +38,25 @@ pub async fn burntext(ctxt: CommandCtxt<'_>, text: Rest) -> anyhow::Result<()> {
     access = Availability::Public,
     cooldown = Duration::from_secs(2),
     category = Category::Services,
-    // usage = "[style] [text]",
-    examples = ["burning hello", "saint fancy"],
+    examples = ["burning hello", "saint fancy", "random im random"],
     send_processing = true
 )]
 pub async fn cooltext(ctxt: CommandCtxt<'_>, style: Word, text: Rest) -> anyhow::Result<()> {
-    let result = crate::rest::cooltext::cooltext(&style.0, text.0.as_str()).await;
+    let style = if &style.0 == "random" {
+        let mut s = STYLES.to_vec();
+        s.shuffle(&mut thread_rng());
+        s[0].0
+    } else {
+        &style.0
+    };
+
+    let result = crate::rest::cooltext::cooltext(style, text.0.as_str()).await;
     if let Ok(r) = result {
-        ctxt.reply(r).await?;
+        ctxt.reply((r, &format!("**Style:** `{style}`")[..])).await?;
     } else {
         bail!(
             "unknown style {}, available styles are: {}",
-            style.0,
+            style,
             STYLES.iter().map(|(v, _)| *v).collect::<Vec<_>>().join(", ")
         )
     }

@@ -173,12 +173,10 @@ pub async fn help(ctxt: CommandCtxt<'_>, labels: Vec<Word>) -> anyhow::Result<()
     } else {
         let mut msg = String::new();
         for (group, list) in groups {
-            msg += &format!(
-                "{}{} {}\n",
-                group.fg_yellow(),
-                ':'.fg_yellow(),
-                list.iter().map(|x| x.metadata().name).collect::<Vec<_>>().join(", ")
-            );
+            let mut commands = list.iter().map(|x| x.metadata().name).collect::<Vec<_>>();
+            commands.sort();
+
+            msg += &format!("{}{} {}\n", group.fg_yellow(), ':'.fg_yellow(), commands.join(", "));
         }
 
         msg = msg.codeblock("ansi");

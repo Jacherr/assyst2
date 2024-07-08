@@ -45,6 +45,7 @@ declare_commands!(
     image::book_command,
     image::caption_command,
     image::circuitboard_command,
+    image::deepfry_command,
     image::flag_command,
     image::flag2_command,
     image::fortunecookie_command,

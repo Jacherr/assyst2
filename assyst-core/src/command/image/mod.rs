@@ -194,6 +194,24 @@ pub async fn circuitboard(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Resul
 }
 
 #[command(
+    description = "deep fry an image",
+    aliases = ["df"],
+    cooldown = Duration::from_secs(2),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image]",
+    examples = ["https://link.to.my/image.png"],
+    send_processing = true
+)]
+pub async fn deepfry(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
+    let result = ctxt.flux_handler().deepfry(source.0, ctxt.data.author.id.get()).await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
     description = "put an image on a flag",
     cooldown = Duration::from_secs(3),
     access = Availability::Public,
@@ -252,8 +270,8 @@ pub async fn fortunecookie(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Resu
     cooldown = Duration::from_secs(3),
     access = Availability::Public,
     category = Category::Image,
-    usage = "[image]",
-    examples = ["https://link.to.my/image.png"],
+    usage = "[image] [text]",
+    examples = ["https://link.to.my/image.png hello"],
     send_processing = true
 )]
 pub async fn heartlocket(ctxt: CommandCtxt<'_>, source: Image, text: RestNoFlags) -> anyhow::Result<()> {
