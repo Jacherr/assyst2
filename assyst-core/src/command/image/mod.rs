@@ -323,6 +323,7 @@ pub async fn reverse(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()>
 
 #[command(
     description = "put an image on a rubik's cube",
+    aliases = ["rubix"],
     cooldown = Duration::from_secs(3),
     access = Availability::Public,
     category = Category::Image,
