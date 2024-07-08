@@ -97,7 +97,8 @@ pub async fn stats(ctxt: CommandCtxt<'_>, option: Option<Word>) -> anyhow::Resul
     }
 
     fn get_general_stats(ctxt: &CommandCtxt<'_>) -> String {
-        let events_rate = ctxt.assyst().metrics_handler.get_events_rate().to_string();
+        let events_rate = ctxt.assyst().metrics_handler.get_events_rate();
+        let events_total = ctxt.assyst().metrics_handler.events.get();
         let commands_rate = ctxt.assyst().metrics_handler.get_commands_rate().to_string();
         let commit = exec_sync("git rev-parse HEAD")
             .map(|x| x.stdout[..8].to_owned())
@@ -109,7 +110,10 @@ pub async fn stats(ctxt: CommandCtxt<'_>, option: Option<Word>) -> anyhow::Resul
                 ctxt.assyst().metrics_handler.guilds.get().to_string(),
             ),
             ("Shards".fg_cyan(), ctxt.assyst().shard_count.to_string()),
-            ("Events".fg_cyan(), events_rate + "/sec"),
+            (
+                "Events".fg_cyan(),
+                format!("{events_rate}/sec ({events_total} since restart)"),
+            ),
             ("Commands".fg_cyan(), commands_rate + "/min"),
             ("Commit Hash".fg_cyan(), commit),
         ]);

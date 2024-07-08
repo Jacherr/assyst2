@@ -42,9 +42,18 @@ declare_commands!(
     image::billboard_command,
     image::bloom_command,
     image::blur_command,
+    image::book_command,
     image::caption_command,
+    image::circuitboard_command,
     image::flag_command,
-    image::resize_command
+    image::flag2_command,
+    image::fortunecookie_command,
+    image::heartlocket_command,
+    image::resize_command,
+    image::reverse_command,
+    image::rubiks_command,
+    image::toaster_command,
+    image::valentine_command
 );
 
 static COMMANDS: OnceLock<HashMap<&'static str, TCommand>> = OnceLock::new();

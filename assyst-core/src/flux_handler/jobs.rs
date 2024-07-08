@@ -91,6 +91,15 @@ impl FluxHandler {
         self.run_flux(request, limits.time).await
     }
 
+    pub async fn book(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let request = FluxRequest::new_basic(media, limits, "book");
+
+        self.run_flux(request, limits.time).await
+    }
+
     pub async fn caption(&self, media: Vec<u8>, text: String, user_id: u64) -> FluxResult {
         let tier = self.get_request_tier(user_id).await?;
 
@@ -106,11 +115,53 @@ impl FluxHandler {
         self.run_flux(request, limits.time).await
     }
 
+    pub async fn circuitboard(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let request = FluxRequest::new_basic(media, limits, "circuitboard");
+
+        self.run_flux(request, limits.time).await
+    }
+
     pub async fn flag(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
         let tier = self.get_request_tier(user_id).await?;
         let limits = &LIMITS[tier];
 
         let request = FluxRequest::new_basic(media, limits, "flag");
+
+        self.run_flux(request, limits.time).await
+    }
+
+    pub async fn flag2(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let request = FluxRequest::new_basic(media, limits, "flag2");
+
+        self.run_flux(request, limits.time).await
+    }
+
+    pub async fn fortune_cookie(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let request = FluxRequest::new_basic(media, limits, "fortune-cookie");
+
+        self.run_flux(request, limits.time).await
+    }
+
+    pub async fn heart_locket(&self, media: Vec<u8>, text: String, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let mut request = FluxRequest::new_with_input_and_limits(media, limits);
+
+        let mut options = HashMap::new();
+        options.insert("text".to_owned(), text);
+
+        request.operation("heart-locket".to_owned(), options);
+        request.output();
 
         self.run_flux(request, limits.time).await
     }
@@ -142,6 +193,42 @@ impl FluxHandler {
 
         request.operation("resize".to_owned(), options);
         request.output();
+
+        self.run_flux(request, limits.time).await
+    }
+
+    pub async fn reverse(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let request = FluxRequest::new_basic(media, limits, "reverse");
+
+        self.run_flux(request, limits.time).await
+    }
+
+    pub async fn rubiks(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let request = FluxRequest::new_basic(media, limits, "rubiks");
+
+        self.run_flux(request, limits.time).await
+    }
+
+    pub async fn toaster(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let request = FluxRequest::new_basic(media, limits, "toaster");
+
+        self.run_flux(request, limits.time).await
+    }
+
+    pub async fn valentine(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let request = FluxRequest::new_basic(media, limits, "valentine");
 
         self.run_flux(request, limits.time).await
     }
