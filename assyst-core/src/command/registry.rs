@@ -33,7 +33,7 @@ declare_commands!(
     misc::tag::tag_command,
     misc::url_command,
     services::burntext_command,
-    services::cooltext_command,
+    services::cooltext::cooltext_command,
     services::download_command,
     services::r34_command,
     image::audio::drip_command,

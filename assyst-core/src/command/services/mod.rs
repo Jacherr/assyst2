@@ -1,19 +1,18 @@
 use std::time::Duration;
 
-use anyhow::bail;
 use assyst_common::util::format_duration;
 use assyst_proc_macro::command;
-use rand::seq::SliceRandom;
-use rand::thread_rng;
 
 use super::arguments::{Rest, Word};
 use super::flags::DownloadFlags;
 use super::CommandCtxt;
 
 use crate::command::{Availability, Category};
-use crate::rest::cooltext::{burn_text, STYLES};
+use crate::rest::cooltext::burn_text;
 use crate::rest::r34::get_random_r34;
 use crate::rest::web_media_download::{download_web_media, WebDownloadOpts};
+
+pub mod cooltext;
 
 #[command(
     aliases = ["firetext"],
@@ -29,37 +28,6 @@ pub async fn burntext(ctxt: CommandCtxt<'_>, text: Rest) -> anyhow::Result<()> {
     let result = burn_text(&text.0).await?;
 
     ctxt.reply(result).await?;
-
-    Ok(())
-}
-
-#[command(
-    description = "make some cool text",
-    access = Availability::Public,
-    cooldown = Duration::from_secs(2),
-    category = Category::Services,
-    examples = ["burning hello", "saint fancy", "random im random"],
-    send_processing = true
-)]
-pub async fn cooltext(ctxt: CommandCtxt<'_>, style: Word, text: Rest) -> anyhow::Result<()> {
-    let style = if &style.0 == "random" {
-        let mut s = STYLES.to_vec();
-        s.shuffle(&mut thread_rng());
-        s[0].0
-    } else {
-        &style.0
-    };
-
-    let result = crate::rest::cooltext::cooltext(style, text.0.as_str()).await;
-    if let Ok(r) = result {
-        ctxt.reply((r, &format!("**Style:** `{style}`")[..])).await?;
-    } else {
-        bail!(
-            "unknown style {}, available styles are: {}",
-            style,
-            STYLES.iter().map(|(v, _)| *v).collect::<Vec<_>>().join(", ")
-        )
-    }
 
     Ok(())
 }
@@ -92,7 +60,7 @@ pub async fn r34(ctxt: CommandCtxt<'_>, tags: Rest) -> anyhow::Result<()> {
     cooldown = Duration::from_secs(2),
     category = Category::Services,
     usage = "[url] <flags>",
-    examples = ["https://www.youtube.com/watch?v=dQw4w9WgXcQ", "https://www.youtube.com/watch?v=dQw4w9WgXcQ --audio", "https://www.youtube.com/watch?v=dQw4w9WgXcQ --quality 480"],
+    examples = ["https://youtu.be/dQw4w9WgXcQ", "https://youtu.be/dQw4w9WgXcQ --audio", "https://youtu.be/dQw4w9WgXcQ --quality 480"],
     send_processing = true,
     flag_descriptions = [
         ("audio", "Get content as MP3"),
