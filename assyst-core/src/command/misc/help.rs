@@ -155,10 +155,12 @@ pub async fn help(ctxt: CommandCtxt<'_>, labels: Vec<Word>) -> anyhow::Result<()
             // irrelevant
             } else {
                 let mut txt = String::new();
-                txt += &format!("{group}:").fg_green();
+                txt += &format!("[{group}]:").fg_green();
                 let l = groups.get(&group);
 
-                if let Some(list) = l {
+                if let Some(mut list) = l.cloned() {
+                    list.sort_by(|a, b| a.metadata().name.cmp(b.metadata().name));
+
                     for i in list {
                         let name = (i.metadata().name.to_owned() + ":").fg_yellow();
                         txt += &format!("\n\t{name} {}", i.metadata().description)
@@ -172,18 +174,27 @@ pub async fn help(ctxt: CommandCtxt<'_>, labels: Vec<Word>) -> anyhow::Result<()
         }
     } else {
         let mut msg = String::new();
-        for (group, list) in groups {
+        let mut sorted = groups.iter().collect::<Vec<_>>();
+        sorted.sort_by(|a, b| format!("{}", a.0).cmp(&format!("{}", b.0)));
+
+        for (group, list) in sorted {
             let mut commands = list.iter().map(|x| x.metadata().name).collect::<Vec<_>>();
             commands.sort();
 
-            msg += &format!("{}{} {}\n", group.fg_yellow(), ':'.fg_yellow(), commands.join(", "));
+            msg += &format!(
+                "{}{} {}\n\n",
+                "[".fg_yellow() + &group.fg_yellow() + &"]".fg_yellow(),
+                ':'.fg_yellow(),
+                commands.join(", ")
+            );
         }
 
-        msg = msg.codeblock("ansi");
+        msg = msg.trim().codeblock("ansi");
 
         msg += &format!(
-            "\nUse {} for more information on a command.\n\n",
-            format!("{}help [command]", ctxt.data.calling_prefix).codestring()
+            "\nUse {} for more information on a command, or {} for more information on a category.\n\n",
+            format!("{}help [command]", ctxt.data.calling_prefix).codestring(),
+            format!("{}help [category]", ctxt.data.calling_prefix).codestring()
         );
 
         msg += &format!(

@@ -133,6 +133,24 @@ impl FluxHandler {
         self.run_flux(request, limits.time).await
     }
 
+    pub async fn drip(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let request = FluxRequest::new_basic(media, limits, "drip");
+
+        self.run_flux(request, limits.time).await
+    }
+
+    pub async fn femurbreaker(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let request = FluxRequest::new_basic(media, limits, "femurbreaker");
+
+        self.run_flux(request, limits.time).await
+    }
+
     pub async fn flag(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
         let tier = self.get_request_tier(user_id).await?;
         let limits = &LIMITS[tier];
@@ -170,6 +188,22 @@ impl FluxHandler {
         options.insert("text".to_owned(), text);
 
         request.operation("heart-locket".to_owned(), options);
+        request.output();
+
+        self.run_flux(request, limits.time).await
+    }
+
+    pub async fn meme(&self, media: Vec<u8>, top: Option<String>, bottom: Option<String>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let mut request = FluxRequest::new_with_input_and_limits(media, limits);
+
+        let mut options = HashMap::new();
+        top.map(|t| options.insert("top".to_owned(), t));
+        bottom.map(|b| options.insert("bottom".to_owned(), b));
+
+        request.operation("meme".to_owned(), options);
         request.output();
 
         self.run_flux(request, limits.time).await
@@ -220,6 +254,33 @@ impl FluxHandler {
         let limits = &LIMITS[tier];
 
         let request = FluxRequest::new_basic(media, limits, "rubiks");
+
+        self.run_flux(request, limits.time).await
+    }
+
+    pub async fn siren(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let request = FluxRequest::new_basic(media, limits, "siren");
+
+        self.run_flux(request, limits.time).await
+    }
+
+    pub async fn sweden(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let request = FluxRequest::new_basic(media, limits, "sweden");
+
+        self.run_flux(request, limits.time).await
+    }
+
+    pub async fn terraria(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let request = FluxRequest::new_basic(media, limits, "terraria");
 
         self.run_flux(request, limits.time).await
     }

@@ -140,6 +140,7 @@ pub struct CommandInteractionInfo {
 
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum Category {
+    Audio,
     Fun,
     Makesweet,
     Image,
@@ -154,6 +155,7 @@ impl Display for Category {
             f,
             "{}",
             match self {
+                Self::Audio => "audio",
                 Self::Fun => "fun",
                 Self::Makesweet => "makesweet",
                 Self::Image => "image",
@@ -168,10 +170,12 @@ impl Display for Category {
 impl From<String> for Category {
     fn from(v: String) -> Category {
         match &*v {
+            "audio" => Category::Audio,
             "fun" => Category::Fun,
             "misc" => Category::Misc,
             "image" => Category::Image,
             "makesweet" => Category::Makesweet,
+            "services" => Category::Services,
             t => Category::None(t.to_string()),
         }
     }

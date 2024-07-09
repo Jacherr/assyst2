@@ -7,6 +7,9 @@ use super::arguments::{Image, Rest, RestNoFlags, Word};
 use super::flags::BloomFlags;
 use crate::command::{Availability, Category, CommandCtxt};
 
+pub mod audio;
+pub mod makesweet;
+
 #[command(
     description = "ah shit here we go again",
     cooldown = Duration::from_secs(2),
@@ -37,47 +40,6 @@ pub async fn aprilfools(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<
     let result = ctxt
         .flux_handler()
         .aprilfools(source.0, ctxt.data.author.id.get())
-        .await?;
-
-    ctxt.reply(result).await?;
-
-    Ok(())
-}
-
-#[command(
-    name = "backtattoo",
-    description = "put an image on a person's back",
-    cooldown = Duration::from_secs(3),
-    access = Availability::Public,
-    category = Category::Image,
-    usage = "[image]",
-    examples = ["https://link.to.my/image.png"],
-    send_processing = true
-)]
-pub async fn back_tattoo(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt
-        .flux_handler()
-        .back_tattoo(source.0, ctxt.data.author.id.get())
-        .await?;
-
-    ctxt.reply(result).await?;
-
-    Ok(())
-}
-
-#[command(
-    description = "put an image on a billboard",
-    cooldown = Duration::from_secs(3),
-    access = Availability::Public,
-    category = Category::Image,
-    usage = "[image]",
-    examples = ["https://link.to.my/image.png"],
-    send_processing = true
-)]
-pub async fn billboard(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt
-        .flux_handler()
-        .billboard(source.0, ctxt.data.author.id.get())
         .await?;
 
     ctxt.reply(result).await?;
@@ -137,23 +99,6 @@ pub async fn blur(ctxt: CommandCtxt<'_>, source: Image, strength: Option<f32>) -
 }
 
 #[command(
-    description = "put an image in a book",
-    cooldown = Duration::from_secs(3),
-    access = Availability::Public,
-    category = Category::Image,
-    usage = "[image]",
-    examples = ["https://link.to.my/image.png"],
-    send_processing = true
-)]
-pub async fn book(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt.flux_handler().book(source.0, ctxt.data.author.id.get()).await?;
-
-    ctxt.reply(result).await?;
-
-    Ok(())
-}
-
-#[command(
     description = "add a caption to an image",
     cooldown = Duration::from_secs(2),
     access = Availability::Public,
@@ -166,26 +111,6 @@ pub async fn caption(ctxt: CommandCtxt<'_>, source: Image, text: Rest) -> anyhow
     let result = ctxt
         .flux_handler()
         .caption(source.0, text.0, ctxt.data.author.id.get())
-        .await?;
-
-    ctxt.reply(result).await?;
-
-    Ok(())
-}
-
-#[command(
-    description = "put an image on a circuit board",
-    cooldown = Duration::from_secs(3),
-    access = Availability::Public,
-    category = Category::Image,
-    usage = "[image]",
-    examples = ["https://link.to.my/image.png"],
-    send_processing = true
-)]
-pub async fn circuitboard(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt
-        .flux_handler()
-        .circuitboard(source.0, ctxt.data.author.id.get())
         .await?;
 
     ctxt.reply(result).await?;
@@ -212,72 +137,34 @@ pub async fn deepfry(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()>
 }
 
 #[command(
-    description = "put an image on a flag",
+    description = "add impact font meme text to an image",
     cooldown = Duration::from_secs(3),
     access = Availability::Public,
     category = Category::Image,
-    usage = "[image]",
-    examples = ["https://link.to.my/image.png"],
+    usage = "[image] [text separated by |]",
+    examples = ["https://link.to.my/image.png hello there you", "https://link.to.my/image.png |hello there you", "https://link.to.my/image.png hello there|you"],
     send_processing = true
 )]
-pub async fn flag(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt.flux_handler().flag(source.0, ctxt.data.author.id.get()).await?;
+pub async fn meme(ctxt: CommandCtxt<'_>, source: Image, text: RestNoFlags) -> anyhow::Result<()> {
+    let text = text.0;
 
-    ctxt.reply(result).await?;
+    let divider = if text.contains("|") {
+        "|".to_string()
+    } else {
+        " ".to_string()
+    };
 
-    Ok(())
-}
+    let parts = text
+        .split_once(&divider)
+        .map(|(x, y)| (Some(x.to_owned()), Some(y.to_owned())))
+        .unwrap_or((Some(text.clone()), None));
 
-#[command(
-    description = "put an image on a different flag",
-    cooldown = Duration::from_secs(3),
-    access = Availability::Public,
-    category = Category::Image,
-    usage = "[image]",
-    examples = ["https://link.to.my/image.png"],
-    send_processing = true
-)]
-pub async fn flag2(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt.flux_handler().flag2(source.0, ctxt.data.author.id.get()).await?;
+    let top_text = parts.0;
+    let bottom_text = parts.1;
 
-    ctxt.reply(result).await?;
-
-    Ok(())
-}
-
-#[command(
-    description = "put an image in a fortune cookie",
-    cooldown = Duration::from_secs(3),
-    access = Availability::Public,
-    category = Category::Image,
-    usage = "[image]",
-    examples = ["https://link.to.my/image.png"],
-    send_processing = true
-)]
-pub async fn fortunecookie(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
     let result = ctxt
         .flux_handler()
-        .fortune_cookie(source.0, ctxt.data.author.id.get())
-        .await?;
-
-    ctxt.reply(result).await?;
-
-    Ok(())
-}
-
-#[command(
-    description = "put an image in a heart locket with some text",
-    cooldown = Duration::from_secs(3),
-    access = Availability::Public,
-    category = Category::Image,
-    usage = "[image] [text]",
-    examples = ["https://link.to.my/image.png hello"],
-    send_processing = true
-)]
-pub async fn heartlocket(ctxt: CommandCtxt<'_>, source: Image, text: RestNoFlags) -> anyhow::Result<()> {
-    let result = ctxt
-        .flux_handler()
-        .heart_locket(source.0, text.0, ctxt.data.author.id.get())
+        .meme(source.0, top_text, bottom_text, ctxt.data.author.id.get())
         .await?;
 
     ctxt.reply(result).await?;
@@ -333,61 +220,6 @@ pub async fn resize(ctxt: CommandCtxt<'_>, source: Image, size: Option<Word>) ->
 )]
 pub async fn reverse(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
     let result = ctxt.flux_handler().reverse(source.0, ctxt.data.author.id.get()).await?;
-
-    ctxt.reply(result).await?;
-
-    Ok(())
-}
-
-#[command(
-    description = "put an image on a rubik's cube",
-    aliases = ["rubix"],
-    cooldown = Duration::from_secs(3),
-    access = Availability::Public,
-    category = Category::Image,
-    usage = "[image]",
-    examples = ["https://link.to.my/image.png"],
-    send_processing = true
-)]
-pub async fn rubiks(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt.flux_handler().rubiks(source.0, ctxt.data.author.id.get()).await?;
-
-    ctxt.reply(result).await?;
-
-    Ok(())
-}
-
-#[command(
-    description = "put an image on a toaster",
-    cooldown = Duration::from_secs(3),
-    access = Availability::Public,
-    category = Category::Image,
-    usage = "[image]",
-    examples = ["https://link.to.my/image.png"],
-    send_processing = true
-)]
-pub async fn toaster(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt.flux_handler().toaster(source.0, ctxt.data.author.id.get()).await?;
-
-    ctxt.reply(result).await?;
-
-    Ok(())
-}
-
-#[command(
-    description = "display an image as a valentine's gift",
-    cooldown = Duration::from_secs(3),
-    access = Availability::Public,
-    category = Category::Image,
-    usage = "[image]",
-    examples = ["https://link.to.my/image.png"],
-    send_processing = true
-)]
-pub async fn valentine(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt
-        .flux_handler()
-        .valentine(source.0, ctxt.data.author.id.get())
-        .await?;
 
     ctxt.reply(result).await?;
 
