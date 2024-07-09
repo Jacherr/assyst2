@@ -124,9 +124,13 @@ pub async fn help(ctxt: CommandCtxt<'_>, labels: Vec<Word>) -> anyhow::Result<()
             let access = "Access: ".fg_yellow() + &meta.access.to_string();
             let subcommands = if let Some(subcommands) = command.subcommands() {
                 format!(
-                    "\n{} {}",
+                    "\n{}\n{}",
                     "Subcommands:".fg_yellow(),
-                    subcommands.iter().map(|x| x.0).collect::<Vec<_>>().join(", ")
+                    subcommands
+                        .iter()
+                        .map(|x| format!("\t{} {}", (x.0.to_owned() + ":").fg_red(), x.1.metadata().description))
+                        .collect::<Vec<_>>()
+                        .join("\n")
                 )
             } else {
                 String::new()

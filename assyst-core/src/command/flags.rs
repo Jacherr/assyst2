@@ -267,7 +267,9 @@ pub fn flags_from_str(input: &str, valid_flags: ValidFlags) -> anyhow::Result<Ha
     let mut entries: HashMap<String, Option<String>> = HashMap::new();
 
     for arg in args {
-        if arg.starts_with("--") && arg.len() > 2 {
+        if (arg.starts_with("--") && arg.len() > 2) || (arg.starts_with("—") && arg.len() > 1) {
+            let arglen = if arg.starts_with("--") { 2 } else { 1 };
+
             // prev flag present but no value, write to hashmap
             if let Some(ref c) = current_flag {
                 let flag = valid_flags
@@ -276,12 +278,12 @@ pub fn flags_from_str(input: &str, valid_flags: ValidFlags) -> anyhow::Result<Ha
 
                 if let FlagType::NoValue = flag {
                     entries.insert(c.clone(), None);
-                    current_flag = Some(arg[2..].to_owned());
+                    current_flag = Some(arg.chars().skip(arglen).collect::<String>());
                 } else {
                     bail!("Flag {c} expects a value, but none was provided");
                 }
             } else {
-                current_flag = Some(arg[2..].to_owned());
+                current_flag = Some(arg.chars().skip(arglen).collect::<String>());
             }
         } else {
             // current flag present, this arg is its value

@@ -115,12 +115,23 @@ impl CommandGroupingInteractionInfo {
         if let Self::Command(x) = self { x } else { unreachable!() }
     }
 
-    pub fn group_as_option_tree(&self) -> Vec<CommandOption> {
+    pub fn group_as_option_tree(&self, subcommands: &'static [(&'static str, TCommand)]) -> Vec<CommandOption> {
         let group = if let Self::Group(x) = self { x } else { unreachable!() };
         let mut options = Vec::new();
 
         for member in group {
-            let mut subcommand = SubCommandBuilder::new(member.0.clone(), format!("{} subcommand", member.0));
+            let subcommand_description = subcommands
+                .iter()
+                .find_map(|x| {
+                    if x.0 == member.0 {
+                        Some(x.1.metadata().description.to_owned())
+                    } else {
+                        None
+                    }
+                })
+                .unwrap_or(format!("{} subcommand", member.0));
+
+            let mut subcommand = SubCommandBuilder::new(member.0.clone(), subcommand_description);
 
             for option in member.1.command_options.clone() {
                 subcommand = subcommand.option(option);

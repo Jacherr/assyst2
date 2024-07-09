@@ -160,7 +160,7 @@ pub async fn add_default(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
 
 #[command(
     aliases = [],
-    description = "Remove an existing colour role",
+    description = "Remove an existing colour role from the server",
     access = Availability::ServerManagers,
     cooldown = Duration::from_secs(5),
     category = Category::Fun,
@@ -205,7 +205,7 @@ pub async fn remove(ctxt: CommandCtxt<'_>, name: Word) -> anyhow::Result<()> {
 #[command(
     name = "remove-all",
     aliases = [],
-    description = "Remove all existing colour roles (THIS CANNOT BE UNDONE)",
+    description = "Remove all existing colour roles from the server (THIS CANNOT BE UNDONE)",
     access = Availability::ServerManagers,
     cooldown = Duration::from_secs(20),
     category = Category::Fun,

@@ -96,7 +96,7 @@ macro_rules! define_commandgroup {
 
                 fn as_interaction_command(&self) -> twilight_model::application::command::Command {
                     let meta = self.metadata();
-                    let options = self.interaction_info().group_as_option_tree();
+                    let options = self.interaction_info().group_as_option_tree(Self::SUBCOMMANDS);
 
                     twilight_model::application::command::Command {
                         application_id: None,
