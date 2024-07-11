@@ -1,4 +1,5 @@
 pub mod colour_role;
+pub mod command_usage;
 pub mod free_tier_2_requests;
 pub mod global_blacklist;
 pub mod prefix;

@@ -43,6 +43,12 @@ pub async fn burn_text(text: &str) -> anyhow::Result<Vec<u8>> {
     let url = cool_text_response.render_location;
     let content = client.get(url.replace("https", "http")).send().await?.bytes().await?;
 
+    if let Ok(a) = String::from_utf8(content.to_vec())
+        && a.starts_with("<!DOCTYPE")
+    {
+        bail!("Cooltext failed to process your input. Try a different input.")
+    }
+
     let mut hasher = DefaultHasher::new();
     content.hash(&mut hasher);
     let result = hasher.finish();
@@ -60,8 +66,18 @@ pub async fn cooltext(style: &str, text: &str) -> anyhow::Result<Vec<u8>> {
     let client = ClientBuilder::new().danger_accept_invalid_certs(true).build().unwrap();
     let styled = STYLES
         .iter()
-        .find_map(|(x, y)| if x.eq_ignore_ascii_case(style) { Some(y) } else { None })
-        .ok_or(anyhow::anyhow!("unknown style {style}"))?;
+        .find_map(|(x, y)| {
+            dbg!(style);
+            dbg!(x);
+            if x.to_lowercase() == style.to_lowercase() {
+                Some(y)
+            } else {
+                None
+            }
+        })
+        .ok_or(anyhow::anyhow!(
+            "Unknown style {style}. Try the 'list' subcommand to see all available styles."
+        ))?;
 
     let cool_text_response = client
         .post(COOLTEXT_URL)
@@ -83,6 +99,12 @@ pub async fn cooltext(style: &str, text: &str) -> anyhow::Result<Vec<u8>> {
 
     let url = cool_text_response.render_location;
     let content = client.get(url.replace("https", "http")).send().await?.bytes().await?;
+
+    if let Ok(a) = String::from_utf8(content.to_vec())
+        && a.starts_with("<!DOCTYPE")
+    {
+        bail!("Cooltext failed to process your input. Try a different input.")
+    }
 
     let mut hasher = DefaultHasher::new();
     content.hash(&mut hasher);

@@ -5,6 +5,7 @@ use assyst_proc_macro::command;
 
 use super::arguments::{Image, Rest, RestNoFlags, Word};
 use super::flags::BloomFlags;
+use super::messagebuilder::{Attachment, MessageBuilder};
 use crate::command::{Availability, Category, CommandCtxt};
 
 pub mod audio;
@@ -137,6 +138,102 @@ pub async fn deepfry(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()>
 }
 
 #[command(
+    description = "fish-eye an image",
+    cooldown = Duration::from_secs(2),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image]",
+    examples = ["https://link.to.my/image.png"],
+    send_processing = true
+)]
+pub async fn fisheye(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
+    let result = ctxt.flux_handler().fisheye(source.0, ctxt.data.author.id.get()).await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "flip an image vertically",
+    cooldown = Duration::from_secs(2),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image]",
+    examples = ["https://link.to.my/image.png"],
+    send_processing = true
+)]
+pub async fn flip(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
+    let result = ctxt.flux_handler().flip(source.0, ctxt.data.author.id.get()).await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "flop an image horizontally",
+    cooldown = Duration::from_secs(2),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image]",
+    examples = ["https://link.to.my/image.png"],
+    send_processing = true
+)]
+pub async fn flop(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
+    let result = ctxt.flux_handler().flip(source.0, ctxt.data.author.id.get()).await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "extract all frames of a gif or video and zip them",
+    cooldown = Duration::from_secs(2),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image]",
+    examples = ["https://link.to.my/image.png"],
+    send_processing = true
+)]
+pub async fn frames(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
+    let result = ctxt.flux_handler().frames(source.0, ctxt.data.author.id.get()).await?;
+
+    let response = MessageBuilder {
+        content: None,
+        attachment: Some(Attachment {
+            name: "frames.zip".to_owned().into_boxed_str(),
+            data: result,
+        }),
+    };
+
+    ctxt.reply(response).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "perform some frame shifting (please suggest a better name for this command)",
+    cooldown = Duration::from_secs(2),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image]",
+    examples = ["https://link.to.my/image.png"],
+    send_processing = true
+)]
+pub async fn frameshift(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
+    let result = ctxt
+        .flux_handler()
+        .frame_shift(source.0, ctxt.data.author.id.get())
+        .await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
     description = "add impact font meme text to an image",
     cooldown = Duration::from_secs(3),
     access = Availability::Public,
@@ -211,7 +308,7 @@ pub async fn resize(ctxt: CommandCtxt<'_>, source: Image, size: Option<Word>) ->
 
 #[command(
     description = "reverse a gif or video",
-    cooldown = Duration::from_secs(3),
+    cooldown = Duration::from_secs(2),
     access = Availability::Public,
     category = Category::Image,
     usage = "[image]",

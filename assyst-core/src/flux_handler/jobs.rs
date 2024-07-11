@@ -151,6 +151,15 @@ impl FluxHandler {
         self.run_flux(request, limits.time).await
     }
 
+    pub async fn fisheye(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let request = FluxRequest::new_basic(media, limits, "fisheye");
+
+        self.run_flux(request, limits.time).await
+    }
+
     pub async fn flag(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
         let tier = self.get_request_tier(user_id).await?;
         let limits = &LIMITS[tier];
@@ -169,11 +178,47 @@ impl FluxHandler {
         self.run_flux(request, limits.time).await
     }
 
+    pub async fn flip(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let request = FluxRequest::new_basic(media, limits, "flip");
+
+        self.run_flux(request, limits.time).await
+    }
+
+    pub async fn flop(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let request = FluxRequest::new_basic(media, limits, "flop");
+
+        self.run_flux(request, limits.time).await
+    }
+
     pub async fn fortune_cookie(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
         let tier = self.get_request_tier(user_id).await?;
         let limits = &LIMITS[tier];
 
         let request = FluxRequest::new_basic(media, limits, "fortune-cookie");
+
+        self.run_flux(request, limits.time).await
+    }
+
+    pub async fn frame_shift(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let request = FluxRequest::new_basic(media, limits, "frame-shift");
+
+        self.run_flux(request, limits.time).await
+    }
+
+    pub async fn frames(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let request = FluxRequest::new_basic(media, limits, "frames");
 
         self.run_flux(request, limits.time).await
     }

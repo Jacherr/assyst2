@@ -108,9 +108,10 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
     let category = fields.remove("category").expect("missing category");
     let examples = fields.remove("examples").unwrap_or_else(empty_array_expr);
     let usage: Expr = fields.remove("usage").map(|v| parse_quote!(String::from(#v))).unwrap_or_else(|| {
-        parse_quote! {
-            vec![#(#parse_usage),*].join(" ")
-        }
+        parse_quote! {{
+            let _v: Vec<String> = vec![#(#parse_usage),*];
+            _v.join(" ")
+        }}
     });
     let send_processing = fields.remove("send_processing").unwrap_or_else(false_expr);
     let age_restricted = fields.remove("age_restricted").unwrap_or_else(false_expr);

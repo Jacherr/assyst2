@@ -71,7 +71,9 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: MessageUpdate) {
                             },
                         }
                     } else {
-                        after_command_execution_success(ctxt.cx, result.command);
+                        let _ = after_command_execution_success(ctxt.cx, result.command)
+                            .await
+                            .map_err(|e| err!("Error handling post-command: {e:#}"));
                     }
                 },
                 Ok(None) | Err(ParseError::PreParseFail(PreParseError::MessageNotPrefixed(_))) => {

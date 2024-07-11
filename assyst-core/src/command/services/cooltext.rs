@@ -1,10 +1,8 @@
 use std::time::Duration;
 
-use anyhow::bail;
 use assyst_common::markdown::Markdown;
 use assyst_proc_macro::command;
-use rand::prelude::SliceRandom;
-use rand::thread_rng;
+use rand::{thread_rng, Rng};
 
 use crate::command::arguments::{Rest, Word};
 use crate::command::{Availability, Category, CommandCtxt};
@@ -21,23 +19,14 @@ use crate::rest::cooltext::STYLES;
 )]
 pub async fn default(ctxt: CommandCtxt<'_>, style: Word, text: Rest) -> anyhow::Result<()> {
     let style = if &style.0 == "random" {
-        let mut s = STYLES.to_vec();
-        s.shuffle(&mut thread_rng());
-        s[0].0
+        let rand = thread_rng().gen_range(0..STYLES.len());
+        STYLES[rand].0
     } else {
         &style.0
     };
 
-    let result = crate::rest::cooltext::cooltext(style, text.0.as_str()).await;
-    if let Ok(r) = result {
-        ctxt.reply((r, &format!("**Style:** `{style}`")[..])).await?;
-    } else {
-        bail!(
-            "unknown style {}, available styles are: {}",
-            style,
-            STYLES.iter().map(|(v, _)| *v).collect::<Vec<_>>().join(", ")
-        )
-    }
+    let result = crate::rest::cooltext::cooltext(style, text.0.as_str()).await?;
+    ctxt.reply((result, &format!("**Style:** `{style}`")[..])).await?;
 
     Ok(())
 }
@@ -68,7 +57,7 @@ define_commandgroup! {
     category: Category::Services,
     aliases: ["ct", "funtext"],
     cooldown: Duration::from_secs(5),
-    description: "Assyst colour roles",
+    description: "Write some cool text",
     examples: ["random hello", "warp warpy text", "list"],
     usage: "[colour]",
     commands: [

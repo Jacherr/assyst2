@@ -122,7 +122,9 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
                     },
                 }
             } else {
-                after_command_execution_success(ctxt.cx, command);
+                let _ = after_command_execution_success(ctxt.cx, command)
+                    .await
+                    .map_err(|e| err!("Error handling post-command: {e:#}"));
             }
         } else {
             warn!(
