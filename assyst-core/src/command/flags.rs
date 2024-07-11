@@ -248,6 +248,30 @@ impl FlagDecode for BloomFlags {
 }
 flag_parse_argument! { BloomFlags }
 
+#[derive(Default)]
+pub struct GhostFlags {
+    pub depth: Option<u64>,
+}
+impl FlagDecode for GhostFlags {
+    fn from_str(input: &str) -> anyhow::Result<Self> {
+        let mut valid_flags = HashMap::new();
+        valid_flags.insert("depth", FlagType::WithValue);
+
+        let raw_decode = flags_from_str(input, valid_flags)?;
+        let result = Self {
+            depth: raw_decode
+                .get("depth")
+                .unwrap_or(&None)
+                .clone()
+                .map(|x| x.parse().context("Provided depth is invalid"))
+                .transpose()?,
+        };
+
+        Ok(result)
+    }
+}
+flag_parse_argument! { GhostFlags }
+
 pub enum FlagType {
     WithValue,
     NoValue,

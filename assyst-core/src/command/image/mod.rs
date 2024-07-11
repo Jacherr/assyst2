@@ -4,7 +4,7 @@ use anyhow::Context;
 use assyst_proc_macro::command;
 
 use super::arguments::{Image, Rest, RestNoFlags, Word};
-use super::flags::BloomFlags;
+use super::flags::{BloomFlags, GhostFlags};
 use super::messagebuilder::{Attachment, MessageBuilder};
 use crate::command::{Availability, Category, CommandCtxt};
 
@@ -226,6 +226,26 @@ pub async fn frameshift(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<
     let result = ctxt
         .flux_handler()
         .frame_shift(source.0, ctxt.data.author.id.get())
+        .await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "add a ghosting effect to a gif or video",
+    cooldown = Duration::from_secs(4),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image] <--depth [depth]>",
+    examples = ["https://link.to.my/image.png", "https://link.to.my/image.png --depth 10"],
+    send_processing = true
+)]
+pub async fn ghost(ctxt: CommandCtxt<'_>, source: Image, flags: GhostFlags) -> anyhow::Result<()> {
+    let result = ctxt
+        .flux_handler()
+        .ghost(source.0, flags.depth, ctxt.data.author.id.get())
         .await?;
 
     ctxt.reply(result).await?;

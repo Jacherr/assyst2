@@ -38,6 +38,7 @@ declare_commands!(
     image::flop_command,
     image::frames_command,
     image::frameshift_command,
+    image::ghost_command,
     image::makesweet::back_tattoo_command,
     image::makesweet::billboard_command,
     image::makesweet::book_command,

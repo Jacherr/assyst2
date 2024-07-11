@@ -223,6 +223,23 @@ impl FluxHandler {
         self.run_flux(request, limits.time).await
     }
 
+    pub async fn ghost(&self, media: Vec<u8>, depth: Option<u64>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+
+        let limits = &LIMITS[tier];
+        let mut request = FluxRequest::new_with_input_and_limits(media, limits);
+
+        let mut options = HashMap::new();
+        if let Some(d) = depth {
+            options.insert("depth".to_owned(), d.to_string());
+        };
+
+        request.operation("ghost".to_owned(), options);
+        request.output();
+
+        self.run_flux(request, limits.time).await
+    }
+
     pub async fn heart_locket(&self, media: Vec<u8>, text: String, user_id: u64) -> FluxResult {
         let tier = self.get_request_tier(user_id).await?;
         let limits = &LIMITS[tier];

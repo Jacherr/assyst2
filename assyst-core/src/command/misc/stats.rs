@@ -11,7 +11,6 @@ use twilight_model::gateway::SessionStartLimit;
 
 use crate::command::arguments::Word;
 use crate::command::misc::key_value;
-use crate::command::registry::get_or_init_commands;
 use crate::command::{Availability, Category, CommandCtxt};
 use crate::rest::filer::{get_filer_stats as filer_stats, FilerStats};
 
