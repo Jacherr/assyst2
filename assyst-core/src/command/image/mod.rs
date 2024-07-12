@@ -4,7 +4,7 @@ use anyhow::Context;
 use assyst_proc_macro::command;
 
 use super::arguments::{Image, Rest, RestNoFlags, Word};
-use super::flags::{BloomFlags, GhostFlags};
+use super::flags::BloomFlags;
 use super::messagebuilder::{Attachment, MessageBuilder};
 use crate::command::{Availability, Category, CommandCtxt};
 
@@ -235,18 +235,53 @@ pub async fn frameshift(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<
 
 #[command(
     description = "add a ghosting effect to a gif or video",
-    cooldown = Duration::from_secs(4),
+    cooldown = Duration::from_secs(3),
     access = Availability::Public,
     category = Category::Image,
-    usage = "[image] <--depth [depth]>",
+    usage = "[image] <depth>",
     examples = ["https://link.to.my/image.png", "https://link.to.my/image.png --depth 10"],
     send_processing = true
 )]
-pub async fn ghost(ctxt: CommandCtxt<'_>, source: Image, flags: GhostFlags) -> anyhow::Result<()> {
+pub async fn ghost(ctxt: CommandCtxt<'_>, source: Image, depth: Option<u64>) -> anyhow::Result<()> {
     let result = ctxt
         .flux_handler()
-        .ghost(source.0, flags.depth, ctxt.data.author.id.get())
+        .ghost(source.0, depth, ctxt.data.author.id.get())
         .await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "convert an input to a gif",
+    cooldown = Duration::from_secs(4),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image]",
+    examples = ["https://link.to.my/image.png"],
+    send_processing = true
+)]
+pub async fn gif(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
+    let result = ctxt.flux_handler().gif(source.0, ctxt.data.author.id.get()).await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "give your input some magik",
+    aliases = ["magic", "magick"],
+    cooldown = Duration::from_secs(4),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image]",
+    examples = ["https://link.to.my/image.png"],
+    send_processing = true
+)]
+pub async fn magik(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
+    let result = ctxt.flux_handler().magik(source.0, ctxt.data.author.id.get()).await?;
 
     ctxt.reply(result).await?;
 
@@ -282,6 +317,27 @@ pub async fn meme(ctxt: CommandCtxt<'_>, source: Image, text: RestNoFlags) -> an
     let result = ctxt
         .flux_handler()
         .meme(source.0, top_text, bottom_text, ctxt.data.author.id.get())
+        .await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "play a gif forward then backward",
+    aliases = ["gifloop", "gloop"],
+    cooldown = Duration::from_secs(4),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image]",
+    examples = ["https://link.to.my/image.png"],
+    send_processing = true
+)]
+pub async fn pingpong(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
+    let result = ctxt
+        .flux_handler()
+        .ping_pong(source.0, ctxt.data.author.id.get())
         .await?;
 
     ctxt.reply(result).await?;

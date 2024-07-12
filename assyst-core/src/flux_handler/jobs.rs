@@ -240,6 +240,15 @@ impl FluxHandler {
         self.run_flux(request, limits.time).await
     }
 
+    pub async fn gif(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let request = FluxRequest::new_basic(media, limits, "gif");
+
+        self.run_flux(request, limits.time).await
+    }
+
     pub async fn heart_locket(&self, media: Vec<u8>, text: String, user_id: u64) -> FluxResult {
         let tier = self.get_request_tier(user_id).await?;
         let limits = &LIMITS[tier];
@@ -251,6 +260,15 @@ impl FluxHandler {
 
         request.operation("heart-locket".to_owned(), options);
         request.output();
+
+        self.run_flux(request, limits.time).await
+    }
+
+    pub async fn magik(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let request = FluxRequest::new_basic(media, limits, "magik");
 
         self.run_flux(request, limits.time).await
     }
@@ -267,6 +285,15 @@ impl FluxHandler {
 
         request.operation("meme".to_owned(), options);
         request.output();
+
+        self.run_flux(request, limits.time).await
+    }
+
+    pub async fn ping_pong(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let request = FluxRequest::new_basic(media, limits, "ping-pong");
 
         self.run_flux(request, limits.time).await
     }

@@ -96,6 +96,9 @@ impl FluxHandler {
                     args.push("--res-limit".to_owned());
                     args.push(format!("{w}x{h}"));
                 },
+                FluxStep::VideoDecodeDisabled => {
+                    args.push("--disable-video-decode".to_owned());
+                },
             }
         }
 

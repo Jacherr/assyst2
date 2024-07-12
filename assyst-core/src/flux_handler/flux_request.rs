@@ -10,8 +10,12 @@ pub enum FluxStep {
     Operation((String, HashMap<String, String>)),
     /// Output. Passes to Flux as `path` at the end. Output must be the last step.
     Output,
+    /// Frame limit of inputs. Inputs will have additional frames removed.
     ImagePageLimit(u64),
+    /// Resolution limit of input. Input will shrink, preserving aspect ratio, to fit this.
     ResolutionLimit((u64, u64)),
+    /// Whether to disable video decoding.
+    VideoDecodeDisabled,
 }
 
 pub struct FluxRequest(pub Vec<FluxStep>);
@@ -51,5 +55,8 @@ impl FluxRequest {
     pub fn limits(&mut self, limits: &LimitData) {
         self.0.push(FluxStep::ImagePageLimit(limits.frames));
         self.0.push(FluxStep::ResolutionLimit((limits.size, limits.size)));
+        if !limits.video_decode_enabled {
+            self.0.push(FluxStep::VideoDecodeDisabled)
+        }
     }
 }

@@ -104,9 +104,15 @@ async fn main() -> anyhow::Result<()> {
 }
 
 async fn runner(mut shard: Shard, tx: UnboundedSender<String>) {
-    while let Some(Ok(item)) = shard.next().await {
-        if let Message::Text(message) = item {
-            tx.send(message).unwrap();
+    loop {
+        match shard.next().await {
+            Some(Ok(Message::Text(message))) => {
+                tx.send(message).unwrap();
+            },
+            Some(Err(e)) => {
+                warn!(?e, "error receiving event");
+            },
+            _ => {},
         }
     }
 }
