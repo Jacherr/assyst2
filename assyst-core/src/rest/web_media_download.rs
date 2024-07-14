@@ -155,11 +155,14 @@ pub async fn download_web_media(assyst: ThreadSafeAssyst, url: &str, opts: WebDo
         vec![Arc::new(api_url)]
     } else {
         let mut urls = assyst.rest_cache_handler.get_web_download_urls();
+        if urls.is_empty() {
+            bail!("Assyst has not yet cached web download URLs. Please try again in a few seconds.");
+        }
         urls.shuffle(&mut thread_rng());
         urls
     };
 
-    let mut req_result_url: Option<String> = None;
+    let mut result: Option<Vec<u8>> = None;
     let mut err: String = String::new();
 
     for route in urls {
@@ -181,6 +184,7 @@ pub async fn download_web_media(assyst: ThreadSafeAssyst, url: &str, opts: WebDo
             .send()
             .await;
 
+        let mut req_result_url = None;
         match res {
             Ok(r) => {
                 if r.status() == StatusCode::OK {
@@ -188,7 +192,6 @@ pub async fn download_web_media(assyst: ThreadSafeAssyst, url: &str, opts: WebDo
                     match try_json {
                         Ok(j) => {
                             req_result_url = Some(j.url.to_string());
-                            break;
                         },
                         Err(e) => err = format!("Failed to deserialize download url: {}", e),
                     }
@@ -222,15 +225,20 @@ pub async fn download_web_media(assyst: ThreadSafeAssyst, url: &str, opts: WebDo
             Err(e) => {
                 err = format!("Download request failed: {}", e);
             },
+        };
+
+        if let Some(r) = req_result_url {
+            let media = download_content(&assyst, &r, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES, false).await?;
+            if let Ok(s) = String::from_utf8(media.clone())
+                && s.starts_with("<!DOCTYPE")
+            {
+                err = "Failed to download media: an unknown error occurred".to_owned();
+                continue;
+            }
+            result = Some(media);
+            break;
         }
     }
 
-    if let Some(r) = req_result_url {
-        let media = download_content(&assyst, &r, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES, false).await?;
-        Ok(media)
-    } else if !err.is_empty() {
-        bail!("{err}");
-    } else {
-        bail!("Failed to download media: an unknown error occurred");
-    }
+    if let Some(r) = result { Ok(r) } else { bail!(err) }
 }

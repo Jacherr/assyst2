@@ -1,12 +1,17 @@
 use std::time::Duration;
 
 use anyhow::Context;
+use assyst_common::ansi::Ansi;
+use assyst_common::markdown::Markdown;
+use assyst_common::util::{format_duration, table};
 use assyst_proc_macro::command;
+use human_bytes::human_bytes;
 
 use super::arguments::{Image, Rest, RestNoFlags, Word};
 use super::flags::BloomFlags;
 use super::messagebuilder::{Attachment, MessageBuilder};
 use crate::command::{Availability, Category, CommandCtxt};
+use crate::flux_handler::jobs::MediaInfo;
 
 pub mod audio;
 pub mod makesweet;
@@ -239,7 +244,7 @@ pub async fn frameshift(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<
     access = Availability::Public,
     category = Category::Image,
     usage = "[image] <depth>",
-    examples = ["https://link.to.my/image.png", "https://link.to.my/image.png --depth 10"],
+    examples = ["https://link.to.my/image.png", "https://link.to.my/image.png 10"],
     send_processing = true
 )]
 pub async fn ghost(ctxt: CommandCtxt<'_>, source: Image, depth: Option<u64>) -> anyhow::Result<()> {
@@ -266,6 +271,120 @@ pub async fn gif(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
     let result = ctxt.flux_handler().gif(source.0, ctxt.data.author.id.get()).await?;
 
     ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "create a magikal gif out of an image",
+    aliases = ["gifmagic", "gifmagick", "gmagik"],
+    cooldown = Duration::from_secs(6),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image]",
+    examples = ["https://link.to.my/image.png"],
+    send_processing = true
+)]
+pub async fn gifmagik(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
+    let result = ctxt
+        .flux_handler()
+        .gif_magik(source.0, ctxt.data.author.id.get())
+        .await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "turn an image into a globe",
+    cooldown = Duration::from_secs(4),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image]",
+    examples = ["https://link.to.my/image.png"],
+    send_processing = true
+)]
+pub async fn globe(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
+    let result = ctxt.flux_handler().globe(source.0, ctxt.data.author.id.get()).await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "grayscale an image",
+    cooldown = Duration::from_secs(2),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image]",
+    examples = ["https://link.to.my/image.png"],
+    send_processing = true
+)]
+pub async fn grayscale(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
+    let result = ctxt
+        .flux_handler()
+        .grayscale(source.0, ctxt.data.author.id.get())
+        .await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "get info about an image or video",
+    aliases = ["ii", "videoinfo", "exif", "vi"],
+    cooldown = Duration::from_secs(2),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image]",
+    examples = ["https://link.to.my/image.png"],
+    send_processing = true
+)]
+pub async fn image_info(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
+    let result = ctxt.flux_handler().image_info(source.0).await?;
+
+    if let MediaInfo::Image(i) = result {
+        let mut kv = Vec::new();
+        kv.push(("Filesize".fg_cyan(), human_bytes(i.file_size_bytes as f64)));
+        kv.push(("Mimetype".fg_cyan(), i.mime_type));
+        kv.push(("Dimensions".fg_cyan(), i.dimensions));
+        if let Some(count) = i.frame_count {
+            kv.push(("Frame Count".fg_cyan(), count.to_string()));
+        };
+        if let Some(r) = i.repeat {
+            kv.push(("Repeat".fg_cyan(), r));
+        };
+        if !i.comments.is_empty() {
+            kv.push((
+                "Comments".fg_cyan(),
+                i.comments
+                    .iter()
+                    .enumerate()
+                    .map(|(i, c)| format!("{i}: {c}"))
+                    .collect::<Vec<_>>()
+                    .join(", "),
+            ))
+        };
+        let table = table::key_value(&kv);
+        ctxt.reply(table.codeblock("ansi")).await?;
+    } else if let MediaInfo::Video(v) = result {
+        let kv = vec![
+            ("Filesize".fg_cyan(), human_bytes(v.file_size_bytes as f64)),
+            ("Mimetype".fg_cyan(), v.mime_type),
+            ("Dimensions".fg_cyan(), v.dimensions),
+            (
+                "Duration".fg_cyan(),
+                format_duration(&Duration::from_millis(v.duration_ms)),
+            ),
+            ("Frame Count".fg_cyan(), v.frame_count.to_string()),
+            ("Frames Per Second".fg_cyan(), v.fps.to_string()),
+        ];
+        let table = table::key_value(&kv);
+        ctxt.reply(table.codeblock("ansi")).await?;
+    }
 
     Ok(())
 }
@@ -393,6 +512,47 @@ pub async fn resize(ctxt: CommandCtxt<'_>, source: Image, size: Option<Word>) ->
 )]
 pub async fn reverse(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
     let result = ctxt.flux_handler().reverse(source.0, ctxt.data.author.id.get()).await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "scramble a gif or video",
+    cooldown = Duration::from_secs(6),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image]",
+    examples = ["https://link.to.my/image.png"],
+    send_processing = true
+)]
+pub async fn scramble(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
+    let result = ctxt
+        .flux_handler()
+        .scramble(source.0, ctxt.data.author.id.get())
+        .await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "speed up or slow down a gif or video",
+    aliases = ["gspeed"],
+    cooldown = Duration::from_secs(3),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image] <multiplier>",
+    examples = ["https://link.to.my/image.png", "https://link.to.my/image.png 3"],
+    send_processing = true
+)]
+pub async fn speed(ctxt: CommandCtxt<'_>, source: Image, multiplier: Option<f64>) -> anyhow::Result<()> {
+    let result = ctxt
+        .flux_handler()
+        .speed(source.0, multiplier, ctxt.data.author.id.get())
+        .await?;
 
     ctxt.reply(result).await?;
 

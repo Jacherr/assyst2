@@ -16,6 +16,8 @@ pub enum FluxStep {
     ResolutionLimit((u64, u64)),
     /// Whether to disable video decoding.
     VideoDecodeDisabled,
+    /// Get media info
+    Info,
 }
 
 pub struct FluxRequest(pub Vec<FluxStep>);
@@ -58,5 +60,9 @@ impl FluxRequest {
         if !limits.video_decode_enabled {
             self.0.push(FluxStep::VideoDecodeDisabled)
         }
+    }
+
+    pub fn info(&mut self) {
+        self.0.push(FluxStep::Info);
     }
 }

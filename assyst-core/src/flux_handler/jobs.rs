@@ -1,9 +1,40 @@
+use assyst_common::util::string_from_likely_utf8;
+use serde::Deserialize;
+use serde_json::from_str;
+
 use std::collections::HashMap;
+use std::time::Duration;
 
 use crate::flux_handler::flux_request::FluxRequest;
 
 use super::limits::LIMITS;
 use super::FluxHandler;
+
+#[derive(Deserialize)]
+pub struct ImageInfo {
+    pub file_size_bytes: u64,
+    pub mime_type: String,
+    pub dimensions: String,
+    pub frame_count: Option<u64>,
+    pub repeat: Option<String>,
+    pub comments: Vec<String>,
+}
+
+#[derive(Deserialize)]
+pub struct VideoInfo {
+    pub file_size_bytes: u64,
+    pub mime_type: String,
+    pub dimensions: String,
+    pub duration_ms: u64,
+    pub frame_count: u64,
+    pub fps: f64,
+}
+
+#[derive(Deserialize)]
+pub enum MediaInfo {
+    Image(ImageInfo),
+    Video(VideoInfo),
+}
 
 pub type FluxResult = anyhow::Result<Vec<u8>>;
 
@@ -249,6 +280,33 @@ impl FluxHandler {
         self.run_flux(request, limits.time).await
     }
 
+    pub async fn gif_magik(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let request = FluxRequest::new_basic(media, limits, "gif-magik");
+
+        self.run_flux(request, limits.time).await
+    }
+
+    pub async fn globe(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let request = FluxRequest::new_basic(media, limits, "globe");
+
+        self.run_flux(request, limits.time).await
+    }
+
+    pub async fn grayscale(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let request = FluxRequest::new_basic(media, limits, "grayscale");
+
+        self.run_flux(request, limits.time).await
+    }
+
     pub async fn heart_locket(&self, media: Vec<u8>, text: String, user_id: u64) -> FluxResult {
         let tier = self.get_request_tier(user_id).await?;
         let limits = &LIMITS[tier];
@@ -262,6 +320,15 @@ impl FluxHandler {
         request.output();
 
         self.run_flux(request, limits.time).await
+    }
+
+    pub async fn image_info(&self, media: Vec<u8>) -> anyhow::Result<MediaInfo> {
+        let mut request = FluxRequest::new();
+        request.input(media);
+        request.info();
+
+        let out = self.run_flux(request, Duration::MAX).await?;
+        Ok(from_str::<MediaInfo>(&string_from_likely_utf8(out))?)
     }
 
     pub async fn magik(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
@@ -347,11 +414,37 @@ impl FluxHandler {
         self.run_flux(request, limits.time).await
     }
 
+    pub async fn scramble(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let request = FluxRequest::new_basic(media, limits, "scramble");
+
+        self.run_flux(request, limits.time).await
+    }
+
     pub async fn siren(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
         let tier = self.get_request_tier(user_id).await?;
         let limits = &LIMITS[tier];
 
         let request = FluxRequest::new_basic(media, limits, "siren");
+
+        self.run_flux(request, limits.time).await
+    }
+
+    pub async fn speed(&self, media: Vec<u8>, multiplier: Option<f64>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let mut request = FluxRequest::new_with_input_and_limits(media, limits);
+
+        let mut options: HashMap<String, String> = HashMap::new();
+        if let Some(m) = multiplier {
+            options.insert("multiplier".to_owned(), m.to_string());
+        };
+
+        request.operation("speed".to_owned(), options);
+        request.output();
 
         self.run_flux(request, limits.time).await
     }

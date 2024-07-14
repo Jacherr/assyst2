@@ -99,6 +99,9 @@ impl FluxHandler {
                 FluxStep::VideoDecodeDisabled => {
                     args.push("--disable-video-decode".to_owned());
                 },
+                FluxStep::Info => {
+                    args.push("--info".to_owned());
+                },
             }
         }
 
@@ -144,16 +147,20 @@ impl FluxHandler {
             );
         }
 
-        let output_file = fs::read(&output_file_path)
-            .await
-            .context("Failed to read output file")?;
+        let output = if !output_file_path.is_empty() {
+            fs::read(&output_file_path)
+                .await
+                .context("Failed to read output file")?
+        } else {
+            output.stdout
+        };
 
-        Ok(output_file)
+        Ok(output)
     }
 
     pub async fn compile_flux() -> anyhow::Result<()> {
         exec_sync(&format!(
-            "cd {} && cargo build --release",
+            "cd {} && mold -run cargo build --release",
             CONFIG.dev.flux_workspace_root_path_override
         ))
         .context("Failed to compile flux")?;

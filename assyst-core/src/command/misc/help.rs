@@ -202,7 +202,7 @@ pub async fn help(ctxt: CommandCtxt<'_>, labels: Vec<Word>) -> anyhow::Result<()
         );
 
         msg += &format!(
-            "{} | {} | {}",
+            "{} | {} | {} | {} | {}",
             "Invite"
                 .codestring()
                 .url("<https://jacher.io/assyst>", Some("Invite link for Assyst.")),
@@ -212,7 +212,14 @@ pub async fn help(ctxt: CommandCtxt<'_>, labels: Vec<Word>) -> anyhow::Result<()
             ),
             "Vote"
                 .codestring()
-                .url("<https://vote.jacher.io/topgg>", Some("top.gg vote link for Assyst."))
+                .url("<https://vote.jacher.io/topgg>", Some("top.gg vote link for Assyst.")),
+            "Patreon"
+                .codestring()
+                .url("<https://www.patreon.com/jacher>", Some("Patreon URL for Assyst.")),
+            "Source".codestring().url(
+                "<https://github.com/jacherr/assyst2.",
+                Some("Source code URL for Assyst.")
+            )
         );
 
         ctxt.reply(msg).await?;
