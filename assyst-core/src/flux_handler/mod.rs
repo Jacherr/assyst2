@@ -102,6 +102,7 @@ impl FluxHandler {
                 FluxStep::Info => {
                     args.push("--info".to_owned());
                 },
+                FluxStep::Version => args.push("--version".to_owned()),
             }
         }
 
@@ -142,7 +143,8 @@ impl FluxHandler {
 
         if !output.status.success() {
             bail!(
-                "Something went wrong: {}",
+                "Something went wrong ({}): {}",
+                output.status.to_string(),
                 string_from_likely_utf8(output.stderr).trim()
             );
         }
@@ -188,5 +190,11 @@ impl FluxHandler {
         } else {
             Ok(0)
         }
+    }
+
+    pub async fn get_version(&self) -> anyhow::Result<String> {
+        let mut req = FluxRequest::new();
+        req.version();
+        Ok(string_from_likely_utf8(self.run_flux(req, Duration::MAX).await?))
     }
 }

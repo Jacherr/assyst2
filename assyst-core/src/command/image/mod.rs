@@ -315,6 +315,7 @@ pub async fn globe(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
 
 #[command(
     description = "grayscale an image",
+    aliases = ["gray", "greyscale", "grey"],
     cooldown = Duration::from_secs(2),
     access = Availability::Public,
     category = Category::Image,
@@ -390,6 +391,24 @@ pub async fn image_info(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<
 }
 
 #[command(
+    description = "invert an image",
+    aliases = ["negate"],
+    cooldown = Duration::from_secs(2),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image]",
+    examples = ["https://link.to.my/image.png"],
+    send_processing = true
+)]
+pub async fn invert(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
+    let result = ctxt.flux_handler().invert(source.0, ctxt.data.author.id.get()).await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
     description = "give your input some magik",
     aliases = ["magic", "magick"],
     cooldown = Duration::from_secs(4),
@@ -437,6 +456,24 @@ pub async fn meme(ctxt: CommandCtxt<'_>, source: Image, text: RestNoFlags) -> an
         .flux_handler()
         .meme(source.0, top_text, bottom_text, ctxt.data.author.id.get())
         .await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "apply a neon effect to an image",
+    aliases = ["negate"],
+    cooldown = Duration::from_secs(2),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image]",
+    examples = ["https://link.to.my/image.png"],
+    send_processing = true
+)]
+pub async fn neon(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
+    let result = ctxt.flux_handler().neon(source.0, ctxt.data.author.id.get()).await?;
 
     ctxt.reply(result).await?;
 

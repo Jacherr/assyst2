@@ -21,7 +21,6 @@ use crate::rest::filer::{get_filer_stats as filer_stats, FilerStats};
     category = Category::Misc,
     usage = "<section>",
     examples = ["", "sessions", "storage", "all"],
-    aliases = ["info"],
     send_processing = true
 )]
 pub async fn stats(ctxt: CommandCtxt<'_>, option: Option<Word>) -> anyhow::Result<()> {
@@ -96,7 +95,7 @@ pub async fn stats(ctxt: CommandCtxt<'_>, option: Option<Word>) -> anyhow::Resul
         Ok(table.codeblock("ansi"))
     }
 
-    fn get_general_stats(ctxt: &CommandCtxt<'_>) -> String {
+    async fn get_general_stats(ctxt: &CommandCtxt<'_>) -> String {
         let events_rate = ctxt.assyst().metrics_handler.get_events_rate();
         let events_total = ctxt.assyst().metrics_handler.events.get();
         let commands_rate = ctxt.assyst().metrics_handler.get_commands_rate().to_string();
@@ -116,6 +115,14 @@ pub async fn stats(ctxt: CommandCtxt<'_>, option: Option<Word>) -> anyhow::Resul
             ),
             ("Commands Executed".fg_cyan(), commands_rate + "/min"),
             ("Commit Hash".fg_cyan(), commit),
+            (
+                "Flux Version".fg_cyan(),
+                ctxt.assyst()
+                    .flux_handler
+                    .get_version()
+                    .await
+                    .unwrap_or("Unknown".to_owned()),
+            ),
         ]);
 
         stats_table.codeblock("ansi")
@@ -136,7 +143,7 @@ pub async fn stats(ctxt: CommandCtxt<'_>, option: Option<Word>) -> anyhow::Resul
     } else if let Some(Word(ref x)) = option
         && x.to_lowercase() == "all"
     {
-        let stats_table = get_general_stats(&ctxt);
+        let stats_table = get_general_stats(&ctxt).await;
         let usages_table = get_process_stats();
         let storage_table = get_storage_stats(&ctxt).await?;
         let session_table = get_session_stats(&ctxt).await?;
@@ -148,7 +155,7 @@ pub async fn stats(ctxt: CommandCtxt<'_>, option: Option<Word>) -> anyhow::Resul
         ctxt.reply(full_output).await?;
     } else {
         // default to general and process stats
-        let stats_table = get_general_stats(&ctxt);
+        let stats_table = get_general_stats(&ctxt).await;
         let usages_table = get_process_stats();
 
         let msg = format!("{} {}", stats_table, usages_table);

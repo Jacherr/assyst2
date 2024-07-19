@@ -149,7 +149,10 @@ async fn main() {
     if let Err(e) = FluxHandler::compile_flux().await {
         err!("Failed to compile flux: {e}");
     }
-    info!("Flux is compiled");
+    info!(
+        "Flux is compiled (version: {})",
+        assyst.flux_handler.get_version().await.unwrap().trim()
+    );
 
     let a = assyst.clone();
 

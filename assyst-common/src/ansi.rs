@@ -1,10 +1,10 @@
 use std::fmt::Display;
 
 pub trait Ansi {
-    fn bold(&self) -> String;
-    fn italic(&self) -> String;
-    fn underline(&self) -> String;
-    fn strikethrough(&self) -> String;
+    fn a_bold(&self) -> String;
+    fn a_italic(&self) -> String;
+    fn a_underline(&self) -> String;
+    fn a_strikethrough(&self) -> String;
     fn fg_black(&self) -> String;
     fn fg_red(&self) -> String;
     fn fg_green(&self) -> String;
@@ -43,16 +43,16 @@ impl<T> Ansi for T
 where
     T: Display,
 {
-    fn bold(&self) -> String {
+    fn a_bold(&self) -> String {
         format!("\x1b[1m{}\x1b[22m", self)
     }
-    fn italic(&self) -> String {
+    fn a_italic(&self) -> String {
         format!("\x1b[3m{}\x1b[23m", self)
     }
-    fn underline(&self) -> String {
+    fn a_underline(&self) -> String {
         format!("\x1b[4m{}\x1b[24m", self)
     }
-    fn strikethrough(&self) -> String {
+    fn a_strikethrough(&self) -> String {
         format!("\x1b[9m{}\x1b[29m", self)
     }
     fn fg_black(&self) -> String {

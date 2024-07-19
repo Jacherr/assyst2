@@ -10,9 +10,9 @@ use anyhow::Context;
 use assyst_common::ansi::Ansi;
 use assyst_common::eval::FakeEvalImageResponse;
 use assyst_common::markdown::Markdown;
-use assyst_common::util::format_duration;
 use assyst_common::util::process::exec_sync;
 use assyst_common::util::table::key_value;
+use assyst_common::util::{format_duration, table};
 use assyst_proc_macro::command;
 
 pub mod help;
@@ -128,4 +128,35 @@ pub async fn eval(ctxt: CommandCtxt<'_>, script: RestNoFlags) -> anyhow::Result<
     }
 
     Ok(())
+}
+
+#[command(
+    description = "get some miscellaneous information about assyst",
+    cooldown = Duration::from_millis(1),
+    access = Availability::Public,
+    category = Category::Misc,
+    usage = "",
+    examples = [""]
+)]
+pub async fn info(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
+    let res = "Assyst Discord Bot".fg_cyan();
+    let table = vec![
+        ("Created by".fg_yellow(), "Jacher (https://github.com/jacherr)"),
+        ("With invaluable help from".fg_yellow(), "y21, Mina"),
+        ("Using key services from".fg_yellow(), "https://cobalt.tools"),
+        (
+            "Written with".fg_yellow(),
+            "Rust, https://twilight.rs and https://tokio.rs",
+        ),
+        (
+            "Built on top of".fg_yellow(),
+            "The Flux image service (https://github.com/jacherr/flux",
+        ),
+        ("Flux is powered by".fg_yellow(), "FFmpeg, gegl, Makesweet, and libvips"),
+    ];
+
+    let table = table::key_value(&table);
+    let out = format!("{res}\n{table}").codeblock("ansi");
+
+    ctxt.reply(out).await
 }

@@ -18,6 +18,8 @@ pub enum FluxStep {
     VideoDecodeDisabled,
     /// Get media info
     Info,
+    /// Get version info
+    Version,
 }
 
 pub struct FluxRequest(pub Vec<FluxStep>);
@@ -64,5 +66,9 @@ impl FluxRequest {
 
     pub fn info(&mut self) {
         self.0.push(FluxStep::Info);
+    }
+
+    pub fn version(&mut self) {
+        self.0.push(FluxStep::Version);
     }
 }

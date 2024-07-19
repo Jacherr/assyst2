@@ -331,6 +331,15 @@ impl FluxHandler {
         Ok(from_str::<MediaInfo>(&string_from_likely_utf8(out))?)
     }
 
+    pub async fn invert(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let request = FluxRequest::new_basic(media, limits, "invert");
+
+        self.run_flux(request, limits.time).await
+    }
+
     pub async fn magik(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
         let tier = self.get_request_tier(user_id).await?;
         let limits = &LIMITS[tier];
@@ -352,6 +361,15 @@ impl FluxHandler {
 
         request.operation("meme".to_owned(), options);
         request.output();
+
+        self.run_flux(request, limits.time).await
+    }
+
+    pub async fn neon(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let request = FluxRequest::new_basic(media, limits, "neon");
 
         self.run_flux(request, limits.time).await
     }

@@ -182,8 +182,8 @@ impl<'buf> DiagnosticBuilder<'buf> {
         let mut out = String::new();
 
         match self.kind {
-            DiagnosticKind::Error => out.push_str(&"error: ".fg_red().bold()),
-            DiagnosticKind::Warning => out.push_str(&"warning: ".fg_yellow().bold()),
+            DiagnosticKind::Error => out.push_str(&"error: ".fg_red().a_bold()),
+            DiagnosticKind::Warning => out.push_str(&"warning: ".fg_yellow().a_bold()),
         }
 
         out += &self.message.expect("no message set for diagnostic");
@@ -211,22 +211,22 @@ impl<'buf> DiagnosticBuilder<'buf> {
                     let arrows = "^".repeat(relative_span_hi - relative_span_lo);
                     match kind {
                         NoteKind::Error => {
-                            out += &arrows.fg_red().bold();
+                            out += &arrows.fg_red().a_bold();
                             out += " ";
-                            out += &message.fg_red().bold();
+                            out += &message.fg_red().a_bold();
                         },
                         NoteKind::Warning => {
-                            out += &arrows.fg_yellow().bold();
+                            out += &arrows.fg_yellow().a_bold();
                             out += " ";
-                            out += &message.fg_yellow().bold();
+                            out += &message.fg_yellow().a_bold();
                         },
                         NoteKind::Help => {
-                            out += &arrows.fg_cyan().bold();
+                            out += &arrows.fg_cyan().a_bold();
                             out += " ";
-                            out += &message.fg_cyan().bold();
+                            out += &message.fg_cyan().a_bold();
                         },
                         NoteKind::Note => {
-                            out += &arrows.bold();
+                            out += &arrows.a_bold();
                             out += " ";
                             out += message;
                         },
@@ -235,16 +235,16 @@ impl<'buf> DiagnosticBuilder<'buf> {
                 None => {
                     match kind {
                         NoteKind::Error => {
-                            out += &"error: ".bold();
+                            out += &"error: ".a_bold();
                         },
                         NoteKind::Warning => {
-                            out += &"warning: ".bold();
+                            out += &"warning: ".a_bold();
                         },
                         NoteKind::Help => {
-                            out += &"help: ".fg_cyan().bold();
+                            out += &"help: ".fg_cyan().a_bold();
                         },
                         NoteKind::Note => {
-                            out += &"note: ".bold();
+                            out += &"note: ".a_bold();
                         },
                     }
                     out += message;
