@@ -4,6 +4,7 @@ use serde::Deserialize;
 
 #[derive(Deserialize)]
 pub struct AssystConfig {
+    pub bot_id: u64,
     pub urls: Urls,
     pub authentication: Authentication,
     pub database: Database,

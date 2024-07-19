@@ -13,7 +13,7 @@ use tokio::time::timeout;
 use tracing::debug;
 
 use crate::assyst::ThreadSafeAssyst;
-use crate::command::flags::DownloadFlags;
+use crate::command::flags::download::DownloadFlags;
 use crate::downloader::{download_content, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES};
 
 pub const INSTANCES_ROUTE: &str = "https://instances.hyper.lol/instances.json";

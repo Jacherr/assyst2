@@ -13,7 +13,8 @@ use tokio::fs;
 use toml::from_str;
 
 use crate::command::arguments::Codeblock;
-use crate::command::flags::{ChargeFlags, RustFlags};
+use crate::command::flags::charge::ChargeFlags;
+use crate::command::flags::rust::RustFlags;
 use crate::command::messagebuilder::{Attachment, MessageBuilder};
 use crate::command::{Availability, Category, CommandCtxt};
 use crate::define_commandgroup;

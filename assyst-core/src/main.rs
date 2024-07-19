@@ -211,29 +211,27 @@ async fn main() {
 #[cfg(test)]
 mod tests {
 
-    use assyst_common::BOT_ID;
-
     use self::gateway_handler::message_parser::preprocess::message_mention_prefix;
 
     use super::*;
 
     #[test]
     fn message_mention_prefix_nick() {
-        let prefix_search = format!("<@!{}>", BOT_ID);
-        let prefix = message_mention_prefix(&format!("<@!{}> test", BOT_ID));
+        let prefix_search = format!("<@!{}>", CONFIG.bot_id);
+        let prefix = message_mention_prefix(&format!("<@!{}> test", CONFIG.bot_id));
         assert_eq!(prefix, Some(prefix_search));
     }
 
     #[test]
     fn message_mention_prefix_no_nick() {
-        let prefix_search = format!("<@{}>", BOT_ID);
-        let prefix = message_mention_prefix(&format!("<@{}> test", BOT_ID));
+        let prefix_search = format!("<@{}>", CONFIG.bot_id);
+        let prefix = message_mention_prefix(&format!("<@{}> test", CONFIG.bot_id));
         assert_eq!(prefix, Some(prefix_search));
     }
 
     #[test]
     fn message_mention_prefix_invalid() {
-        let prefix = message_mention_prefix(&format!("<{}> test", BOT_ID));
+        let prefix = message_mention_prefix(&format!("<{}> test", CONFIG.bot_id));
         assert_eq!(prefix, None);
     }
 }

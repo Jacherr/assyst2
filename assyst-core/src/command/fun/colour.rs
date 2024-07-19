@@ -8,7 +8,7 @@ use twilight_model::id::marker::{GuildMarker, RoleMarker};
 use twilight_model::id::Id;
 
 use crate::command::arguments::Word;
-use crate::command::flags::ColourRemoveAllFlags;
+use crate::command::flags::colour::ColourRemoveAllFlags;
 use crate::command::{Availability, Category, CommandCtxt};
 use crate::define_commandgroup;
 

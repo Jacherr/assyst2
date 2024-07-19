@@ -8,7 +8,8 @@ use assyst_proc_macro::command;
 use human_bytes::human_bytes;
 
 use super::arguments::{Image, Rest, RestNoFlags, Word};
-use super::flags::BloomFlags;
+use super::flags::bloom::BloomFlags;
+use super::flags::caption::CaptionFlags;
 use super::messagebuilder::{Attachment, MessageBuilder};
 use crate::command::{Availability, Category, CommandCtxt};
 use crate::flux_handler::jobs::MediaInfo;
@@ -109,14 +110,18 @@ pub async fn blur(ctxt: CommandCtxt<'_>, source: Image, strength: Option<f32>) -
     cooldown = Duration::from_secs(2),
     access = Availability::Public,
     category = Category::Image,
-    usage = "[image] [caption]",
-    examples = ["https://link.to.my/image.png hello there"],
-    send_processing = true
+    usage = "[image] [caption] <...flags>",
+    examples = ["https://link.to.my/image.png hello there", "https://link.to.my/image.png i am on the bottom --bottom", "https://link.to.my/image.png i am an inverted caption --black"],
+    send_processing = true,
+    flag_descriptions = [
+        ("bottom", "Setting this flag puts the caption on the bottom of the image"),
+        ("black", "Setting this flag inverts the caption"),
+    ]
 )]
-pub async fn caption(ctxt: CommandCtxt<'_>, source: Image, text: Rest) -> anyhow::Result<()> {
+pub async fn caption(ctxt: CommandCtxt<'_>, source: Image, text: Rest, flags: CaptionFlags) -> anyhow::Result<()> {
     let result = ctxt
         .flux_handler()
-        .caption(source.0, text.0, ctxt.data.author.id.get())
+        .caption(source.0, text.0, flags.bottom, flags.black, ctxt.data.author.id.get())
         .await?;
 
     ctxt.reply(result).await?;
@@ -409,6 +414,27 @@ pub async fn invert(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> 
 }
 
 #[command(
+    description = "jpeg-ify an image",
+    aliases = ["jpg"],
+    cooldown = Duration::from_secs(2),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image] <quality: 1-100>",
+    examples = ["https://link.to.my/image.png 5"],
+    send_processing = true
+)]
+pub async fn jpeg(ctxt: CommandCtxt<'_>, source: Image, quality: Option<u64>) -> anyhow::Result<()> {
+    let result = ctxt
+        .flux_handler()
+        .jpeg(source.0, quality, ctxt.data.author.id.get())
+        .await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
     description = "give your input some magik",
     aliases = ["magic", "magick"],
     cooldown = Duration::from_secs(4),
@@ -455,6 +481,42 @@ pub async fn meme(ctxt: CommandCtxt<'_>, source: Image, text: RestNoFlags) -> an
     let result = ctxt
         .flux_handler()
         .meme(source.0, top_text, bottom_text, ctxt.data.author.id.get())
+        .await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "create a motivational poster out of an image",
+    cooldown = Duration::from_secs(3),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image] [text separated by |]",
+    examples = ["https://link.to.my/image.png hello there you", "https://link.to.my/image.png |hello there you", "https://link.to.my/image.png hello there|you"],
+    send_processing = true
+)]
+pub async fn motivate(ctxt: CommandCtxt<'_>, source: Image, text: RestNoFlags) -> anyhow::Result<()> {
+    let text = text.0;
+
+    let divider = if text.contains("|") {
+        "|".to_string()
+    } else {
+        " ".to_string()
+    };
+
+    let parts = text
+        .split_once(&divider)
+        .map(|(x, y)| (Some(x.to_owned()), Some(y.to_owned())))
+        .unwrap_or((Some(text.clone()), None));
+
+    let top_text = parts.0;
+    let bottom_text = parts.1;
+
+    let result = ctxt
+        .flux_handler()
+        .motivate(source.0, top_text, bottom_text, ctxt.data.author.id.get())
         .await?;
 
     ctxt.reply(result).await?;

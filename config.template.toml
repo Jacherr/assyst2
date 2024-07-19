@@ -4,6 +4,8 @@
 # If not using Patreon, you can safely exclude this file. However, you should also set `dev.disable_patreon_synchronisation` to true.
 ######
 
+bot_id = 1234
+
 [urls]
 # Proxy URLs for untrusted requests. Leave blank for no proxying.
 proxy = []

@@ -146,7 +146,7 @@ pub async fn info(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
         ("Using key services from".fg_yellow(), "https://cobalt.tools"),
         (
             "Written with".fg_yellow(),
-            "Rust, https://twilight.rs and https://tokio.rs",
+            "C, Rust, https://twilight.rs and https://tokio.rs",
         ),
         (
             "Built on top of".fg_yellow(),

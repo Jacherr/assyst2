@@ -1,7 +1,7 @@
 use assyst_common::config::config::LoggingWebhook;
 use assyst_common::config::CONFIG;
+use assyst_common::err;
 use assyst_common::metrics_handler::MetricsHandler;
-use assyst_common::{err, BOT_ID};
 use assyst_database::model::free_tier_2_requests::FreeTier2Requests;
 use assyst_database::model::user_votes::UserVotes;
 use assyst_database::DatabaseHandler;
@@ -22,7 +22,7 @@ use twilight_model::id::Id;
 
 const FREE_TIER_2_REQUESTS_ON_VOTE: u64 = 15;
 lazy_static! {
-    static ref TOP_GG_VOTE_URL: String = format!("https://top.gg/bot/{}/vote", BOT_ID);
+    static ref TOP_GG_VOTE_URL: String = format!("https://top.gg/bot/{}/vote", CONFIG.bot_id);
 }
 
 struct AppError(anyhow::Error);

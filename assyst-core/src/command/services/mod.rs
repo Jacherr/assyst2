@@ -4,7 +4,7 @@ use assyst_common::util::format_duration;
 use assyst_proc_macro::command;
 
 use super::arguments::{Rest, Word};
-use super::flags::DownloadFlags;
+use super::flags::download::DownloadFlags;
 use super::CommandCtxt;
 
 use crate::command::{Availability, Category};

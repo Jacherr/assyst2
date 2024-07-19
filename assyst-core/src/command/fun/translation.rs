@@ -6,7 +6,7 @@ use assyst_common::util::table;
 use assyst_proc_macro::command;
 
 use crate::command::arguments::{Rest, Word};
-use crate::command::flags::BadTranslateFlags;
+use crate::command::flags::badtranslate::BadTranslateFlags;
 use crate::command::{Availability, Category, CommandCtxt};
 use crate::rest::bad_translation::{
     bad_translate as bad_translate_default, bad_translate_with_count, get_languages, translate_single, TranslateResult,

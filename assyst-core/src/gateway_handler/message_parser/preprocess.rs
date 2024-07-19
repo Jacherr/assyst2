@@ -2,7 +2,6 @@ use std::time::{Duration, Instant};
 
 use crate::assyst::ThreadSafeAssyst;
 use assyst_common::config::CONFIG;
-use assyst_common::BOT_ID;
 use assyst_database::model::global_blacklist::GlobalBlacklist;
 use assyst_database::model::prefix::Prefix;
 use twilight_model::channel::message::MessageType;
@@ -20,8 +19,8 @@ pub struct PreprocessResult {
 
 /// Returns `Some(prefix)` if the prefix is the mention of the bot, otherwise `None`
 pub fn message_mention_prefix(content: &str) -> Option<String> {
-    let mention_no_nickname = format!("<@{BOT_ID}>");
-    let mention_nickname = format!("<@!{BOT_ID}>");
+    let mention_no_nickname = format!("<@{}>", CONFIG.bot_id);
+    let mention_nickname = format!("<@!{}>", CONFIG.bot_id);
 
     if content.starts_with(&mention_no_nickname) {
         Some(mention_no_nickname)

@@ -131,7 +131,7 @@ impl FluxHandler {
         self.run_flux(request, limits.time).await
     }
 
-    pub async fn caption(&self, media: Vec<u8>, text: String, user_id: u64) -> FluxResult {
+    pub async fn caption(&self, media: Vec<u8>, text: String, bottom: bool, black: bool, user_id: u64) -> FluxResult {
         let tier = self.get_request_tier(user_id).await?;
 
         let limits = &LIMITS[tier];
@@ -139,6 +139,12 @@ impl FluxHandler {
 
         let mut options = HashMap::new();
         options.insert("text".to_owned(), text);
+        if bottom {
+            options.insert("bottom".to_owned(), "1".to_owned());
+        }
+        if black {
+            options.insert("black".to_owned(), "1".to_owned());
+        }
 
         request.operation("caption".to_owned(), options);
         request.output();
@@ -340,6 +346,23 @@ impl FluxHandler {
         self.run_flux(request, limits.time).await
     }
 
+    pub async fn jpeg(&self, media: Vec<u8>, quality: Option<u64>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let mut request = FluxRequest::new_with_input_and_limits(media, limits);
+
+        let mut options = HashMap::new();
+        if let Some(q) = quality {
+            options.insert("quality".to_owned(), q.to_string());
+        }
+
+        request.operation("jpeg".to_owned(), options);
+        request.output();
+
+        self.run_flux(request, limits.time).await
+    }
+
     pub async fn magik(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
         let tier = self.get_request_tier(user_id).await?;
         let limits = &LIMITS[tier];
@@ -360,6 +383,28 @@ impl FluxHandler {
         bottom.map(|b| options.insert("bottom".to_owned(), b));
 
         request.operation("meme".to_owned(), options);
+        request.output();
+
+        self.run_flux(request, limits.time).await
+    }
+
+    pub async fn motivate(
+        &self,
+        media: Vec<u8>,
+        top: Option<String>,
+        bottom: Option<String>,
+        user_id: u64,
+    ) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let mut request = FluxRequest::new_with_input_and_limits(media, limits);
+
+        let mut options = HashMap::new();
+        top.map(|t| options.insert("top".to_owned(), t));
+        bottom.map(|b| options.insert("bottom".to_owned(), b));
+
+        request.operation("motivate".to_owned(), options);
         request.output();
 
         self.run_flux(request, limits.time).await
