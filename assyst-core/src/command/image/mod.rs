@@ -16,6 +16,7 @@ use crate::flux_handler::jobs::MediaInfo;
 
 pub mod audio;
 pub mod makesweet;
+pub mod randomize;
 
 #[command(
     description = "ah shit here we go again",
@@ -543,6 +544,26 @@ pub async fn neon(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
 }
 
 #[command(
+    description = "overlay one image over another",
+    cooldown = Duration::from_secs(2),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image]",
+    examples = ["https://link.to.my/image.png"],
+    send_processing = true
+)]
+pub async fn overlay(ctxt: CommandCtxt<'_>, source: Image, source2: Image) -> anyhow::Result<()> {
+    let result = ctxt
+        .flux_handler()
+        .overlay(source.0, source2.0, ctxt.data.author.id.get())
+        .await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
     description = "play a gif forward then backward",
     aliases = ["gifloop", "gloop"],
     cooldown = Duration::from_secs(4),
@@ -557,6 +578,43 @@ pub async fn pingpong(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()
         .flux_handler()
         .ping_pong(source.0, ctxt.data.author.id.get())
         .await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "pixelate an image",
+    cooldown = Duration::from_secs(2),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image] <strength: 1-100>",
+    examples = ["https://link.to.my/image.png 5"],
+    send_processing = true
+)]
+pub async fn pixelate(ctxt: CommandCtxt<'_>, source: Image, strength: Option<f32>) -> anyhow::Result<()> {
+    let result = ctxt
+        .flux_handler()
+        .pixelate(source.0, strength, ctxt.data.author.id.get())
+        .await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "make an image rainbow",
+    cooldown = Duration::from_secs(4),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image]",
+    examples = ["https://link.to.my/image.png"],
+    send_processing = true
+)]
+pub async fn rainbow(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
+    let result = ctxt.flux_handler().rainbow(source.0, ctxt.data.author.id.get()).await?;
 
     ctxt.reply(result).await?;
 

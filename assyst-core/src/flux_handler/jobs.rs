@@ -419,11 +419,50 @@ impl FluxHandler {
         self.run_flux(request, limits.time).await
     }
 
+    pub async fn overlay(&self, media: Vec<u8>, media2: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let mut request = FluxRequest::new_with_input_and_limits(media, limits);
+        request.input(media2);
+
+        request.operation("overlay".to_owned(), HashMap::new());
+        request.output();
+
+        self.run_flux(request, limits.time).await
+    }
+
     pub async fn ping_pong(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
         let tier = self.get_request_tier(user_id).await?;
         let limits = &LIMITS[tier];
 
         let request = FluxRequest::new_basic(media, limits, "ping-pong");
+
+        self.run_flux(request, limits.time).await
+    }
+
+    pub async fn pixelate(&self, media: Vec<u8>, strength: Option<f32>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let mut request = FluxRequest::new_with_input_and_limits(media, limits);
+
+        let mut options = HashMap::new();
+        if let Some(s) = strength {
+            options.insert("strength".to_owned(), s.to_string());
+        }
+
+        request.operation("pixelate".to_owned(), options);
+        request.output();
+
+        self.run_flux(request, limits.time).await
+    }
+
+    pub async fn rainbow(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let request = FluxRequest::new_basic(media, limits, "rainbow");
 
         self.run_flux(request, limits.time).await
     }

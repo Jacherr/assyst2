@@ -216,7 +216,7 @@ pub async fn help(ctxt: CommandCtxt<'_>, labels: Vec<Word>) -> anyhow::Result<()
             "Patreon"
                 .codestring()
                 .url("<https://www.patreon.com/jacher>", Some("Patreon URL for Assyst.")),
-            "Source".codestring().url(
+            "Source Code".codestring().url(
                 "<https://github.com/jacherr/assyst2.",
                 Some("Source code URL for Assyst.")
             )

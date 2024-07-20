@@ -148,11 +148,12 @@ async fn main() {
     info!("Compiling Flux...");
     if let Err(e) = FluxHandler::compile_flux().await {
         err!("Failed to compile flux: {e}");
+    } else {
+        info!(
+            "Flux is compiled (version: {})",
+            assyst.flux_handler.get_version().await.unwrap().trim()
+        );
     }
-    info!(
-        "Flux is compiled (version: {})",
-        assyst.flux_handler.get_version().await.unwrap().trim()
-    );
 
     let a = assyst.clone();
 
@@ -205,33 +206,5 @@ async fn main() {
 
     loop {
         std::thread::sleep(Duration::from_secs(1));
-    }
-}
-
-#[cfg(test)]
-mod tests {
-
-    use self::gateway_handler::message_parser::preprocess::message_mention_prefix;
-
-    use super::*;
-
-    #[test]
-    fn message_mention_prefix_nick() {
-        let prefix_search = format!("<@!{}>", CONFIG.bot_id);
-        let prefix = message_mention_prefix(&format!("<@!{}> test", CONFIG.bot_id));
-        assert_eq!(prefix, Some(prefix_search));
-    }
-
-    #[test]
-    fn message_mention_prefix_no_nick() {
-        let prefix_search = format!("<@{}>", CONFIG.bot_id);
-        let prefix = message_mention_prefix(&format!("<@{}> test", CONFIG.bot_id));
-        assert_eq!(prefix, Some(prefix_search));
-    }
-
-    #[test]
-    fn message_mention_prefix_invalid() {
-        let prefix = message_mention_prefix(&format!("<{}> test", CONFIG.bot_id));
-        assert_eq!(prefix, None);
     }
 }

@@ -161,11 +161,17 @@ impl FluxHandler {
     }
 
     pub async fn compile_flux() -> anyhow::Result<()> {
-        exec_sync(&format!(
-            "cd {} && mold -run cargo build --release",
+        const CARGO_EXIT_FAIL: i32 = 101;
+
+        let res = exec_sync(&format!(
+            "cd {} && mold -run cargo build -q --release",
             CONFIG.dev.flux_workspace_root_path_override
         ))
         .context("Failed to compile flux")?;
+
+        if res.exit_code.code() == Some(CARGO_EXIT_FAIL) {
+            bail!("{}", res.stderr);
+        }
 
         Ok(())
     }

@@ -469,7 +469,7 @@ pub async fn check_metadata(
     }
 
     if metadata.send_processing && ctxt.data.source == Source::RawMessage {
-        if let Err(e) = ctxt.reply("Processing...").await {
+        if let Err(e) = ctxt.reply(":gear: Processing...").await {
             return Err(ExecutionError::Command(e));
         }
     } else if metadata.send_processing && ctxt.data.source == Source::Interaction {

@@ -146,7 +146,7 @@ pub async fn get_web_download_api_urls(assyst: ThreadSafeAssyst) -> anyhow::Resu
     Ok(valid_urls)
 }
 
-/// Attempts to download web media. Will try all APIs in the event of faliure, unless
+/// Attempts to download web media. Will try all APIs until one succeeds, unless
 /// `opts.api_url_override` is set.
 pub async fn download_web_media(assyst: ThreadSafeAssyst, url: &str, opts: WebDownloadOpts) -> anyhow::Result<Vec<u8>> {
     let encoded_url = urlencoding::encode(url).to_string();
