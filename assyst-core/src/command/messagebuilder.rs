@@ -50,6 +50,15 @@ impl From<Attachment> for MessageBuilder {
     }
 }
 
+impl From<(Attachment, String)> for MessageBuilder {
+    fn from(value: (Attachment, String)) -> Self {
+        Self {
+            content: Some(value.1),
+            attachment: Some(value.0),
+        }
+    }
+}
+
 impl From<Image> for MessageBuilder {
     fn from(value: Image) -> Self {
         Self {

@@ -111,10 +111,18 @@ pub async fn user_globally_blacklisted(assyst: ThreadSafeAssyst, id: u64) -> Res
 /// - Checking that the message starts with the correct prefix for the context, and returning any
 ///   identified prefix,
 /// - Fetching all command restrictions for handling later once the command has been determined.
-pub async fn preprocess(assyst: ThreadSafeAssyst, message: &Message) -> Result<PreprocessResult, PreParseError> {
+pub async fn preprocess(
+    assyst: ThreadSafeAssyst,
+    message: &Message,
+    from_edit: bool,
+) -> Result<PreprocessResult, PreParseError> {
     // check author is not bot or webhook
     if message.author.bot || message.webhook_id.is_some() {
         return Err(PreParseError::UserIsBotOrWebhook(Some(message.author.id.get())));
+    }
+
+    if from_edit && message.edited_timestamp.is_none() {
+        return Err(PreParseError::EditedMessageWithNoTimestamp);
     }
 
     let relevant_message_kinds = &[MessageType::Regular, MessageType::Reply];

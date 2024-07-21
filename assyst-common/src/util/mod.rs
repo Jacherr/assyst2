@@ -147,3 +147,15 @@ pub fn hash_buffer(buf: &[u8]) -> String {
     let rand = rand::thread_rng().gen::<usize>();
     format!("{:x}{:x}", body_hasher.finish(), rand)
 }
+
+pub fn sanitise_filename(name: &str) -> String {
+    name.replace("/", "_")
+        .replace("<", "_")
+        .replace(">", "_")
+        .replace(":", "_")
+        .replace("\"", "_")
+        .replace("|", "_")
+        .replace("\\", "_")
+        .replace("?", "_")
+        .replace("*", "_")
+}

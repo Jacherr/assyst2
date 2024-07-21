@@ -31,7 +31,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: MessageUpdate) {
 
     match convert_message_update_to_message(event) {
         Some(message) => {
-            match parse_message_into_command(assyst.clone(), &message, processing_time_start).await {
+            match parse_message_into_command(assyst.clone(), &message, processing_time_start, true).await {
                 Ok(Some(result)) => {
                     let data = CommandData {
                         source: Source::RawMessage,

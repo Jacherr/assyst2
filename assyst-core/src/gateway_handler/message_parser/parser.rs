@@ -49,11 +49,12 @@ pub async fn parse_message_into_command(
     assyst: ThreadSafeAssyst,
     message: &Message,
     processing_time_start: Instant,
+    from_edit: bool,
 ) -> Result<Option<ParseResult>, ParseError> {
     let parse_start = Instant::now();
     let preprocess_start = Instant::now();
 
-    let preprocess = preprocess(assyst.clone(), message).await?;
+    let preprocess = preprocess(assyst.clone(), message, from_edit).await?;
 
     let preprocess_time = preprocess_start.elapsed();
 

@@ -21,7 +21,7 @@ use super::after_command_execution_success;
 pub async fn handle(assyst: ThreadSafeAssyst, MessageCreate(message): MessageCreate) {
     let processing_time_start = Instant::now();
 
-    match parse_message_into_command(assyst.clone(), &message, processing_time_start).await {
+    match parse_message_into_command(assyst.clone(), &message, processing_time_start, false).await {
         Ok(Some(result)) => {
             let data = CommandData {
                 source: Source::RawMessage,

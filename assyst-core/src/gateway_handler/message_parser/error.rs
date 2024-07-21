@@ -17,6 +17,8 @@ pub enum PreParseError {
     UserIsBotOrWebhook(Option<u64>),
     /// The kind of message is not supported, e.g., a user join system message.
     UnsupportedMessageKind(MessageType),
+    /// A MESSAGE_UPDATE was received, but it had no edited timestamp.
+    EditedMessageWithNoTimestamp,
     /// Other unknown failure. Unexpected error with high severity.
     Failure(String),
 }
@@ -35,6 +37,7 @@ impl Display for PreParseError {
             Self::UnsupportedMessageKind(kind) => {
                 write!(f, "Unsupported message kind ({:?})", kind)
             },
+            Self::EditedMessageWithNoTimestamp => f.write_str("The message was updated, but not edited."),
             Self::Failure(message) => {
                 write!(f, "Preprocessor failure: {}", message)
             },

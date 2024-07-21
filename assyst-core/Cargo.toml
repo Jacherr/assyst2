@@ -41,3 +41,5 @@ dash_vm = { git = "https://github.com/y21/dash" }
 dash_rt = { git = "https://github.com/y21/dash" }
 libc = "0.2.155"
 toml = "0.8.14"
+zip = "2.1.4"
+num_cpus = "1.16.0"

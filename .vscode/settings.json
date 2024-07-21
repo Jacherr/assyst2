@@ -10,4 +10,7 @@
         "GTK_PATH": null,
         "GIO_MODULE_DIR": null,
     },
+    "[json]": {
+        "editor.defaultFormatter": "vscode.json-language-features"
+    },
 }

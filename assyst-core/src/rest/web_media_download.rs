@@ -1,14 +1,15 @@
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use anyhow::bail;
-use assyst_common::util::format_duration;
+use anyhow::{bail, Context};
+use assyst_common::util::{format_duration, string_from_likely_utf8};
 use futures_util::future::join_all;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use reqwest::StatusCode;
 use serde::Deserialize;
 use serde_json::{from_str, json};
+use tokio::process::Command;
 use tokio::time::timeout;
 use tracing::debug;
 
@@ -23,11 +24,12 @@ pub const TEST_SCORE_THRESHOLD: f32 = 90.0;
 
 pub static TEST_URL_TIMEOUT: Duration = Duration::from_secs(15);
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct WebDownloadOpts {
     pub audio_only: Option<bool>,
     pub quality: Option<String>,
     pub api_url_override: Option<String>,
+    pub verbose: bool,
 }
 impl WebDownloadOpts {
     pub fn from_download_flags(flags: DownloadFlags) -> Self {
@@ -39,8 +41,21 @@ impl WebDownloadOpts {
                 None
             },
             api_url_override: None,
+            verbose: flags.verbose,
         }
     }
+}
+
+#[derive(Deserialize)]
+pub struct YouTubePlaylist {
+    pub entries: Vec<YouTubePlaylistEntry>,
+}
+
+#[derive(Deserialize)]
+pub struct YouTubePlaylistEntry {
+    pub url: String,
+    pub title: String,
+    pub duration: Option<usize>,
 }
 
 #[derive(Deserialize)]
@@ -70,6 +85,7 @@ async fn test_route(assyst: ThreadSafeAssyst, url: &str) -> bool {
         audio_only: Some(false),
         quality: Some("144".to_owned()),
         api_url_override: Some(url.to_owned()),
+        verbose: false,
     };
 
     let res = download_web_media(assyst.clone(), TEST_URL, opts).await;
@@ -166,7 +182,7 @@ pub async fn download_web_media(assyst: ThreadSafeAssyst, url: &str, opts: WebDo
     let mut err: String = String::new();
 
     for route in urls {
-        debug!("trying url: {route}");
+        debug!("trying url: {route} for web media {url}");
 
         let res = assyst
             .reqwest_client
@@ -228,7 +244,25 @@ pub async fn download_web_media(assyst: ThreadSafeAssyst, url: &str, opts: WebDo
         };
 
         if let Some(r) = req_result_url {
-            let media = download_content(&assyst, &r, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES, false).await?;
+            debug!("downloading from url {r} for web media {url}");
+
+            let media = match timeout(
+                Duration::from_secs(120),
+                download_content(&assyst, &r, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES, false),
+            )
+            .await
+            {
+                Ok(Ok(m)) => m,
+                Ok(Err(e)) => {
+                    err = format!("Failed to download media: {e}");
+                    continue;
+                },
+                Err(_) => {
+                    err = "Failed to download media: a timeout was exceeded".to_owned();
+                    continue;
+                },
+            };
+
             if let Ok(s) = String::from_utf8(media.clone())
                 && s.starts_with("<!DOCTYPE")
             {
@@ -241,4 +275,28 @@ pub async fn download_web_media(assyst: ThreadSafeAssyst, url: &str, opts: WebDo
     }
 
     if let Some(r) = result { Ok(r) } else { bail!(err) }
+}
+
+pub async fn get_youtube_playlist_entries(url: &str) -> anyhow::Result<Vec<(String, String)>> {
+    let mut command = Command::new("yt-dlp");
+    command.args(["--flat-playlist", "--no-warnings", "-q", "-i", "-J", url]);
+    let result = command.output().await.context("Failed to get playlist entries")?;
+    if !result.status.success() {
+        bail!(
+            "Failed to get playlist entries: {}",
+            string_from_likely_utf8(result.stderr)
+        );
+    }
+
+    let output = string_from_likely_utf8(result.stdout);
+    let playlist = from_str::<YouTubePlaylist>(&output).context("Failed to deserialize playlist")?;
+
+    // longest videos first
+    let mut entries = playlist.entries;
+    entries.sort_by(|x, y| y.duration.unwrap_or(0).cmp(&x.duration.unwrap_or(0)));
+
+    Ok(entries
+        .iter()
+        .map(|x| (x.title.clone(), x.url.clone()))
+        .collect::<Vec<_>>())
 }

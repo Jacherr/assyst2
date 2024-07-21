@@ -10,6 +10,7 @@ use human_bytes::human_bytes;
 use super::arguments::{Image, Rest, RestNoFlags, Word};
 use super::flags::bloom::BloomFlags;
 use super::flags::caption::CaptionFlags;
+use super::flags::speechbubble::SpeechBubbleFlags;
 use super::messagebuilder::{Attachment, MessageBuilder};
 use crate::command::{Availability, Category, CommandCtxt};
 use crate::flux_handler::jobs::MediaInfo;
@@ -350,7 +351,7 @@ pub async fn grayscale(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<(
     examples = ["https://link.to.my/image.png"],
     send_processing = true
 )]
-pub async fn image_info(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
+pub async fn imageinfo(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
     let result = ctxt.flux_handler().image_info(source.0).await?;
 
     if let MediaInfo::Image(i) = result {
@@ -676,6 +677,26 @@ pub async fn reverse(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()>
 }
 
 #[command(
+    description = "rotate an image",
+    cooldown = Duration::from_secs(2),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image] <degrees: 0-360>",
+    examples = ["https://link.to.my/image.png 45"],
+    send_processing = true
+)]
+pub async fn rotate(ctxt: CommandCtxt<'_>, source: Image, degrees: Option<u64>) -> anyhow::Result<()> {
+    let result = ctxt
+        .flux_handler()
+        .rotate(source.0, degrees, ctxt.data.author.id.get())
+        .await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
     description = "scramble a gif or video",
     cooldown = Duration::from_secs(6),
     access = Availability::Public,
@@ -688,6 +709,30 @@ pub async fn scramble(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()
     let result = ctxt
         .flux_handler()
         .scramble(source.0, ctxt.data.author.id.get())
+        .await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "add a speechbubble to an image",
+    aliases = ["speech"],
+    cooldown = Duration::from_secs(2),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image] <...flags>",
+    examples = ["https://link.to.my/image.png", "https://link.to.my/image.png --solid"],
+    send_processing = true,
+    flag_descriptions = [
+        ("solid", "Setting this flag will make the speech bubble a solid white instead of transparent"),
+    ]
+)]
+pub async fn speechbubble(ctxt: CommandCtxt<'_>, source: Image, flags: SpeechBubbleFlags) -> anyhow::Result<()> {
+    let result = ctxt
+        .flux_handler()
+        .speech_bubble(source.0, flags.solid, ctxt.data.author.id.get())
         .await?;
 
     ctxt.reply(result).await?;
@@ -709,6 +754,63 @@ pub async fn speed(ctxt: CommandCtxt<'_>, source: Image, multiplier: Option<f64>
     let result = ctxt
         .flux_handler()
         .speed(source.0, multiplier, ctxt.data.author.id.get())
+        .await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "spin an image",
+    cooldown = Duration::from_secs(3),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image]",
+    examples = ["https://link.to.my/image.png"],
+    send_processing = true
+)]
+pub async fn spin(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
+    let result = ctxt.flux_handler().spin(source.0, ctxt.data.author.id.get()).await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "pixel-spread an image",
+    cooldown = Duration::from_secs(3),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image] <strength>",
+    examples = ["https://link.to.my/image.png", "https://link.to.my/image.png 15"],
+    send_processing = true
+)]
+pub async fn spread(ctxt: CommandCtxt<'_>, source: Image, strength: Option<u64>) -> anyhow::Result<()> {
+    let result = ctxt
+        .flux_handler()
+        .spread(source.0, strength, ctxt.data.author.id.get())
+        .await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "swirl an image",
+    cooldown = Duration::from_secs(3),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image] <strength>",
+    examples = ["https://link.to.my/image.png", "https://link.to.my/image.png 2.5", "https://link.to.my/image.png -1"],
+    send_processing = true
+)]
+pub async fn swirl(ctxt: CommandCtxt<'_>, source: Image, strength: Option<f32>) -> anyhow::Result<()> {
+    let result = ctxt
+        .flux_handler()
+        .swirl(source.0, strength, ctxt.data.author.id.get())
         .await?;
 
     ctxt.reply(result).await?;

@@ -1,3 +1,4 @@
+use anyhow::Context;
 use assyst_common::config::CONFIG;
 use serde::Deserialize;
 
@@ -28,6 +29,8 @@ pub async fn upload_to_filer(assyst: ThreadSafeAssyst, data: Vec<u8>, content_ty
         .body(data)
         .send()
         .await?
+        .error_for_status()
+        .context("Failed to upload to filer")?
         .text()
         .await?)
 }

@@ -4,7 +4,8 @@
     round_char_boundary,
     trait_alias,
     async_closure,
-    if_let_guard
+    if_let_guard,
+    iterator_try_collect
 )]
 
 use std::sync::Arc;
@@ -27,7 +28,7 @@ use rest::web_media_download::get_web_download_api_urls;
 use task::tasks::refresh_web_download_urls::refresh_web_download_urls;
 use task::tasks::reminders::handle_reminders;
 use tokio::spawn;
-use tracing::{debug, info, trace};
+use tracing::{debug, info /* trace */};
 use twilight_gateway::EventTypeFlags;
 use twilight_model::id::marker::WebhookMarker;
 use twilight_model::id::Id;
@@ -167,7 +168,7 @@ async fn main() {
                 // break if read fails because it means broken pipe
                 // we need to re-poll the pipe to get a new connection
                 let event = ok_or_break!(gateway_pipe.read_string().await);
-                trace!("got event: {}", event);
+                //info!("got event: {}", event);
 
                 let parsed_event = twilight_gateway::parse(
                     event,

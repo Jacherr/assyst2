@@ -507,6 +507,23 @@ impl FluxHandler {
         self.run_flux(request, limits.time).await
     }
 
+    pub async fn rotate(&self, media: Vec<u8>, degrees: Option<u64>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let mut request = FluxRequest::new_with_input_and_limits(media, limits);
+
+        let mut options = HashMap::new();
+        if let Some(d) = degrees {
+            options.insert("degrees".to_owned(), d.to_string());
+        }
+
+        request.operation("rotate".to_owned(), options);
+        request.output();
+
+        self.run_flux(request, limits.time).await
+    }
+
     pub async fn rubiks(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
         let tier = self.get_request_tier(user_id).await?;
         let limits = &LIMITS[tier];
@@ -534,6 +551,23 @@ impl FluxHandler {
         self.run_flux(request, limits.time).await
     }
 
+    pub async fn speech_bubble(&self, media: Vec<u8>, solid: bool, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let mut request = FluxRequest::new_with_input_and_limits(media, limits);
+
+        let mut options = HashMap::new();
+        if solid {
+            options.insert("solid".to_owned(), "1".to_owned());
+        }
+
+        request.operation("speech-bubble".to_owned(), options);
+        request.output();
+
+        self.run_flux(request, limits.time).await
+    }
+
     pub async fn speed(&self, media: Vec<u8>, multiplier: Option<f64>, user_id: u64) -> FluxResult {
         let tier = self.get_request_tier(user_id).await?;
         let limits = &LIMITS[tier];
@@ -551,11 +585,54 @@ impl FluxHandler {
         self.run_flux(request, limits.time).await
     }
 
+    pub async fn spin(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let request = FluxRequest::new_basic(media, limits, "spin");
+
+        self.run_flux(request, limits.time).await
+    }
+
+    pub async fn spread(&self, media: Vec<u8>, strength: Option<u64>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let mut request = FluxRequest::new_with_input_and_limits(media, limits);
+
+        let mut options: HashMap<String, String> = HashMap::new();
+        if let Some(s) = strength {
+            options.insert("strength".to_owned(), s.to_string());
+        };
+
+        request.operation("spread".to_owned(), options);
+        request.output();
+
+        self.run_flux(request, limits.time).await
+    }
+
     pub async fn sweden(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
         let tier = self.get_request_tier(user_id).await?;
         let limits = &LIMITS[tier];
 
         let request = FluxRequest::new_basic(media, limits, "sweden");
+
+        self.run_flux(request, limits.time).await
+    }
+
+    pub async fn swirl(&self, media: Vec<u8>, strength: Option<f32>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let mut request = FluxRequest::new_with_input_and_limits(media, limits);
+
+        let mut options: HashMap<String, String> = HashMap::new();
+        if let Some(s) = strength {
+            options.insert("strength".to_owned(), s.to_string());
+        };
+
+        request.operation("swirl".to_owned(), options);
+        request.output();
 
         self.run_flux(request, limits.time).await
     }

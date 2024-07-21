@@ -15,12 +15,14 @@ use twilight_model::application::interaction::application_command::CommandOption
 pub struct DownloadFlags {
     pub audio: bool,
     pub quality: u64,
+    pub verbose: bool,
 }
 impl FlagDecode for DownloadFlags {
     fn from_str(input: &str) -> anyhow::Result<Self> {
         let mut valid_flags = HashMap::new();
         valid_flags.insert("quality", FlagType::WithValue);
         valid_flags.insert("audio", FlagType::NoValue);
+        valid_flags.insert("verbose", FlagType::NoValue);
 
         let raw_decode = flags_from_str(input, valid_flags)?;
         let result = Self {
@@ -32,6 +34,7 @@ impl FlagDecode for DownloadFlags {
                 .unwrap_or("720".to_owned())
                 .parse()
                 .context("Provided quality is invalid")?,
+            verbose: raw_decode.contains_key("verbose"),
         };
 
         Ok(result)
