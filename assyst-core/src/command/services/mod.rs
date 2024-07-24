@@ -112,6 +112,8 @@ pub async fn download(ctxt: CommandCtxt<'_>, url: Word, options: DownloadFlags) 
             locks.push(Mutex::new(()));
         }
         let locks = Arc::new(locks);
+        let zip = Arc::new(Mutex::new(ZipWriter::new(Cursor::new(Vec::new()))));
+        let failed = Arc::new(std::sync::Mutex::new(Vec::new()));
 
         for v in videos {
             let a = ctxt.assyst().clone();
@@ -119,8 +121,10 @@ pub async fn download(ctxt: CommandCtxt<'_>, url: Word, options: DownloadFlags) 
             let title = v.0.clone();
             let opts = opts.clone();
             let l = locks.clone();
+            let z = zip.clone();
+            let failed = failed.clone();
             video_tasks.spawn(async move {
-                let lock = loop {
+                let _lock = loop {
                     let r#try = l.iter().find(|x| x.try_lock().is_ok());
                     match r#try {
                         Some(l) => break l.lock().await,
@@ -132,10 +136,48 @@ pub async fn download(ctxt: CommandCtxt<'_>, url: Word, options: DownloadFlags) 
                 };
 
                 let media = timeout(Duration::from_secs(120), download_web_media(a, &url, opts)).await;
-                let r = (title, url, media);
+                match media {
+                    Ok(Ok(m)) => {
+                        let mut z_lock = z.lock().await;
+                        let r#type = match filetype::get_sig(&m) {
+                            Some(t) => t,
+                            None => {
+                                failed.lock().unwrap().push(format!("{url}: Unknown signature"));
+                                return;
+                            },
+                        };
 
-                drop(lock);
-                r
+                        let _ = z_lock
+                            .start_file(
+                                format!(
+                                    "{}_{}.{}",
+                                    sanitise_filename(&title),
+                                    SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis(),
+                                    r#type.as_str()
+                                ),
+                                SimpleFileOptions::default(),
+                            )
+                            .map_err(|e| {
+                                failed
+                                    .lock()
+                                    .unwrap()
+                                    .push(format!("{url}: failed to start file ({e:?})"))
+                            });
+
+                        let _ = z_lock.write_all(&m).map_err(|e| {
+                            failed
+                                .lock()
+                                .unwrap()
+                                .push(format!("{url}: failed to write file ({e:?})"))
+                        });
+                    },
+                    Ok(Err(e)) => {
+                        failed.lock().unwrap().push(format!("{url}: {e:?}"));
+                    },
+                    Err(_) => {
+                        failed.lock().unwrap().push(format!("{url}: timed out"));
+                    },
+                }
             });
         }
 
@@ -154,51 +196,10 @@ pub async fn download(ctxt: CommandCtxt<'_>, url: Word, options: DownloadFlags) 
         let zip_msg = "Zipping files. This may take a while!";
         ctxt.reply(zip_msg).await?;
 
-        let mut failed: Vec<String> = Vec::new();
-        let mut buf = Cursor::new(Vec::new());
-        let mut zip = ZipWriter::new(&mut buf);
-        let mut zipped = 0;
-
-        for video in joined {
-            let filename = video.0;
-            let content = match video.2 {
-                Ok(Ok(v)) => v,
-                Ok(Err(e)) => {
-                    failed.push(format!("{}: {}", video.1, e));
-                    continue;
-                },
-                Err(_) => {
-                    failed.push(format!("{}: timed out", video.1));
-                    continue;
-                },
-            };
-
-            let r#type = match filetype::get_sig(&content) {
-                Some(t) => t,
-                None => {
-                    failed.push(format!("{}: Unknown signature", video.1));
-                    continue;
-                },
-            };
-
-            zip.start_file(
-                format!(
-                    "{}_{}.{}",
-                    sanitise_filename(&filename),
-                    SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis(),
-                    r#type.as_str()
-                ),
-                SimpleFileOptions::default(),
-            )?;
-            zip.write_all(&content).context("Failed to write file to ZIP")?;
-            zipped += 1;
-
-            if zipped % 10 == 0 {
-                ctxt.reply(format!("{zip_msg}\nZipped {zipped}/{len} videos.")).await?;
-            }
-        }
-
-        let finished = zip.finish().context("Failed to create ZIP")?;
+        let finished = Arc::into_inner(zip)
+            .context("`Arc` has more than one strong reference")?
+            .into_inner();
+        let finished = finished.finish().context("Failed to create ZIP")?;
         let out = finished.clone().into_inner();
 
         ctxt.reply(format!(
@@ -213,6 +214,7 @@ pub async fn download(ctxt: CommandCtxt<'_>, url: Word, options: DownloadFlags) 
                 data: out,
             },
             {
+                let failed = failed.lock().unwrap();
                 if !failed.is_empty() {
                     format!(
                         ":warning: Failed to download {} videos, most likely due to region or age restrictions.{}",
