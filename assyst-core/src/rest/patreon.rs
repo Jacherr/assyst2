@@ -11,7 +11,7 @@ pub const TIER_3_AMOUNT: usize = 1000;
 pub const TIER_2_AMOUNT: usize = 500;
 pub const TIER_1_AMOUNT: usize = 300;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum PatronTier {
     Tier4 = 4,
     Tier3 = 3,
@@ -161,7 +161,7 @@ async fn get_patreon_access_token(assyst: ThreadSafeAssyst) -> anyhow::Result<St
 
     std::fs::write(PATREON_REFRESH_LOCATION, response.refresh_token.clone())?;
 
-    Ok(response.access_token.to_owned())
+    Ok(response.access_token)
 }
 
 /// I am not proud of this code, but at the same time, I am not proud of Patreon for making such a

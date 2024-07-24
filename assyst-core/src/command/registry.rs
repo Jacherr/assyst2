@@ -84,7 +84,9 @@ declare_commands!(
     misc::exec_command,
     misc::help::help_command,
     misc::info_command,
+    misc::patronstatus_command,
     misc::ping_command,
+    misc::prefix::prefix_command,
     misc::remind::remind_command,
     misc::run::run_command,
     misc::stats::stats_command,
@@ -92,7 +94,7 @@ declare_commands!(
     misc::url_command,
     services::burntext_command,
     services::cooltext::cooltext_command,
-    services::download_command,
+    services::download::download_command,
     services::r34_command
 );
 

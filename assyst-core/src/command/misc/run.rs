@@ -200,12 +200,12 @@ pub async fn dash(ctxt: CommandCtxt<'_>, script: Codeblock) -> anyhow::Result<()
                 EvalError::Exception(unrooted) => {
                     let fmt = format_value(unrooted.root(&mut scope), &mut scope);
                     if let Ok(f) = fmt {
-                        format!("Exception: {}", f)
+                        format!("Exception: {f}")
                     } else {
                         format!("Exception: {:?}", fmt.unwrap_err())
                     }
                 },
-                EvalError::Middle(middle) => format!("Middle error: {:?}", middle),
+                EvalError::Middle(middle) => format!("Middle error: {middle:?}"),
             },
         }
     };

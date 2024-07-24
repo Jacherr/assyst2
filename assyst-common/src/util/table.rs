@@ -75,7 +75,7 @@ pub fn generate_list<K: AsRef<str>, V: AsRef<str>>(key_name: &str, value_name: &
         .collect::<Vec<_>>()
         .join("\n");
 
-    output = format!("{}\n{}", output, formatted_values);
+    output = format!("{output}\n{formatted_values}");
 
     output
 }

@@ -524,7 +524,7 @@ impl ImageUrl {
         if let Some(e) = emoji::lookup_by_glyph::lookup(word) {
             let codepoint = e.codepoint.to_lowercase().replace(' ', "-").replace("-fe0f", "");
 
-            let emoji_url = format!("https://bignutty.gitlab.io/emojipedia-data/data/{}.json", codepoint);
+            let emoji_url = format!("https://bignutty.gitlab.io/emojipedia-data/data/{codepoint}.json");
             let dl = ctxt
                 .assyst()
                 .reqwest_client
@@ -686,7 +686,7 @@ impl ParseArgument for ImageUrl {
     }
 
     fn as_command_option(name: &str) -> CommandOption {
-        AttachmentBuilder::new(name, "attachment input").required(true).build()
+        AttachmentBuilder::new(name, "attachment input").required(false).build()
     }
 }
 
@@ -710,6 +710,6 @@ impl ParseArgument for Image {
     }
 
     fn as_command_option(name: &str) -> CommandOption {
-        AttachmentBuilder::new(name, "attachment input").required(true).build()
+        AttachmentBuilder::new(name, "attachment input").required(false).build()
     }
 }

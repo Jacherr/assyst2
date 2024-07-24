@@ -29,9 +29,9 @@ impl fmt::Display for DownloadError {
             DownloadError::ProxyNetworkError => write!(f, "Failed to connect to proxy"),
             DownloadError::InvalidStatus => write!(f, "Invalid status received from proxy"),
             DownloadError::LimitExceeded(limit) => write!(f, "The output file exceeded the maximum file size limit of {}. Try using a smaller input.", human_bytes((*limit) as f64)),
-            DownloadError::Url(e) => write!(f, "Failed to parse URL: {}", e),
+            DownloadError::Url(e) => write!(f, "Failed to parse URL: {e}"),
             DownloadError::NoHost => write!(f, "No host found in URL"),
-            DownloadError::Reqwest(e) => write!(f, "{}", e),
+            DownloadError::Reqwest(e) => write!(f, "{e}"),
         }
     }
 }

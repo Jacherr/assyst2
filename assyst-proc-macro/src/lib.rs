@@ -153,7 +153,9 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
             fn as_interaction_command(&self) -> twilight_model::application::command::Command {
                 let meta = self.metadata();
                 let options = if let crate::command::CommandGroupingInteractionInfo::Command(x) = self.interaction_info() {
-                    x.command_options
+                    let mut ops = x.command_options;
+                    ops.sort_by(|x, y| y.required.cmp(&x.required));
+                    ops
                 } else {
                     unreachable!()
                 };

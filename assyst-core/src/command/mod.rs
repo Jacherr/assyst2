@@ -388,7 +388,6 @@ impl<'a> CommandCtxt<'a> {
         let builder = builder.into();
         match self.data.source {
             Source::RawMessage => gateway_reply::reply_raw_message(self, builder).await,
-            // TODO: reply properly
             Source::Interaction => gateway_reply::reply_interaction_command(self, builder).await,
         }
     }

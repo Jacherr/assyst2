@@ -158,7 +158,7 @@ pub async fn stats(ctxt: CommandCtxt<'_>, option: Option<Word>) -> anyhow::Resul
         let stats_table = get_general_stats(&ctxt).await;
         let usages_table = get_process_stats();
 
-        let msg = format!("{} {}", stats_table, usages_table);
+        let msg = format!("{stats_table} {usages_table}");
 
         ctxt.reply(msg).await?;
     }

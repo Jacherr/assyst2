@@ -28,7 +28,7 @@ pub fn get_default_avatar_url(user: &User) -> String {
         // Legacy
         user.discriminator % 5
     };
-    format!("https://cdn.discordapp.com/embed/avatars/{}.png?size=1024", suffix)
+    format!("https://cdn.discordapp.com/embed/avatars/{suffix}.png?size=1024")
 }
 
 pub fn get_avatar_url(user: &User) -> String {
@@ -64,14 +64,13 @@ pub fn format_tag(user: &User) -> String {
 /// Generates a message link
 pub fn message_link(guild_id: u64, channel_id: u64, message_id: u64) -> String {
     format!(
-        "https://discord.com/channels/{}/{}/{}",
-        guild_id, channel_id, message_id
+        "https://discord.com/channels/{guild_id}/{channel_id}/{message_id}"
     )
 }
 
 /// Generates a DM message link
 pub fn dm_message_link(channel_id: u64, message_id: u64) -> String {
-    format!("https://discord.com/channels/@me/{}/{}", channel_id, message_id)
+    format!("https://discord.com/channels/@me/{channel_id}/{message_id}")
 }
 
 /// Attempts to return the timestamp as a Discord timestamp,

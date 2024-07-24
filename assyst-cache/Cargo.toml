@@ -13,3 +13,6 @@ assyst-common = { path = "../assyst-common" }
 dashmap = "5.5.3"
 twilight-model = "=0.16.0-rc.1"
 rustc-hash = "1.1.0"
+
+[lints]
+workspace = true

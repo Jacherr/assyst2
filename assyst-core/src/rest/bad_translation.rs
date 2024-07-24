@@ -25,7 +25,7 @@ impl Display for TranslateError {
                 "A network error occurred: {}",
                 e.to_string().replace(&CONFIG.urls.bad_translation, "[bt]")
             ),
-            TranslateError::Raw(s) => write!(f, "{}", s),
+            TranslateError::Raw(s) => write!(f, "{s}"),
         }
     }
 }
@@ -90,7 +90,7 @@ async fn translate(
     while attempt <= MAX_ATTEMPTS {
         match translate_retry(client, text, target, count, additional_data).await {
             Ok(result) => return Ok(result),
-            Err(e) => eprintln!("Proxy failed! {:?}", e),
+            Err(e) => eprintln!("Proxy failed! {e:?}"),
         };
 
         attempt += 1;

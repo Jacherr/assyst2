@@ -89,7 +89,7 @@ pub async fn help(ctxt: CommandCtxt<'_>, labels: Vec<Word>) -> anyhow::Result<()
                     "\n{}",
                     meta.flag_descriptions
                         .iter()
-                        .map(|(x, y)| { format!("--{}: {}", x, y) })
+                        .map(|(x, y)| { format!("--{x}: {y}") })
                         .collect::<Vec<_>>()
                         .join("\n")
                 )

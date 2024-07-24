@@ -26,20 +26,20 @@ impl Display for PreParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::MessageNotPrefixed(prefix) => {
-                write!(f, "Message does not start with correct prefix ({})", prefix)
+                write!(f, "Message does not start with correct prefix ({prefix})")
             },
             Self::UserGloballyBlacklisted(id) => {
-                write!(f, "User {} is globally blacklisted", id)
+                write!(f, "User {id} is globally blacklisted")
             },
             Self::UserIsBotOrWebhook(id) => {
                 write!(f, "User is a bot or webhook ({})", id.unwrap_or(0))
             },
             Self::UnsupportedMessageKind(kind) => {
-                write!(f, "Unsupported message kind ({:?})", kind)
+                write!(f, "Unsupported message kind ({kind:?})")
             },
             Self::EditedMessageWithNoTimestamp => f.write_str("The message was updated, but not edited."),
             Self::Failure(message) => {
-                write!(f, "Preprocessor failure: {}", message)
+                write!(f, "Preprocessor failure: {message}")
             },
         }
     }
@@ -80,7 +80,7 @@ impl Display for ParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::PreParseFail(message) => {
-                write!(f, "Pre-parse failed: {}", message)
+                write!(f, "Pre-parse failed: {message}")
             },
         }
     }

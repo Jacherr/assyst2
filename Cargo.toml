@@ -13,3 +13,7 @@ members = [
 ]
 exclude = ["flux"]
 resolver = "2"
+
+[workspace.lints.clippy]
+uninlined_format_args = "warn"
+redundant_clone = "warn"

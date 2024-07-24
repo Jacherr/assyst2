@@ -58,7 +58,7 @@ pub async fn bad_translate(ctxt: CommandCtxt<'_>, text: Rest, flags: BadTranslat
             .context("Failed to run bad translation")?
     };
 
-    let mut output = format!("**Output:**\n{}", text);
+    let mut output = format!("**Output:**\n{text}");
 
     if flags.chain {
         output += "\n\n**Language chain:**\n";

@@ -345,7 +345,7 @@ pub async fn default(ctxt: CommandCtxt<'_>, colour: Option<Word>) -> anyhow::Res
                 .roles(&user_roles_minus_colours)
                 .await?;
 
-            ctxt.reply(format!("Your colour role is now `{}`.", colour)).await?;
+            ctxt.reply(format!("Your colour role is now `{colour}`.")).await?;
         } else {
             let roles = ColourRole::list_in_guild(&ctxt.assyst().database_handler, id as i64)
                 .await

@@ -138,8 +138,8 @@ async fn top_gg_webhook(
 
     if let Some(v) = voter {
         let message = format!(
-            "{0}#{1} voted for Assyst on top.gg and got {2} free tier 1 requests!\n{0}#{1} has voted {3} total times.",
-            user.name, user.discriminator, FREE_TIER_2_REQUESTS_ON_VOTE, v.count
+            "{0} voted for Assyst on top.gg and got {1} free tier 1 requests!\n{0} has voted {2} total times.",
+            user.name, FREE_TIER_2_REQUESTS_ON_VOTE, v.count
         );
 
         let LoggingWebhook { id, token } = CONFIG.logging_webhooks.vote.clone();

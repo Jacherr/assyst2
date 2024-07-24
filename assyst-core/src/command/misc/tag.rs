@@ -31,7 +31,7 @@ pub async fn create(ctxt: CommandCtxt<'_>, name: Word, contents: Rest) -> anyhow
 #[command(description = "runs a tag", cooldown = Duration::from_secs(2), access = Availability::Public, category = Category::Misc, usage = "<args>")]
 pub async fn default(ctxt: CommandCtxt<'_>, tag_name: Word, arguments: Vec<Word>) -> anyhow::Result<()> {
     let Some(guild_id) = ctxt.data.guild_id else {
-        bail!("tags can only be used in guilds")
+        bail!("Tags can only be used in guilds.")
     };
 
     let tag = ctxt

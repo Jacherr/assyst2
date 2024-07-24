@@ -2,6 +2,7 @@ use std::time::{Duration, Instant};
 
 use crate::command::Availability;
 use crate::rest::eval::fake_eval;
+use crate::rest::patreon::PatronTier;
 
 use super::arguments::{Image, ImageUrl, Rest, RestNoFlags, Word};
 use super::{Category, CommandCtxt};
@@ -13,9 +14,11 @@ use assyst_common::markdown::Markdown;
 use assyst_common::util::process::exec_sync;
 use assyst_common::util::table::key_value;
 use assyst_common::util::{format_duration, table};
+use assyst_database::model::free_tier_2_requests::FreeTier2Requests;
 use assyst_proc_macro::command;
 
 pub mod help;
+pub mod prefix;
 pub mod remind;
 pub mod run;
 pub mod stats;
@@ -159,4 +162,48 @@ pub async fn info(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
     let out = format!("{res}\n{table}").codeblock("ansi");
 
     ctxt.reply(out).await
+}
+
+#[command(
+    description = "get your current patron and free tier-2 request status",
+    cooldown = Duration::from_millis(1),
+    access = Availability::Public,
+    category = Category::Misc,
+    usage = "",
+    examples = [""]
+)]
+pub async fn patronstatus(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
+    let free_tier_2_requests =
+        FreeTier2Requests::get_user_free_tier_2_requests(&ctxt.assyst().database_handler, ctxt.data.author.id.get())
+            .await
+            .context("Failed to get free tier 2 request count")?
+            .count;
+
+    let patron_status = ctxt
+        .assyst()
+        .premium_users
+        .lock()
+        .unwrap()
+        .iter()
+        .find(|p| p.user_id == ctxt.data.author.id.get())
+        .map(|p| p.tier.clone())
+        .unwrap_or(PatronTier::Tier0);
+
+    ctxt.reply(format!(
+        "{}\n{}",
+        if patron_status == PatronTier::Tier0 {
+            "You're not a patron. You can become one [here](<https://patreon.com/jacher>).".to_owned()
+        } else {
+            format!("You're a tier {} patron.", patron_status as u64)
+        },
+        if free_tier_2_requests == 0 {
+            "You don't have any free tier 2 requests. You can get some by [voting](<https://vote.jacher.io/topgg>)."
+                .to_owned()
+        } else {
+            format!("You have {free_tier_2_requests} free tier 2 requests.")
+        }
+    ))
+    .await?;
+
+    Ok(())
 }

@@ -209,7 +209,7 @@ pub async fn download_web_media(assyst: ThreadSafeAssyst, url: &str, opts: WebDo
                         Ok(j) => {
                             req_result_url = Some(j.url.to_string());
                         },
-                        Err(e) => err = format!("Failed to deserialize download url: {}", e),
+                        Err(e) => err = format!("Failed to deserialize download url: {e}"),
                     }
                 } else {
                     let try_err = r.text().await;
@@ -229,17 +229,17 @@ pub async fn download_web_media(assyst: ThreadSafeAssyst, url: &str, opts: WebDo
                                         e = "YouTube has blocked video downloading. Please try again later.".to_owned()
                                     }
 
-                                    err = format!("Download request failed: {}", e);
+                                    err = format!("Download request failed: {e}");
                                 },
-                                Err(d_e) => err = format!("Download request failed: {} (raw error: {})", d_e, e),
+                                Err(d_e) => err = format!("Download request failed: {d_e} (raw error: {e})"),
                             }
                         },
-                        Err(e) => err = format!("Failed to extract download request error: {}", e),
+                        Err(e) => err = format!("Failed to extract download request error: {e}"),
                     }
                 }
             },
             Err(e) => {
-                err = format!("Download request failed: {}", e);
+                err = format!("Download request failed: {e}");
             },
         };
 

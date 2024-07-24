@@ -12,3 +12,6 @@ assyst-common = { path = "../assyst-common" }
 bytes = "1.0.1"
 either = "1.9.0"
 memchr = "2.6.4"
+
+[lints]
+workspace = true

@@ -61,7 +61,7 @@ pub async fn parse_prefix(
         let guild_prefix = Prefix::get(&assyst.database_handler, guild_id).await;
         match guild_prefix {
             // found prefix in db/cache
-            Ok(Some(p)) => p.prefix.clone(),
+            Ok(Some(p)) => p.prefix,
             // no prefix in db/cache, add default to db
             Ok(None) => {
                 let default_prefix = Prefix {

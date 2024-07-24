@@ -101,7 +101,7 @@ pub async fn request(
     tests: Option<bool>,
 ) -> Result<ApiResult, Error> {
     client
-        .post(&format!("{}/{}", API_BASE, path))
+        .post(&format!("{API_BASE}/{path}"))
         .json(&json!({
             "code": code,
             "channel": channel.unwrap_or("stable"),
@@ -148,7 +148,7 @@ pub async fn clippy(
 
 pub fn prepend_code(code: &str) -> Cow<str> {
     if !code.contains("fn main") {
-        Cow::Owned(format!("fn main() {{ println!(\"{{:?}}\", {{ {} }});}}", code))
+        Cow::Owned(format!("fn main() {{ println!(\"{{:?}}\", {{ {code} }});}}"))
     } else {
         Cow::Borrowed(code)
     }

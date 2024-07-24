@@ -66,10 +66,10 @@ async fn main() {
         let assyst = Arc::clone(&assyst);
 
         std::panic::set_hook(Box::new(move |info| {
-            println!("{}", info);
+            println!("{info}");
 
             let assyst = assyst.clone();
-            let msg = format!("A thread has panicked: ```{}```", info);
+            let msg = format!("A thread has panicked: ```{info}```");
 
             if CONFIG.logging_webhooks.enable_webhooks {
                 let LoggingWebhook { id, token } = CONFIG.logging_webhooks.panic.clone();

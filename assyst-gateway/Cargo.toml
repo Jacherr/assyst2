@@ -19,3 +19,6 @@ time = { version = "0.3.31", features = ["macros"] }
 twilight-model = "=0.16.0-rc.1"
 twilight-http = "=0.16.0-rc.1"
 jemallocator = "0.5.4"
+
+[lints]
+workspace = true

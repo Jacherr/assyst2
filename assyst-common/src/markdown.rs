@@ -120,7 +120,7 @@ where
 
     fn codeblock(&self, language: impl Display) -> String {
         let t = self.escape_codeblock(&language);
-        format!("```{language}\n{}\n```", t)
+        format!("```{language}\n{t}\n```")
     }
 
     fn spoiler(&self) -> String {
