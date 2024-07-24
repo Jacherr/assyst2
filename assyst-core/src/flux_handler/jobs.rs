@@ -655,11 +655,63 @@ impl FluxHandler {
         self.run_flux(request, limits.time).await
     }
 
+    pub async fn uncaption(&self, media: Vec<u8>, amount: Option<String>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let mut request = FluxRequest::new_with_input_and_limits(media, limits);
+
+        let mut options: HashMap<String, String> = HashMap::new();
+        if let Some(a) = amount {
+            options.insert("amount".to_owned(), a);
+        };
+
+        request.operation("uncaption".to_owned(), options);
+        request.output();
+
+        self.run_flux(request, limits.time).await
+    }
+
     pub async fn valentine(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
         let tier = self.get_request_tier(user_id).await?;
         let limits = &LIMITS[tier];
 
         let request = FluxRequest::new_basic(media, limits, "valentine");
+
+        self.run_flux(request, limits.time).await
+    }
+
+    pub async fn wormhole(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let request = FluxRequest::new_basic(media, limits, "wormhole");
+
+        self.run_flux(request, limits.time).await
+    }
+
+    pub async fn zoom(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let request = FluxRequest::new_basic(media, limits, "zoom");
+
+        self.run_flux(request, limits.time).await
+    }
+
+    pub async fn zoom_blur(&self, media: Vec<u8>, power: Option<f32>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let mut request = FluxRequest::new_with_input_and_limits(media, limits);
+
+        let mut options: HashMap<String, String> = HashMap::new();
+        if let Some(p) = power {
+            options.insert("power".to_owned(), p.to_string());
+        };
+
+        request.operation("zoom-blur".to_owned(), options);
+        request.output();
 
         self.run_flux(request, limits.time).await
     }

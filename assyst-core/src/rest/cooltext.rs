@@ -67,8 +67,6 @@ pub async fn cooltext(style: &str, text: &str) -> anyhow::Result<Vec<u8>> {
     let styled = STYLES
         .iter()
         .find_map(|(x, y)| {
-            dbg!(style);
-            dbg!(x);
             if x.to_lowercase() == style.to_lowercase() {
                 Some(y)
             } else {

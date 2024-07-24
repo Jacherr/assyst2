@@ -817,3 +817,81 @@ pub async fn swirl(ctxt: CommandCtxt<'_>, source: Image, strength: Option<f32>) 
 
     Ok(())
 }
+
+#[command(
+    description = "remove a caption from an image",
+    cooldown = Duration::from_secs(3),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image] <amount: percentage or lines>",
+    examples = ["https://link.to.my/image.png", "https://link.to.my/image.png 50", "https://link.to.my/image.png 15%"],
+    send_processing = true
+)]
+pub async fn uncaption(ctxt: CommandCtxt<'_>, source: Image, amount: Option<Word>) -> anyhow::Result<()> {
+    let result = ctxt
+        .flux_handler()
+        .uncaption(source.0, amount.map(|a| a.0), ctxt.data.author.id.get())
+        .await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "put an image through a wormhole",
+    cooldown = Duration::from_secs(3),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image]",
+    examples = ["https://link.to.my/image.png"],
+    send_processing = true
+)]
+pub async fn wormhole(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
+    let result = ctxt
+        .flux_handler()
+        .wormhole(source.0, ctxt.data.author.id.get())
+        .await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "zoom into an image",
+    cooldown = Duration::from_secs(3),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image]",
+    examples = ["https://link.to.my/image.png"],
+    send_processing = true
+)]
+pub async fn zoom(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
+    let result = ctxt.flux_handler().zoom(source.0, ctxt.data.author.id.get()).await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "apply a motion blur effect to an image",
+    aliases = ["zb"],
+    cooldown = Duration::from_secs(3),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image] <power: -20 to 20>",
+    examples = ["https://link.to.my/image.png", "https://link.to.my/image.png -10.2", "https://link.to.my/image.png 5.4"],
+    send_processing = true
+)]
+pub async fn zoomblur(ctxt: CommandCtxt<'_>, source: Image, power: Option<f32>) -> anyhow::Result<()> {
+    let result = ctxt
+        .flux_handler()
+        .zoom_blur(source.0, power, ctxt.data.author.id.get())
+        .await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
