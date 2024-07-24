@@ -6,7 +6,7 @@ pub struct CommandUsage {
     pub uses: i32,
 }
 impl CommandUsage {
-    pub async fn get_command_usage_stats(&self, handler: &DatabaseHandler) -> Result<Vec<Self>, sqlx::Error> {
+    pub async fn get_command_usage_stats(handler: &DatabaseHandler) -> Result<Vec<Self>, sqlx::Error> {
         let query = "SELECT * FROM command_uses order by uses desc";
         sqlx::query_as::<_, Self>(query).fetch_all(&handler.pool).await
     }

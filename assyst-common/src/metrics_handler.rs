@@ -16,7 +16,7 @@ pub struct MetricsHandler {
     pub events_rate_tracker: Mutex<RateTracker>,
     pub commands: IntCounter,
     pub total_commands_rate_tracker: Mutex<RateTracker>,
-    pub individual_commands_rate_trackers: Mutex<HashMap<&'static str /* command name */, RateTracker>>,
+    pub individual_commands_rate_trackers: tokio::sync::Mutex<HashMap<&'static str /* command name */, RateTracker>>,
     pub database_handler: Arc<DatabaseHandler>,
 }
 impl MetricsHandler {
@@ -29,7 +29,7 @@ impl MetricsHandler {
             events_rate_tracker: Mutex::new(RateTracker::new(Duration::from_secs(1))),
             commands: register_int_counter!("commands", "Total number of commands executed")?,
             total_commands_rate_tracker: Mutex::new(RateTracker::new(Duration::from_secs(60))),
-            individual_commands_rate_trackers: Mutex::new(HashMap::new()),
+            individual_commands_rate_trackers: tokio::sync::Mutex::new(HashMap::new()),
             database_handler,
         })
     }
@@ -85,8 +85,8 @@ impl MetricsHandler {
         self.total_commands_rate_tracker.lock().unwrap().get_rate()
     }
 
-    pub fn add_individual_command_usage(&self, command_name: &'static str) {
-        let mut lock = self.individual_commands_rate_trackers.lock().unwrap();
+    pub async fn add_individual_command_usage(&self, command_name: &'static str) {
+        let mut lock = self.individual_commands_rate_trackers.lock().await;
         let entry = lock.get_mut(&command_name);
         if let Some(entry) = entry {
             entry.add_sample();

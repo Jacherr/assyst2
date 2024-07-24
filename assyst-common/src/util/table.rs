@@ -46,6 +46,17 @@ pub fn generate_table<T: AsRef<str>>(input: &[(T, T)]) -> String {
 
 /// Generates a list given a list of tuples containing strings
 pub fn generate_list<K: AsRef<str>, V: AsRef<str>>(key_name: &str, value_name: &str, values: &[(K, V)]) -> String {
+    generate_list_fixed_delim(key_name, value_name, values, key_name.len(), value_name.len())
+}
+
+/// Generates a list given a list of tuples containing strings
+pub fn generate_list_fixed_delim<K: AsRef<str>, V: AsRef<str>>(
+    key_name: &str,
+    value_name: &str,
+    values: &[(K, V)],
+    key_delim_len: usize,
+    value_delim_len: usize,
+) -> String {
     let longest = get_longer_str(
         key_name,
         values.iter().fold(values[0].0.as_ref(), |previous, (current, _)| {
@@ -57,8 +68,8 @@ pub fn generate_list<K: AsRef<str>, V: AsRef<str>>(key_name: &str, value_name: &
         " {4}{}\t{}\n {4}{}\t{}",
         key_name,
         value_name,
-        "-".repeat(key_name.len()),
-        "-".repeat(value_name.len()),
+        "-".repeat(key_delim_len),
+        "-".repeat(value_delim_len),
         " ".repeat(longest.len() - key_name.len()),
     );
 

@@ -5,6 +5,7 @@ use crate::rest::eval::fake_eval;
 use crate::rest::patreon::PatronTier;
 
 use super::arguments::{Image, ImageUrl, Rest, RestNoFlags, Word};
+use super::registry::get_or_init_commands;
 use super::{Category, CommandCtxt};
 
 use anyhow::Context;
@@ -12,8 +13,9 @@ use assyst_common::ansi::Ansi;
 use assyst_common::eval::FakeEvalImageResponse;
 use assyst_common::markdown::Markdown;
 use assyst_common::util::process::exec_sync;
-use assyst_common::util::table::key_value;
+use assyst_common::util::table::{generate_list_fixed_delim, key_value};
 use assyst_common::util::{format_duration, table};
+use assyst_database::model::command_usage::CommandUsage;
 use assyst_database::model::free_tier_2_requests::FreeTier2Requests;
 use assyst_proc_macro::command;
 
@@ -204,6 +206,113 @@ pub async fn patronstatus(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
         }
     ))
     .await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "get bot invite and relevant links",
+    cooldown = Duration::from_millis(1),
+    access = Availability::Public,
+    category = Category::Misc,
+    usage = "",
+    examples = [""]
+)]
+pub async fn invite(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
+    let message = format!(
+        "{}\n{} | {} | {} | {}",
+        "Invite the bot"
+            .codestring()
+            .bold()
+            .url("<https://jacher.io/assyst>", Some("Invite link for Assyst.")),
+        "Support Server".codestring().url(
+            "<https://discord.gg/brmtnpxbtg>",
+            Some("Invite link for the Assyst Support Discord Server.")
+        ),
+        "Vote"
+            .codestring()
+            .url("<https://vote.jacher.io/topgg>", Some("top.gg vote link for Assyst.")),
+        "Patreon"
+            .codestring()
+            .url("<https://www.patreon.com/jacher>", Some("Patreon URL for Assyst.")),
+        "Source Code".codestring().url(
+            "<https://github.com/jacherr/assyst2.",
+            Some("Source code URL for Assyst.")
+        )
+    );
+
+    ctxt.reply(message).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "get the most-ran bot commands",
+    aliases = ["tcs", "topcmds"],
+    cooldown = Duration::from_millis(2),
+    access = Availability::Public,
+    category = Category::Misc,
+    usage = "",
+    examples = [""]
+)]
+pub async fn topcommands(ctxt: CommandCtxt<'_>, command: Option<Word>) -> anyhow::Result<()> {
+    let mut diff_lock = ctxt
+        .assyst()
+        .metrics_handler
+        .individual_commands_rate_trackers
+        .lock()
+        .await;
+
+    if let Some(c) = command {
+        let command = c.0;
+        let command = get_or_init_commands().get(&command[..]).context("Command not found")?;
+        let command_name = command.metadata().name;
+        let data = (CommandUsage {
+            command_name: command_name.to_owned(),
+            uses: 0,
+        })
+        .get_command_usage_stats_for(&ctxt.assyst().database_handler)
+        .await
+        .context("Failed to get command usage stats")?;
+
+        let rate = diff_lock.get_mut(command_name).map(|r| r.get_rate()).unwrap_or(0);
+
+        ctxt.reply(format!(
+            "Comman `{command_name}` has been used **{}** times. ({rate}/hr)",
+            data.uses
+        ))
+        .await?;
+    } else {
+        let top_commands = CommandUsage::get_command_usage_stats(&ctxt.assyst().database_handler)
+            .await
+            .context("Failed to get command usage statistics")?;
+
+        let top_commands_formatted_raw: Vec<(&str, String)> = top_commands
+            .iter()
+            .take(20)
+            .map(|t| {
+                let rate = diff_lock
+                    .get_mut(&t.command_name[..])
+                    .map(|r| r.get_rate())
+                    .unwrap_or(0);
+                (
+                    &t.command_name[..],
+                    format!("{} {}", t.uses, format!("({rate}/hr)").fg_green()),
+                )
+            })
+            .collect::<Vec<_>>();
+
+        let top_commands_formatted = top_commands_formatted_raw
+            .iter()
+            .map(|(a, b)| (a.fg_yellow(), &b[..]))
+            .collect::<Vec<_>>();
+
+        let table = generate_list_fixed_delim(&"Command".fg_cyan(), &"Uses".fg_cyan(), &top_commands_formatted, 7, 4);
+
+        drop(diff_lock);
+
+        ctxt.reply(table.codeblock("ansi")).await?;
+    }
 
     Ok(())
 }

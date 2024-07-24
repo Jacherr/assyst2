@@ -146,15 +146,18 @@ async fn main() {
     info!("Registering interaction commands");
     register_interaction_commands(assyst.clone()).await.unwrap();
 
-    info!("Compiling Flux...");
-    if let Err(e) = FluxHandler::compile_flux().await {
-        err!("Failed to compile flux: {e}");
-    } else {
-        info!(
-            "Flux is compiled (version: {})",
-            assyst.flux_handler.get_version().await.unwrap().trim()
-        );
-    }
+    let a = assyst.clone();
+    spawn(async move {
+        info!("Compiling Flux...");
+        if let Err(e) = FluxHandler::compile_flux().await {
+            err!("Failed to compile flux: {e}");
+        } else {
+            info!(
+                "Flux is compiled (version: {})",
+                a.flux_handler.get_version().await.unwrap().trim()
+            );
+        }
+    });
 
     let a = assyst.clone();
 

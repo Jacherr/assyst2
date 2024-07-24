@@ -16,7 +16,8 @@ pub async fn after_command_execution_success(ctxt: CommandCtxt<'_>, command: TCo
     ctxt.assyst().metrics_handler.add_command();
     ctxt.assyst()
         .metrics_handler
-        .add_individual_command_usage(command.metadata().name);
+        .add_individual_command_usage(command.metadata().name)
+        .await;
     (CommandUsage {
         command_name: command.metadata().name.to_owned(),
         uses: 0,
