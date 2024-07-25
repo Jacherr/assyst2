@@ -79,6 +79,7 @@ declare_commands!(
     image::wormhole_command,
     image::zoom_command,
     image::zoomblur_command,
+    misc::chars_command,
     misc::command_command,
     misc::enlarge_command,
     misc::eval_command,

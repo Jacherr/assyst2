@@ -1,6 +1,8 @@
+use std::fmt::Write;
 use std::time::{Duration, Instant};
 
 use crate::command::Availability;
+use crate::rest::charinfo::{extract_page_title, get_char_info};
 use crate::rest::eval::fake_eval;
 use crate::rest::patreon::PatronTier;
 
@@ -357,6 +359,33 @@ pub async fn command(ctxt: CommandCtxt<'_>, command: Word) -> anyhow::Result<()>
         ctxt.reply(format!("Disabled command `{}`", command_obj.command_name.codestring()))
             .await?;
     }
+
+    Ok(())
+}
+
+#[command(
+    description = "get string character information",
+    aliases = ["charinfo"],
+    cooldown = Duration::from_secs(3),
+    access = Availability::Public,
+    category = Category::Misc,
+    usage = "[characters]",
+    examples = ["👨‍👩‍👧‍👦"]
+)]
+pub async fn chars(ctxt: CommandCtxt<'_>, chars: RestNoFlags) -> anyhow::Result<()> {
+    let chars = chars.0.chars().take(10);
+
+    let mut output = String::new();
+
+    for ch in chars {
+        let (html, url) = get_char_info(ctxt.assyst().clone(), ch).await?;
+
+        let title = extract_page_title(&html).unwrap_or_else(|| "<unknown>".to_owned());
+
+        writeln!(output, "`{ch}` — **{title}** (<{url}>)")?;
+    }
+
+    ctxt.reply(output).await?;
 
     Ok(())
 }
