@@ -1,6 +1,8 @@
 use moka::sync::Cache;
+use std::collections::HashSet;
 use std::hash::Hash;
 use std::mem::size_of;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use crate::model::prefix::Prefix;
@@ -19,12 +21,14 @@ fn default_cache<K: TCacheK, V: TCacheV>() -> Cache<K, V> {
 pub struct DatabaseCache {
     prefixes: Cache<u64, Prefix>,
     global_blacklist: Cache<u64, bool>,
+    disabled_commands: Cache<u64, Arc<Mutex<HashSet<String>>>>,
 }
 impl DatabaseCache {
     pub fn new() -> Self {
         DatabaseCache {
             prefixes: default_cache(),
             global_blacklist: default_cache(),
+            disabled_commands: default_cache(),
         }
     }
 
@@ -49,9 +53,41 @@ impl DatabaseCache {
         self.global_blacklist.insert(user_id, blacklisted);
     }
 
+    pub fn get_guild_disabled_commands(&self, guild_id: u64) -> Option<Arc<Mutex<HashSet<String>>>> {
+        self.disabled_commands.get(&guild_id)
+    }
+
+    pub fn set_command_disabled(&self, guild_id: u64, command: &str) {
+        let disabled_commands = self.get_guild_disabled_commands(guild_id);
+        if let Some(old) = disabled_commands {
+            let mut lock = old.lock().unwrap();
+            let cmd = command.to_owned();
+            lock.insert(cmd);
+        } else {
+            self.disabled_commands.insert(
+                guild_id,
+                Arc::new(Mutex::new(HashSet::from_iter(vec![command.to_owned()]))),
+            );
+        }
+    }
+
+    pub fn set_command_enabled(&self, guild_id: u64, command: &str) {
+        let disabled_commands = self.get_guild_disabled_commands(guild_id);
+        if let Some(old) = disabled_commands {
+            let mut lock = old.lock().unwrap();
+            lock.remove(command);
+        }
+    }
+
+    pub fn reset_disabled_commands_for(&self, guild_id: u64) {
+        self.disabled_commands
+            .insert(guild_id, Arc::new(Mutex::new(HashSet::new())));
+    }
+
     pub fn size_of(&self) -> u64 {
         self.prefixes.run_pending_tasks();
         self.global_blacklist.run_pending_tasks();
+        self.disabled_commands.run_pending_tasks();
 
         let mut size = 0;
 
@@ -60,6 +96,21 @@ impl DatabaseCache {
             size += size_of::<u64>() as u64;
             // add value size
             size += prefix.1.size_of();
+        }
+
+        for command in self.disabled_commands.iter() {
+            // add key size
+            size += size_of::<u64>() as u64;
+            // add value size - approximate
+            size += command
+                .1
+                .lock()
+                .unwrap()
+                .iter()
+                .cloned()
+                .collect::<Vec<String>>()
+                .join("")
+                .len() as u64;
         }
 
         size += self.global_blacklist.entry_count() * size_of::<(u64, bool)>() as u64;

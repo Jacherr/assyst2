@@ -8,7 +8,7 @@ use super::arguments::{Image, ImageUrl, Rest, RestNoFlags, Word};
 use super::registry::get_or_init_commands;
 use super::{Category, CommandCtxt};
 
-use anyhow::Context;
+use anyhow::{bail, Context};
 use assyst_common::ansi::Ansi;
 use assyst_common::eval::FakeEvalImageResponse;
 use assyst_common::markdown::Markdown;
@@ -17,6 +17,7 @@ use assyst_common::util::table::{generate_list_fixed_delim, key_value};
 use assyst_common::util::{format_duration, table};
 use assyst_database::model::command_usage::CommandUsage;
 use assyst_database::model::free_tier_2_requests::FreeTier2Requests;
+use assyst_database::model::guild_disabled_command::GuildDisabledCommand;
 use assyst_proc_macro::command;
 
 pub mod help;
@@ -312,6 +313,49 @@ pub async fn topcommands(ctxt: CommandCtxt<'_>, command: Option<Word>) -> anyhow
         drop(diff_lock);
 
         ctxt.reply(table.codeblock("ansi")).await?;
+    }
+
+    Ok(())
+}
+
+#[command(
+    description = "toggle enable or disable a command",
+    cooldown = Duration::from_secs(1),
+    access = Availability::ServerManagers,
+    category = Category::Misc,
+    usage = "[command]",
+    examples = ["caption"]
+)]
+pub async fn command(ctxt: CommandCtxt<'_>, command: Word) -> anyhow::Result<()> {
+    let Some(guild_id) = ctxt.data.guild_id else {
+        bail!("Enabling or disabling commands is only supported in servers.")
+    };
+    let command_obj = GuildDisabledCommand {
+        guild_id: guild_id.get() as _,
+        command_name: command.0,
+    };
+
+    let is_disabled = command_obj
+        .is_disabled(&ctxt.assyst().database_handler)
+        .await
+        .context("Failed to get command enabled status")?;
+
+    if is_disabled {
+        command_obj
+            .enable(&ctxt.assyst().database_handler)
+            .await
+            .context("Failed to enable command")?;
+
+        ctxt.reply(format!("Enabled command `{}`", command_obj.command_name.codestring()))
+            .await?;
+    } else {
+        command_obj
+            .disable(&ctxt.assyst().database_handler)
+            .await
+            .context("Failed to disable command")?;
+
+        ctxt.reply(format!("Disabled command `{}`", command_obj.command_name.codestring()))
+            .await?;
     }
 
     Ok(())
