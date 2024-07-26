@@ -5,14 +5,13 @@ use assyst_common::err;
 use tracing::debug;
 use twilight_model::gateway::payload::incoming::MessageCreate;
 
+use super::after_command_execution_success;
 use crate::command::errors::{ExecutionError, TagParseError};
 use crate::command::source::Source;
 use crate::command::{CommandCtxt, CommandData, RawMessageParseCtxt};
 use crate::gateway_handler::message_parser::error::{ErrorSeverity, GetErrorSeverity};
 use crate::gateway_handler::message_parser::parser::parse_message_into_command;
 use crate::ThreadSafeAssyst;
-
-use super::after_command_execution_success;
 
 /// Handle a [MessageCreate] event received from the Discord gateway.
 ///
@@ -47,12 +46,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, MessageCreate(message): MessageCre
                         ExecutionError::Parse(TagParseError::ArgsExhausted(_)) => {
                             let _ = ctxt
                                 .cx
-                                .reply(format!(
-                                    ":warning: `{err}\nUsage: {}{} {}`",
-                                    ctxt.cx.data.calling_prefix,
-                                    result.command.metadata().name,
-                                    result.command.metadata().usage
-                                ))
+                                .reply(format!(":warning: `{err}\nUsage: {}{} {}`", ctxt.cx.data.calling_prefix, result.command.metadata().name, result.command.metadata().usage))
                                 .await;
                         },
                         _ => {
@@ -61,9 +55,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, MessageCreate(message): MessageCre
                     },
                 }
             } else {
-                let _ = after_command_execution_success(ctxt.cx, result.command)
-                    .await
-                    .map_err(|e| err!("Error handling post-command: {e:#}"));
+                let _ = after_command_execution_success(ctxt.cx, result.command).await.map_err(|e| err!("Error handling post-command: {e:#}"));
             }
         },
         Ok(None) => { /* command not found */ },

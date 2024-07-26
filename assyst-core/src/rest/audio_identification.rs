@@ -31,10 +31,7 @@ pub mod notsoidentify {
     }
 }
 
-pub async fn identify_song_notsoidentify(
-    assyst: ThreadSafeAssyst,
-    search: String,
-) -> anyhow::Result<Vec<notsoidentify::Song>> {
+pub async fn identify_song_notsoidentify(assyst: ThreadSafeAssyst, search: String) -> anyhow::Result<Vec<notsoidentify::Song>> {
     let client = &assyst.reqwest_client;
     let formdata = Form::new();
     let formdata = formdata.part("url", Part::text(search));

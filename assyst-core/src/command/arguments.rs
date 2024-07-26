@@ -13,13 +13,12 @@ use twilight_model::id::marker::ChannelMarker;
 use twilight_model::id::Id;
 use twilight_util::builder::command::{AttachmentBuilder, IntegerBuilder, NumberBuilder, StringBuilder};
 
+use super::errors::TagParseError;
+use super::{CommandCtxt, InteractionCommandParseCtxt, Label, RawMessageParseCtxt};
 use crate::assyst::Assyst;
 use crate::commit_if_ok;
 use crate::downloader::{self, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES};
 use crate::gateway_handler::message_parser::error::{ErrorSeverity, GetErrorSeverity};
-
-use super::errors::TagParseError;
-use super::{CommandCtxt, InteractionCommandParseCtxt, Label, RawMessageParseCtxt};
 
 pub trait ParseArgument: Sized {
     /// Parses `Self`, given a command, where the source is a raw message.
@@ -44,10 +43,7 @@ impl ParseArgument for u64 {
             Ok(*option as u64)
         } else {
             // cloning is fine since this should (ideally) never happen
-            Err(TagParseError::MismatchedCommandOptionType((
-                "u64".to_owned(),
-                next.clone(),
-            )))
+            Err(TagParseError::MismatchedCommandOptionType(("u64".to_owned(), next.clone())))
         }
     }
 
@@ -67,10 +63,7 @@ impl ParseArgument for f64 {
         if let CommandOptionValue::Number(option) = next {
             Ok(*option)
         } else {
-            Err(TagParseError::MismatchedCommandOptionType((
-                "f64".to_owned(),
-                next.clone(),
-            )))
+            Err(TagParseError::MismatchedCommandOptionType(("f64".to_owned(), next.clone())))
         }
     }
 
@@ -90,10 +83,7 @@ impl ParseArgument for f32 {
         if let CommandOptionValue::Number(option) = next {
             Ok(*option as f32)
         } else {
-            Err(TagParseError::MismatchedCommandOptionType((
-                "f32".to_owned(),
-                next.clone(),
-            )))
+            Err(TagParseError::MismatchedCommandOptionType(("f32".to_owned(), next.clone())))
         }
     }
 
@@ -149,11 +139,7 @@ impl ParseArgument for Vec<Word> {
 
     async fn parse_command_option(ctxt: &mut InteractionCommandParseCtxt<'_>) -> Result<Self, TagParseError> {
         let text = Word::parse_command_option(ctxt).await?;
-        let items = text
-            .0
-            .split_ascii_whitespace()
-            .map(|y| Word(y.to_owned()))
-            .collect::<Vec<_>>();
+        let items = text.0.split_ascii_whitespace().map(|y| Word(y.to_owned())).collect::<Vec<_>>();
 
         Ok(items)
     }
@@ -188,10 +174,7 @@ impl ParseArgument for Time {
 
             Ok(Time { millis })
         } else {
-            Err(TagParseError::MismatchedCommandOptionType((
-                "String (time)".to_owned(),
-                word.value.clone(),
-            )))
+            Err(TagParseError::MismatchedCommandOptionType(("String (time)".to_owned(), word.value.clone())))
         }
     }
 
@@ -215,10 +198,7 @@ impl ParseArgument for Word {
         if let CommandOptionValue::String(ref option) = word.value {
             Ok(Word(option.clone()))
         } else {
-            Err(TagParseError::MismatchedCommandOptionType((
-                "String".to_owned(),
-                word.value.clone(),
-            )))
+            Err(TagParseError::MismatchedCommandOptionType(("String".to_owned(), word.value.clone())))
         }
     }
 
@@ -241,10 +221,7 @@ impl ParseArgument for Codeblock {
         if let CommandOptionValue::String(ref option) = word.value {
             Ok(Codeblock(option.clone()))
         } else {
-            Err(TagParseError::MismatchedCommandOptionType((
-                "String".to_owned(),
-                word.value.clone(),
-            )))
+            Err(TagParseError::MismatchedCommandOptionType(("String".to_owned(), word.value.clone())))
         }
     }
 
@@ -260,28 +237,21 @@ pub struct Rest(pub String);
 impl ParseArgument for Rest {
     async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>, label: Label) -> Result<Self, TagParseError> {
         if let Some(m) = ctxt.cx.data.message {
-            if let Some(ref r) = m.referenced_message {
-                Ok(Self(r.content.clone()))
-            } else {
-                Ok(Self(ctxt.rest(label)?))
-            }
+            if let Some(ref r) = m.referenced_message { Ok(Self(r.content.clone())) } else { Ok(Self(ctxt.rest(label)?)) }
         } else {
             Ok(Self(ctxt.rest(label)?))
         }
     }
 
     async fn parse_command_option(ctxt: &mut InteractionCommandParseCtxt<'_>) -> Result<Self, TagParseError> {
-        // treat Rest as same as Word because there is no option type which is just one whitespace-delimited
-        // word
+        // treat Rest as same as Word because there is no option type which is just one
+        // whitespace-delimited word
         let word = ctxt.next_option()?;
 
         if let CommandOptionValue::String(ref option) = word.value {
             Ok(Rest(option.clone()))
         } else {
-            Err(TagParseError::MismatchedCommandOptionType((
-                "String (Rest)".to_owned(),
-                word.value.clone(),
-            )))
+            Err(TagParseError::MismatchedCommandOptionType(("String (Rest)".to_owned(), word.value.clone())))
         }
     }
 
@@ -302,28 +272,21 @@ pub struct RestNoFlags(pub String);
 impl ParseArgument for RestNoFlags {
     async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>, label: Label) -> Result<Self, TagParseError> {
         if let Some(m) = ctxt.cx.data.message {
-            if let Some(ref r) = m.referenced_message {
-                Ok(Self(r.content.clone()))
-            } else {
-                Ok(Self(ctxt.rest_all(label)))
-            }
+            if let Some(ref r) = m.referenced_message { Ok(Self(r.content.clone())) } else { Ok(Self(ctxt.rest_all(label))) }
         } else {
             Ok(Self(ctxt.rest_all(label)))
         }
     }
 
     async fn parse_command_option(ctxt: &mut InteractionCommandParseCtxt<'_>) -> Result<Self, TagParseError> {
-        // treat Rest as same as Word because there is no option type which is just one whitespace-delimited
-        // word
+        // treat Rest as same as Word because there is no option type which is just one
+        // whitespace-delimited word
         let word = ctxt.next_option()?;
 
         if let CommandOptionValue::String(ref option) = word.value {
             Ok(RestNoFlags(option.clone()))
         } else {
-            Err(TagParseError::MismatchedCommandOptionType((
-                "String (Rest)".to_owned(),
-                word.value.clone(),
-            )))
+            Err(TagParseError::MismatchedCommandOptionType(("String (Rest)".to_owned(), word.value.clone())))
         }
     }
 
@@ -348,22 +311,12 @@ impl ImageUrl {
             return Err(TagParseError::NoMention);
         }
 
-        let user = ctxt
-            .cx
-            .assyst()
-            .http_client
-            .user(Id::new(user_id))
-            .await?
-            .model()
-            .await?;
+        let user = ctxt.cx.assyst().http_client.user(Id::new(user_id)).await?.model().await?;
 
         Ok(Self(get_avatar_url(&user)))
     }
 
-    async fn from_mention_command_option(
-        ctxt: &mut InteractionCommandParseCtxt<'_>,
-        _: Label,
-    ) -> Result<Self, TagParseError> {
+    async fn from_mention_command_option(ctxt: &mut InteractionCommandParseCtxt<'_>, _: Label) -> Result<Self, TagParseError> {
         let word = ctxt.next_option()?;
 
         if let CommandOptionValue::String(ref option) = word.value {
@@ -373,54 +326,27 @@ impl ImageUrl {
                 return Err(TagParseError::NoMention);
             }
 
-            let user = ctxt
-                .cx
-                .assyst()
-                .http_client
-                .user(Id::new(user_id))
-                .await?
-                .model()
-                .await?;
+            let user = ctxt.cx.assyst().http_client.user(Id::new(user_id)).await?.model().await?;
 
             Ok(Self(get_avatar_url(&user)))
         } else {
-            Err(TagParseError::MismatchedCommandOptionType((
-                "String (mention aregument)".to_owned(),
-                word.value.clone(),
-            )))
+            Err(TagParseError::MismatchedCommandOptionType(("String (mention aregument)".to_owned(), word.value.clone())))
         }
     }
 
-    async fn from_url_argument_raw_message(
-        ctxt: &mut RawMessageParseCtxt<'_>,
-        label: Label,
-    ) -> Result<Self, TagParseError> {
+    async fn from_url_argument_raw_message(ctxt: &mut RawMessageParseCtxt<'_>, label: Label) -> Result<Self, TagParseError> {
         let word = ctxt.next_word(label)?;
 
-        if regex::URL.is_match(word) {
-            Ok(Self(word.to_owned()))
-        } else {
-            Err(TagParseError::NoUrl)
-        }
+        if regex::URL.is_match(word) { Ok(Self(word.to_owned())) } else { Err(TagParseError::NoUrl) }
     }
 
-    async fn from_url_argument_command_option(
-        ctxt: &mut InteractionCommandParseCtxt<'_>,
-        _: Label,
-    ) -> Result<Self, TagParseError> {
+    async fn from_url_argument_command_option(ctxt: &mut InteractionCommandParseCtxt<'_>, _: Label) -> Result<Self, TagParseError> {
         let word = ctxt.next_option()?;
 
         if let CommandOptionValue::String(ref option) = word.value {
-            if regex::URL.is_match(option) {
-                Ok(Self(option.to_owned()))
-            } else {
-                Err(TagParseError::NoUrl)
-            }
+            if regex::URL.is_match(option) { Ok(Self(option.to_owned())) } else { Err(TagParseError::NoUrl) }
         } else {
-            Err(TagParseError::MismatchedCommandOptionType((
-                "String (url argument)".to_owned(),
-                word.value.clone(),
-            )))
+            Err(TagParseError::MismatchedCommandOptionType(("String (url argument)".to_owned(), word.value.clone())))
         }
     }
 
@@ -433,10 +359,7 @@ impl ImageUrl {
         Self::attachment(ctxt.cx.data.message.as_ref().unwrap().attachments.first())
     }
 
-    async fn from_attachment_interaction_command(
-        ctxt: &mut InteractionCommandParseCtxt<'_>,
-        _: Label,
-    ) -> Result<Self, TagParseError> {
+    async fn from_attachment_interaction_command(ctxt: &mut InteractionCommandParseCtxt<'_>, _: Label) -> Result<Self, TagParseError> {
         let word = ctxt.next_option()?;
 
         if let CommandOptionValue::Attachment(ref option) = word.value {
@@ -444,24 +367,13 @@ impl ImageUrl {
             let attachment = attachment.ok_or(TagParseError::NoAttachment)?;
             Self::attachment(Some(attachment))
         } else {
-            Err(TagParseError::MismatchedCommandOptionType((
-                "Attachment".to_owned(),
-                word.value.clone(),
-            )))
+            Err(TagParseError::MismatchedCommandOptionType(("Attachment".to_owned(), word.value.clone())))
         }
     }
 
     /// This only exists for raw message
     async fn from_reply(ctxt: &mut RawMessageParseCtxt<'_>, _: Label) -> Result<Self, TagParseError> {
-        let reply = ctxt
-            .cx
-            .data
-            .message
-            .as_ref()
-            .unwrap()
-            .referenced_message
-            .as_deref()
-            .ok_or(TagParseError::NoReply)?;
+        let reply = ctxt.cx.data.message.as_ref().unwrap().referenced_message.as_deref().ok_or(TagParseError::NoReply)?;
 
         if let Some(attachment) = reply.attachments.first() {
             return Ok(Self(attachment.url.clone()));
@@ -525,14 +437,7 @@ impl ImageUrl {
             let codepoint = e.codepoint.to_lowercase().replace(' ', "-").replace("-fe0f", "");
 
             let emoji_url = format!("https://bignutty.gitlab.io/emojipedia-data/data/{codepoint}.json");
-            let dl = ctxt
-                .assyst()
-                .reqwest_client
-                .get(emoji_url)
-                .send()
-                .await?
-                .json::<TwemojiLookup>()
-                .await?;
+            let dl = ctxt.assyst().reqwest_client.get(emoji_url).send().await?.json::<TwemojiLookup>().await?;
 
             Ok(Self(dl.vendor_images.twitter))
         } else {
@@ -545,23 +450,13 @@ impl ImageUrl {
         Self::emoji(&mut ctxt.cx, word).await
     }
 
-    async fn from_emoji_command_option(
-        ctxt: &mut InteractionCommandParseCtxt<'_>,
-        _: Label,
-    ) -> Result<Self, TagParseError> {
+    async fn from_emoji_command_option(ctxt: &mut InteractionCommandParseCtxt<'_>, _: Label) -> Result<Self, TagParseError> {
         let word = ctxt.next_option()?;
 
         if let CommandOptionValue::String(ref option) = word.value {
-            if regex::URL.is_match(option) {
-                Ok(Self::emoji(&mut ctxt.cx, option).await?)
-            } else {
-                Err(TagParseError::NoUrl)
-            }
+            if regex::URL.is_match(option) { Ok(Self::emoji(&mut ctxt.cx, option).await?) } else { Err(TagParseError::NoUrl) }
         } else {
-            Err(TagParseError::MismatchedCommandOptionType((
-                "String (emoji argument)".to_owned(),
-                word.value.clone(),
-            )))
+            Err(TagParseError::MismatchedCommandOptionType(("String (emoji argument)".to_owned(), word.value.clone())))
         }
     }
 
@@ -578,12 +473,9 @@ impl ImageUrl {
         Self::sticker(ctxt.cx.data.message.as_ref().unwrap().sticker_items.first())
     }
 
-    // Defined separately without a CommandCtxt because it is also used elsewhere where we don't have
-    // one (and this also doesn't need it)
-    pub async fn from_channel_history(
-        assyst: &Assyst,
-        channel_id: Id<ChannelMarker>,
-    ) -> Result<ImageUrl, TagParseError> {
+    // Defined separately without a CommandCtxt because it is also used elsewhere where we don't
+    // have one (and this also doesn't need it)
+    pub async fn from_channel_history(assyst: &Assyst, channel_id: Id<ChannelMarker>) -> Result<ImageUrl, TagParseError> {
         let messages = assyst.http_client.channel_messages(channel_id).await?.models().await?;
 
         macro_rules! handle {
@@ -696,16 +588,14 @@ impl ParseArgument for Image {
     async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>, label: Label) -> Result<Self, TagParseError> {
         let ImageUrl(url) = ImageUrl::parse_raw_message(ctxt, label).await?;
 
-        let data =
-            downloader::download_content(ctxt.cx.assyst(), &url, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES, true).await?;
+        let data = downloader::download_content(ctxt.cx.assyst(), &url, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES, true).await?;
         Ok(Image(data))
     }
 
     async fn parse_command_option(ctxt: &mut InteractionCommandParseCtxt<'_>) -> Result<Self, TagParseError> {
         let ImageUrl(url) = ImageUrl::parse_command_option(ctxt).await?;
 
-        let data =
-            downloader::download_content(ctxt.cx.assyst(), &url, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES, true).await?;
+        let data = downloader::download_content(ctxt.cx.assyst(), &url, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES, true).await?;
         Ok(Image(data))
     }
 

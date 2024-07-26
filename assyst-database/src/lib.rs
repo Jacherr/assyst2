@@ -31,15 +31,9 @@ pub struct DatabaseHandler {
 }
 impl DatabaseHandler {
     pub async fn new(url: String, safe_url: String) -> anyhow::Result<Self> {
-        info!(
-            "Connecting to database on {} with {} max connections",
-            safe_url, MAX_CONNECTIONS
-        );
+        info!("Connecting to database on {} with {} max connections", safe_url, MAX_CONNECTIONS);
 
-        let pool = PgPoolOptions::new()
-            .max_connections(MAX_CONNECTIONS)
-            .connect(&url)
-            .await?;
+        let pool = PgPoolOptions::new().max_connections(MAX_CONNECTIONS).connect(&url).await?;
 
         info!("Connected to database on {}", safe_url);
         let cache = DatabaseCache::new();
@@ -55,11 +49,7 @@ impl DatabaseHandler {
     pub async fn get_tag(&self, guild_id: i64, name: &str) -> Result<Option<Tag>, sqlx::Error> {
         let query = r#"SELECT * FROM tags WHERE name = $1 AND guild_id = $2"#;
 
-        let result = sqlx::query_as(query)
-            .bind(name)
-            .bind(guild_id)
-            .fetch_one(&self.pool)
-            .await;
+        let result = sqlx::query_as(query).bind(name).bind(guild_id).fetch_one(&self.pool).await;
 
         match result {
             Ok(v) => Ok(Some(v)),

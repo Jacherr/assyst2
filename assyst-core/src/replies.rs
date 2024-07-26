@@ -25,11 +25,7 @@ pub struct Reply {
 
 impl Reply {
     pub fn in_use(&self) -> Option<ReplyInUse> {
-        if let ReplyState::InUse(reply) = self.state {
-            Some(reply)
-        } else {
-            None
-        }
+        if let ReplyState::InUse(reply) = self.state { Some(reply) } else { None }
     }
 }
 
@@ -39,14 +35,8 @@ pub struct Replies(Cache<u64, Reply>, Cache<u64, ()>);
 impl Replies {
     pub fn new() -> Self {
         Self(
-            Cache::builder()
-                .max_capacity(1000)
-                .time_to_idle(Duration::from_secs(60 * 5))
-                .build(),
-            Cache::builder()
-                .max_capacity(1000)
-                .time_to_idle(Duration::from_secs(60 * 5))
-                .build(),
+            Cache::builder().max_capacity(1000).time_to_idle(Duration::from_secs(60 * 5)).build(),
+            Cache::builder().max_capacity(1000).time_to_idle(Duration::from_secs(60 * 5)).build(),
         )
     }
 

@@ -1,4 +1,5 @@
 use std::time::Duration;
+
 use tokio::time::Instant;
 
 /// Struct to allow the tracking of how fast a value increases, or how fast a state changes.
@@ -11,16 +12,12 @@ pub struct RateTracker {
 }
 impl RateTracker {
     pub fn new(tracking_length: Duration) -> RateTracker {
-        RateTracker {
-            tracking_length,
-            samples: vec![],
-        }
+        RateTracker { tracking_length, samples: vec![] }
     }
 
     /// Removes all samples from this tracker which are older than the tracking length.
     pub fn remove_expired_samples(&mut self) {
-        self.samples
-            .retain(|x| Instant::now().duration_since(*x) <= self.tracking_length);
+        self.samples.retain(|x| Instant::now().duration_since(*x) <= self.tracking_length);
     }
 
     /// Add a sample to the tracker.

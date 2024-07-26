@@ -1,7 +1,8 @@
-use crate::assyst::ThreadSafeAssyst;
-use crate::rest::web_media_download::get_web_download_api_urls;
 use assyst_common::err;
 use tracing::debug;
+
+use crate::assyst::ThreadSafeAssyst;
+use crate::rest::web_media_download::get_web_download_api_urls;
 
 pub async fn refresh_web_download_urls(assyst: ThreadSafeAssyst) {
     debug!("Updating web download source URLs");

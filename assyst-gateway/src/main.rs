@@ -54,14 +54,9 @@ async fn main() -> anyhow::Result<()> {
 
     let intents = Intents::MESSAGE_CONTENT | Intents::GUILDS | Intents::GUILD_MESSAGES | Intents::DIRECT_MESSAGES;
     debug!("intents={:?}", intents);
-    let gateway_config = GatewayConfigBuilder::new(CONFIG.authentication.discord_token.clone(), intents)
-        .presence(presence)
-        .build();
+    let gateway_config = GatewayConfigBuilder::new(CONFIG.authentication.discord_token.clone(), intents).presence(presence).build();
 
-    let shards = create_recommended(&http_client, gateway_config.clone(), |_, _| gateway_config.clone())
-        .await
-        .unwrap()
-        .collect::<Vec<_>>();
+    let shards = create_recommended(&http_client, gateway_config.clone(), |_, _| gateway_config.clone()).await.unwrap().collect::<Vec<_>>();
 
     info!("Recommended shard count: {}", shards.len());
 
@@ -90,11 +85,7 @@ async fn main() -> anyhow::Result<()> {
     let shards_count = shards.len();
 
     for shard in shards {
-        info!(
-            "Registering runner for shard {} of {}",
-            shard.id().number(),
-            shards_count - 1
-        );
+        info!("Registering runner for shard {} of {}", shard.id().number(), shards_count - 1);
         tasks.push(spawn(runner(shard, tx.clone())));
     }
 

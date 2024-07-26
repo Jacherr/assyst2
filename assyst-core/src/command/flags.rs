@@ -1,18 +1,6 @@
 use std::collections::HashMap;
 
 use anyhow::{bail, Context};
-use twilight_util::builder::command::StringBuilder;
-
-use super::Label;
-
-pub mod badtranslate;
-pub mod bloom;
-pub mod caption;
-pub mod charge;
-pub mod colour;
-pub mod download;
-pub mod rust;
-pub mod speechbubble;
 
 #[macro_export]
 macro_rules! flag_parse_argument {

@@ -1,14 +1,13 @@
+use std::collections::HashMap;
+use std::time::Duration;
+
 use assyst_common::util::string_from_likely_utf8;
 use serde::Deserialize;
 use serde_json::from_str;
 
-use std::collections::HashMap;
-use std::time::Duration;
-
-use crate::flux_handler::flux_request::FluxRequest;
-
 use super::limits::LIMITS;
 use super::FluxHandler;
+use crate::flux_handler::flux_request::FluxRequest;
 
 #[derive(Deserialize)]
 pub struct ImageInfo {
@@ -75,14 +74,7 @@ impl FluxHandler {
         self.run_flux(request, limits.time).await
     }
 
-    pub async fn bloom(
-        &self,
-        media: Vec<u8>,
-        radius: Option<u64>,
-        sharpness: Option<u64>,
-        brightness: Option<u64>,
-        user_id: u64,
-    ) -> FluxResult {
+    pub async fn bloom(&self, media: Vec<u8>, radius: Option<u64>, sharpness: Option<u64>, brightness: Option<u64>, user_id: u64) -> FluxResult {
         let tier = self.get_request_tier(user_id).await?;
 
         let limits = &LIMITS[tier];
@@ -388,13 +380,7 @@ impl FluxHandler {
         self.run_flux(request, limits.time).await
     }
 
-    pub async fn motivate(
-        &self,
-        media: Vec<u8>,
-        top: Option<String>,
-        bottom: Option<String>,
-        user_id: u64,
-    ) -> FluxResult {
+    pub async fn motivate(&self, media: Vec<u8>, top: Option<String>, bottom: Option<String>, user_id: u64) -> FluxResult {
         let tier = self.get_request_tier(user_id).await?;
         let limits = &LIMITS[tier];
 

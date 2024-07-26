@@ -1,12 +1,14 @@
-use crate::context::Context;
-use crate::errors::{err_res, BytePos, ErrorKind, TResult};
-use crate::subtags;
-use assyst_common::util::filetype::Type;
-use rand::prelude::ThreadRng;
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::error::Error as StdError;
 use std::ops::Range;
+
+use assyst_common::util::filetype::Type;
+use rand::prelude::ThreadRng;
+
+use crate::context::Context;
+use crate::errors::{err_res, BytePos, ErrorKind, TResult};
+use crate::subtags;
 
 /// Constants and helper functions for tag parser limits
 pub mod limits {
@@ -45,16 +47,8 @@ pub struct SharedState<'a> {
 }
 
 impl<'a> SharedState<'a> {
-    pub fn new(
-        variables: &'a RefCell<HashMap<String, String>>,
-        counter: &'a Counter,
-        attachment: &'a RefCell<Option<(Vec<u8>, Type)>>,
-    ) -> Self {
-        Self {
-            variables,
-            counter,
-            attachment,
-        }
+    pub fn new(variables: &'a RefCell<HashMap<String, String>>, counter: &'a Counter, attachment: &'a RefCell<Option<(Vec<u8>, Type)>>) -> Self {
+        Self { variables, counter, attachment }
     }
 
     /// Calls `f` with a mutable reference to the user defined variables
@@ -172,13 +166,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Creates a new parser
-    pub fn new(
-        input: &'a [u8],
-        args: &'a [&'a str],
-        state: SharedState<'a>,
-        mode: ParseMode,
-        cx: &'a dyn Context,
-    ) -> Self {
+    pub fn new(input: &'a [u8], args: &'a [&'a str], state: SharedState<'a>, mode: ParseMode, cx: &'a dyn Context) -> Self {
         Self {
             input,
             args,
@@ -250,8 +238,8 @@ impl<'a> Parser<'a> {
         let mut output = Vec::new();
 
         if !side_effects {
-            // If this call isn't allowed to have any side effects, we can just "fast-forward" to the next }
-            // that matches the depth of the current call.
+            // If this call isn't allowed to have any side effects, we can just "fast-forward" to
+            // the next } that matches the depth of the current call.
             let mut depth = 1;
 
             while self.idx < self.input.len() {
@@ -326,7 +314,9 @@ impl<'a> Parser<'a> {
                                 self.recover_parse_error(&mut output)?;
                                 continue;
                             },
-                            ParseMode::StopOnError => return err_res(ErrorKind::EmptySubtag { span: self.span() }),
+                            ParseMode::StopOnError => {
+                                return err_res(ErrorKind::EmptySubtag { span: self.span() });
+                            },
                         }
                     }
 
@@ -370,9 +360,7 @@ impl<'a> Parser<'a> {
                             (Err(err), ParseMode::IgnoreOnError) if let ErrorKind::UnknownSubtag { .. } = *err.kind => {
                                 // we allow recovering only from unknown subtags specifically
 
-                                std::str::from_utf8(&self.input[self.span()])
-                                    .unwrap_or_else(|err| self.unreachable_invalid_utf8(err))
-                                    .to_owned()
+                                std::str::from_utf8(&self.input[self.span()]).unwrap_or_else(|err| self.unreachable_invalid_utf8(err)).to_owned()
                             },
                             (Err(err), _) => return Err(err),
                         }
@@ -414,8 +402,8 @@ impl<'a> Parser<'a> {
     #[cold]
     #[track_caller]
     fn unreachable_invalid_utf8(&self, err: impl StdError) -> ! {
-        // this should not be possible and indicates a bug in the parser -- be as useful as possible for
-        // debugging purposes when it does happen
+        // this should not be possible and indicates a bug in the parser -- be as useful as possible
+        // for debugging purposes when it does happen
         panic!("tag ended up with invalid utf-8: {err:?}\ntag source: {:?}", self.input)
     }
 
@@ -514,10 +502,7 @@ impl<'a> Parser<'a> {
             "idof" => subtags::exec(self, &args, subtags::idof),
             "userid" => subtags::exec(self, &args, subtags::userid),
             "tag" => subtags::exec(self, &args, subtags::tag),
-            _ => err_res(ErrorKind::UnknownSubtag {
-                name: name.to_owned(),
-                span: name_span,
-            }),
+            _ => err_res(ErrorKind::UnknownSubtag { name: name.to_owned(), span: name_span }),
         }
     }
 

@@ -1,16 +1,20 @@
+use std::collections::HashMap;
 use std::time::Duration;
 
 use anyhow::{bail, Context};
 use assyst_common::markdown::Markdown;
 use assyst_database::model::colour_role::ColourRole;
 use assyst_proc_macro::command;
+use twilight_model::application::interaction::application_command::CommandOptionValue;
 use twilight_model::id::marker::{GuildMarker, RoleMarker};
 use twilight_model::id::Id;
+use twilight_util::builder::command::StringBuilder;
 
-use crate::command::arguments::Word;
-use crate::command::flags::colour::ColourRemoveAllFlags;
-use crate::command::{Availability, Category, CommandCtxt};
-use crate::define_commandgroup;
+use crate::command::arguments::{ParseArgument, Word};
+use crate::command::errors::TagParseError;
+use crate::command::flags::{flags_from_str, FlagDecode, FlagType};
+use crate::command::{Availability, Category, CommandCtxt, InteractionCommandParseCtxt, Label, RawMessageParseCtxt};
+use crate::{define_commandgroup, flag_parse_argument};
 
 const DEFAULT_COLOURS: &[(&str, u32)] = &[
     ("gold", 0xf1c40f),
@@ -386,3 +390,25 @@ define_commandgroup! {
     default_interaction_subcommand: "assign",
     default: default
 }
+
+#[derive(Default)]
+pub struct ColourRemoveAllFlags {
+    pub i_am_sure: bool,
+}
+impl FlagDecode for ColourRemoveAllFlags {
+    fn from_str(input: &str) -> anyhow::Result<Self>
+    where
+        Self: Sized,
+    {
+        let mut valid_flags = HashMap::new();
+        valid_flags.insert("i-am-sure", FlagType::NoValue);
+
+        let raw_decode = flags_from_str(input, valid_flags)?;
+        let result = Self {
+            i_am_sure: raw_decode.contains_key("i-am-sure"),
+        };
+
+        Ok(result)
+    }
+}
+flag_parse_argument! { ColourRemoveAllFlags }

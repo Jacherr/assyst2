@@ -26,15 +26,9 @@ async fn main() {
             debug!("Handling job: {}", job);
 
             let result = match job {
-                CacheJob::HandleReady(event) => {
-                    CacheResponse::NewGuildsFromReady(guild_cache.handle_ready_event(event))
-                },
-                CacheJob::HandleGuildCreate(event) => {
-                    CacheResponse::ShouldHandleGuildCreate(guild_cache.handle_guild_create_event(event))
-                },
-                CacheJob::HandleGuildDelete(event) => {
-                    CacheResponse::ShouldHandleGuildDelete(guild_cache.handle_guild_delete_event(event))
-                },
+                CacheJob::HandleReady(event) => CacheResponse::NewGuildsFromReady(guild_cache.handle_ready_event(event)),
+                CacheJob::HandleGuildCreate(event) => CacheResponse::ShouldHandleGuildCreate(guild_cache.handle_guild_create_event(event)),
+                CacheJob::HandleGuildDelete(event) => CacheResponse::ShouldHandleGuildDelete(guild_cache.handle_guild_delete_event(event)),
             };
 
             ok_or_break!(stream.write_object(result).await);

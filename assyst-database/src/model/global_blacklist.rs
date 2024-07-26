@@ -12,12 +12,7 @@ impl GlobalBlacklist {
 
         let query = r#"SELECT user_id FROM blacklist WHERE user_id = $1"#;
 
-        match sqlx::query_as::<_, (i64,)>(query)
-            .bind(user_id as i64)
-            .fetch_one(&handler.pool)
-            .await
-            .map(|result| result.0)
-        {
+        match sqlx::query_as::<_, (i64,)>(query).bind(user_id as i64).fetch_one(&handler.pool).await.map(|result| result.0) {
             Ok(_) => {
                 handler.cache.set_user_global_blacklist(user_id, true);
                 Ok(true)
@@ -43,10 +38,6 @@ impl GlobalBlacklist {
         let query = r#"DELETE FROM blacklist WHERE user_id = $1"#;
 
         handler.cache.set_user_global_blacklist(user_id, false);
-        sqlx::query(query)
-            .bind(user_id as i64)
-            .execute(&handler.pool)
-            .await
-            .map(|_| ())
+        sqlx::query(query).bind(user_id as i64).execute(&handler.pool).await.map(|_| ())
     }
 }

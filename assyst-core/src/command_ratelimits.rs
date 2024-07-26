@@ -7,12 +7,7 @@ use moka::sync::Cache;
 pub struct CommandRatelimits(Cache<(u64, &'static str), Instant>);
 impl CommandRatelimits {
     pub fn new() -> Self {
-        Self(
-            Cache::builder()
-                .max_capacity(1000)
-                .time_to_idle(Duration::from_secs(60 * 5))
-                .build(),
-        )
+        Self(Cache::builder().max_capacity(1000).time_to_idle(Duration::from_secs(60 * 5)).build())
     }
 
     pub fn insert(&self, id: u64, command_name: &'static str, value: Instant) {

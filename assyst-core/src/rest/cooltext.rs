@@ -66,16 +66,8 @@ pub async fn cooltext(style: &str, text: &str) -> anyhow::Result<Vec<u8>> {
     let client = ClientBuilder::new().danger_accept_invalid_certs(true).build().unwrap();
     let styled = STYLES
         .iter()
-        .find_map(|(x, y)| {
-            if x.to_lowercase() == style.to_lowercase() {
-                Some(y)
-            } else {
-                None
-            }
-        })
-        .ok_or(anyhow::anyhow!(
-            "Unknown style {style}. Try the 'list' subcommand to see all available styles."
-        ))?;
+        .find_map(|(x, y)| if x.to_lowercase() == style.to_lowercase() { Some(y) } else { None })
+        .ok_or(anyhow::anyhow!("Unknown style {style}. Try the 'list' subcommand to see all available styles."))?;
 
     let cool_text_response = client
         .post(COOLTEXT_URL)

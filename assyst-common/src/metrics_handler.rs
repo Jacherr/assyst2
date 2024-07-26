@@ -1,11 +1,13 @@
-use crate::util::process::get_processes_mem_usage;
-use crate::util::rate_tracker::RateTracker;
-use assyst_database::DatabaseHandler;
-use prometheus::{register_int_counter, register_int_gauge, register_int_gauge_vec, IntCounter, IntGauge, IntGaugeVec};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
+
+use assyst_database::DatabaseHandler;
+use prometheus::{register_int_counter, register_int_gauge, register_int_gauge_vec, IntCounter, IntGauge, IntGaugeVec};
 use tracing::info;
+
+use crate::util::process::get_processes_mem_usage;
+use crate::util::rate_tracker::RateTracker;
 
 /// Handler for general metrics, including rate trackers, Prometheus metrics, etc.
 pub struct MetricsHandler {
@@ -49,9 +51,7 @@ impl MetricsHandler {
         let memory_usages = get_processes_mem_usage();
 
         for usage in memory_usages {
-            self.memory_usage
-                .with_label_values(&[usage.0])
-                .set((usage.1 / 1024 / 1024) as i64);
+            self.memory_usage.with_label_values(&[usage.0]).set((usage.1 / 1024 / 1024) as i64);
         }
     }
 

@@ -1,3 +1,14 @@
+use std::sync::{Arc, Mutex};
+
+use assyst_common::config::CONFIG;
+use assyst_common::metrics_handler::MetricsHandler;
+use assyst_common::pipe::CACHE_PIPE_PATH;
+use assyst_database::DatabaseHandler;
+use twilight_http::client::InteractionClient;
+use twilight_http::Client as HttpClient;
+use twilight_model::id::marker::ApplicationMarker;
+use twilight_model::id::Id;
+
 use crate::command_ratelimits::CommandRatelimits;
 use crate::flux_handler::FluxHandler;
 use crate::persistent_cache_handler::PersistentCacheHandler;
@@ -5,15 +16,6 @@ use crate::replies::Replies;
 use crate::rest::patreon::Patron;
 use crate::rest::rest_cache_handler::RestCacheHandler;
 use crate::task::Task;
-use assyst_common::config::CONFIG;
-use assyst_common::metrics_handler::MetricsHandler;
-use assyst_common::pipe::CACHE_PIPE_PATH;
-use assyst_database::DatabaseHandler;
-use std::sync::{Arc, Mutex};
-use twilight_http::client::InteractionClient;
-use twilight_http::Client as HttpClient;
-use twilight_model::id::marker::ApplicationMarker;
-use twilight_model::id::Id;
 
 pub type ThreadSafeAssyst = Arc<Assyst>;
 
@@ -54,8 +56,7 @@ impl Assyst {
     pub async fn new() -> anyhow::Result<Assyst> {
         let http_client = Arc::new(HttpClient::new(CONFIG.authentication.discord_token.clone()));
         let shard_count = http_client.gateway().authed().await?.model().await?.shards as u64;
-        let database_handler =
-            Arc::new(DatabaseHandler::new(CONFIG.database.to_url(), CONFIG.database.to_url_safe()).await?);
+        let database_handler = Arc::new(DatabaseHandler::new(CONFIG.database.to_url(), CONFIG.database.to_url_safe()).await?);
         let premium_users = Arc::new(Mutex::new(vec![]));
         let current_application = http_client.current_user_application().await?.model().await?;
 

@@ -51,9 +51,7 @@ pub fn parse_to_millis(input: &str) -> Result<u64, ParseToMillisError> {
     let mut total: u64 = 0;
 
     for current in matches {
-        let amount = current[1]
-            .parse::<u64>()
-            .map_err(|_| ParseToMillisError::ParseIntError)?;
+        let amount = current[1].parse::<u64>().map_err(|_| ParseToMillisError::ParseIntError)?;
 
         let unit: u64 = unit_to_ms(&current[2]);
 
@@ -67,16 +65,10 @@ pub fn parse_to_millis(input: &str) -> Result<u64, ParseToMillisError> {
 
 /// Initialises tracing logging.
 pub fn tracing_init() {
-    let filter = EnvFilter::from_default_env()
-        .add_directive("twilight_gateway=info".parse().unwrap())
-        .add_directive("hyper=info".parse().unwrap());
+    let filter = EnvFilter::from_default_env().add_directive("twilight_gateway=info".parse().unwrap()).add_directive("hyper=info".parse().unwrap());
     let description = "[year]-[month]-[day] [hour]:[minute]:[second]";
 
-    tracing_subscriber::fmt()
-        .with_timer(UtcTime::new(format_description::parse(description).unwrap()))
-        .with_line_number(true)
-        .with_env_filter(filter)
-        .init();
+    tracing_subscriber::fmt().with_timer(UtcTime::new(format_description::parse(description).unwrap())).with_line_number(true).with_env_filter(filter).init();
 
     info!("Initialised logging");
 }
@@ -103,11 +95,7 @@ mod units {
 
 /// Pluralizes a string
 pub fn pluralize<'a>(s: &'a str, adder: &str, count: u64) -> Cow<'a, str> {
-    if count == 1 {
-        Cow::Borrowed(s)
-    } else {
-        Cow::Owned(s.to_owned() + adder)
-    }
+    if count == 1 { Cow::Borrowed(s) } else { Cow::Owned(s.to_owned() + adder) }
 }
 
 /// Converts a timestamp to a humanly readable string

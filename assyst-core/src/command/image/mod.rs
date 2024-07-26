@@ -7,17 +7,17 @@ use assyst_common::util::{format_duration, table};
 use assyst_proc_macro::command;
 use human_bytes::human_bytes;
 
-use super::arguments::{Image, Rest, RestNoFlags, Word};
-use super::flags::bloom::BloomFlags;
-use super::flags::caption::CaptionFlags;
-use super::flags::speechbubble::SpeechBubbleFlags;
+use super::arguments::{Image, RestNoFlags, Word};
 use super::messagebuilder::{Attachment, MessageBuilder};
 use crate::command::{Availability, Category, CommandCtxt};
 use crate::flux_handler::jobs::MediaInfo;
 
 pub mod audio;
+pub mod bloom;
+pub mod caption;
 pub mod makesweet;
 pub mod randomize;
+pub mod speechbubble;
 
 #[command(
     description = "ah shit here we go again",
@@ -57,37 +57,6 @@ pub async fn aprilfools(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<
 }
 
 #[command(
-    description = "bloom an image",
-    cooldown = Duration::from_secs(2),
-    access = Availability::Public,
-    category = Category::Image,
-    usage = "[image] <flags>",
-    examples = ["https://link.to.my/image.png", "https://link.to.my/image.png --brightness 100 --sharpness 25 --radius 10"],
-    send_processing = true,
-    flag_descriptions = [
-        ("radius", "Bloom radius as a number"),
-        ("brightness", "Bloom brightness as a number"),
-        ("sharpness", "Bloom sharpness as a number"),
-    ]
-)]
-pub async fn bloom(ctxt: CommandCtxt<'_>, source: Image, flags: BloomFlags) -> anyhow::Result<()> {
-    let result = ctxt
-        .flux_handler()
-        .bloom(
-            source.0,
-            flags.radius,
-            flags.sharpness,
-            flags.brightness,
-            ctxt.data.author.id.get(),
-        )
-        .await?;
-
-    ctxt.reply(result).await?;
-
-    Ok(())
-}
-
-#[command(
     description = "blur an image",
     cooldown = Duration::from_secs(2),
     access = Availability::Public,
@@ -100,30 +69,6 @@ pub async fn blur(ctxt: CommandCtxt<'_>, source: Image, strength: Option<f32>) -
     let result = ctxt
         .flux_handler()
         .blur(source.0, strength, ctxt.data.author.id.get())
-        .await?;
-
-    ctxt.reply(result).await?;
-
-    Ok(())
-}
-
-#[command(
-    description = "add a caption to an image",
-    cooldown = Duration::from_secs(2),
-    access = Availability::Public,
-    category = Category::Image,
-    usage = "[image] [caption] <...flags>",
-    examples = ["https://link.to.my/image.png hello there", "https://link.to.my/image.png i am on the bottom --bottom", "https://link.to.my/image.png i am an inverted caption --black"],
-    send_processing = true,
-    flag_descriptions = [
-        ("bottom", "Setting this flag puts the caption on the bottom of the image"),
-        ("black", "Setting this flag inverts the caption"),
-    ]
-)]
-pub async fn caption(ctxt: CommandCtxt<'_>, source: Image, text: Rest, flags: CaptionFlags) -> anyhow::Result<()> {
-    let result = ctxt
-        .flux_handler()
-        .caption(source.0, text.0, flags.bottom, flags.black, ctxt.data.author.id.get())
         .await?;
 
     ctxt.reply(result).await?;
@@ -709,30 +654,6 @@ pub async fn scramble(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()
     let result = ctxt
         .flux_handler()
         .scramble(source.0, ctxt.data.author.id.get())
-        .await?;
-
-    ctxt.reply(result).await?;
-
-    Ok(())
-}
-
-#[command(
-    description = "add a speechbubble to an image",
-    aliases = ["speech"],
-    cooldown = Duration::from_secs(2),
-    access = Availability::Public,
-    category = Category::Image,
-    usage = "[image] <...flags>",
-    examples = ["https://link.to.my/image.png", "https://link.to.my/image.png --solid"],
-    send_processing = true,
-    flag_descriptions = [
-        ("solid", "Setting this flag will make the speech bubble a solid white instead of transparent"),
-    ]
-)]
-pub async fn speechbubble(ctxt: CommandCtxt<'_>, source: Image, flags: SpeechBubbleFlags) -> anyhow::Result<()> {
-    let result = ctxt
-        .flux_handler()
-        .speech_bubble(source.0, flags.solid, ctxt.data.author.id.get())
         .await?;
 
     ctxt.reply(result).await?;

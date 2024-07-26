@@ -1,8 +1,5 @@
 use twilight_model::gateway::event::{DispatchEvent, GatewayEvent};
-use twilight_model::gateway::payload::incoming::{
-    ChannelUpdate, GuildCreate, GuildDelete, GuildUpdate, InteractionCreate, MessageCreate, MessageDelete,
-    MessageUpdate, Ready,
-};
+use twilight_model::gateway::payload::incoming::{ChannelUpdate, GuildCreate, GuildDelete, GuildUpdate, InteractionCreate, MessageCreate, MessageDelete, MessageUpdate, Ready};
 
 #[derive(Debug)]
 pub enum IncomingEvent {

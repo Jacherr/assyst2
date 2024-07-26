@@ -6,13 +6,7 @@ use twilight_model::channel::Message;
 
 use crate::assyst::Assyst;
 
-pub async fn fake_eval(
-    assyst: &Assyst,
-    code: String,
-    accept_image: bool,
-    message: Option<&Message>,
-    args: Vec<String>,
-) -> anyhow::Result<FakeEvalImageResponse> {
+pub async fn fake_eval(assyst: &Assyst, code: String, accept_image: bool, message: Option<&Message>, args: Vec<String>) -> anyhow::Result<FakeEvalImageResponse> {
     let response = assyst
         .reqwest_client
         .post(format!("{}/eval", CONFIG.urls.eval))

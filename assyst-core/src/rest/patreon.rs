@@ -1,7 +1,9 @@
-use crate::assyst::ThreadSafeAssyst;
+use std::collections::HashMap;
+
 use assyst_common::config::{CONFIG, PATREON_REFRESH_LOCATION};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+
+use crate::assyst::ThreadSafeAssyst;
 
 pub const REFRESH_ROUTE: &str = "https://www.patreon.com/api/oauth2/token";
 pub const ROUTE: &str = "https://api.patreon.com/api/oauth2/v2/campaigns/4568373/members?include=user,currently_entitled_tiers&fields%5Buser%5D=social_connections,full_name&fields%5Bmember%5D=is_follower,last_charge_date,last_charge_status,lifetime_support_cents,currently_entitled_amount_cents,patron_status&page%5Bsize%5D=10000";
@@ -171,14 +173,7 @@ pub async fn get_patrons(assyst: ThreadSafeAssyst) -> anyhow::Result<Vec<Patron>
 
     let access_token = get_patreon_access_token(assyst.clone()).await?;
 
-    let response = assyst
-        .reqwest_client
-        .get(ROUTE)
-        .header(reqwest::header::AUTHORIZATION, &format!("Bearer {access_token}"))
-        .send()
-        .await?
-        .json::<Response>()
-        .await?;
+    let response = assyst.reqwest_client.get(ROUTE).header(reqwest::header::AUTHORIZATION, &format!("Bearer {access_token}")).send().await?.json::<Response>().await?;
 
     let mut entitled_tiers: HashMap<String, PatronTier> = HashMap::new();
     let mut discord_connections: HashMap<String, u64> = HashMap::new();
@@ -194,11 +189,7 @@ pub async fn get_patrons(assyst: ThreadSafeAssyst) -> anyhow::Result<Vec<Patron>
 
     for i in response.included {
         let id = i.id.clone();
-        let discord = i
-            .attributes
-            .social_connections
-            .as_ref()
-            .map(|s| s.discord.as_ref().map(|d| d.user_id.clone()));
+        let discord = i.attributes.social_connections.as_ref().map(|s| s.discord.as_ref().map(|d| d.user_id.clone()));
 
         if let Some(Some(d)) = discord {
             discord_connections.insert(id, d.parse::<u64>().unwrap());
@@ -211,11 +202,7 @@ pub async fn get_patrons(assyst: ThreadSafeAssyst) -> anyhow::Result<Vec<Patron>
 
         let discord = discord_connections.get(&patron_id);
         if let Some(d) = discord {
-            patrons.push(Patron {
-                user_id: *d,
-                tier,
-                _admin: false,
-            });
+            patrons.push(Patron { user_id: *d, tier, _admin: false });
         };
     }
 

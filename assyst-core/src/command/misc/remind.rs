@@ -21,10 +21,7 @@ use crate::define_commandgroup;
 )]
 pub async fn default(ctxt: CommandCtxt<'_>, when: Time, text: Option<Rest>) -> anyhow::Result<()> {
     if when.millis < 1000 {
-        bail!(
-            "Invalid time provided (see {}help remind for examples)",
-            ctxt.data.calling_prefix
-        );
+        bail!("Invalid time provided (see {}help remind for examples)", ctxt.data.calling_prefix);
     } else if when.millis / 1000 / 60 / 24 / 365 /* years */ >= 100 {
         bail!("Cannot set a reminder further than 100 years in the future :-(");
     }
@@ -47,16 +44,9 @@ pub async fn default(ctxt: CommandCtxt<'_>, when: Time, text: Option<Rest>) -> a
         message: text,
     };
 
-    reminder
-        .insert(&ctxt.assyst().database_handler)
-        .await
-        .context("Failed to insert reminder to database")?;
+    reminder.insert(&ctxt.assyst().database_handler).await.context("Failed to insert reminder to database")?;
 
-    ctxt.reply(format!(
-        "Reminder successfully set for {} from now.",
-        format_time(when.millis)
-    ))
-    .await?;
+    ctxt.reply(format!("Reminder successfully set for {} from now.", format_time(when.millis))).await?;
 
     Ok(())
 }
@@ -70,9 +60,7 @@ pub async fn default(ctxt: CommandCtxt<'_>, when: Time, text: Option<Rest>) -> a
     examples = [""],
 )]
 pub async fn list(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
-    let reminders = Reminder::fetch_user_reminders(&ctxt.assyst().database_handler, ctxt.data.author.id.get(), 10)
-        .await
-        .context("Failed to fetch reminders")?;
+    let reminders = Reminder::fetch_user_reminders(&ctxt.assyst().database_handler, ctxt.data.author.id.get(), 10).await.context("Failed to fetch reminders")?;
 
     if reminders.is_empty() {
         ctxt.reply("You don't have any set reminders.").await?;
@@ -81,19 +69,11 @@ pub async fn list(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
 
     let formatted = reminders.iter().fold(String::new(), |mut f, reminder| {
         use std::fmt::Write;
-        writeln!(
-            f,
-            "[#{}] {}: `{}`",
-            reminder.id,
-            format_discord_timestamp(reminder.timestamp as u64),
-            reminder.message
-        )
-        .unwrap();
+        writeln!(f, "[#{}] {}: `{}`", reminder.id, format_discord_timestamp(reminder.timestamp as u64), reminder.message).unwrap();
         f
     });
 
-    ctxt.reply(format!(":calendar: **Upcoming Reminders:**\n\n{formatted}"))
-        .await?;
+    ctxt.reply(format!(":calendar: **Upcoming Reminders:**\n\n{formatted}")).await?;
 
     Ok(())
 }

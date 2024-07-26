@@ -1,7 +1,8 @@
+use std::borrow::{Borrow, Cow};
+
 use reqwest::{Client, Error};
 use serde::Deserialize;
 use serde_json::json;
-use std::borrow::{Borrow, Cow};
 
 const API_BASE: &str = "https://play.rust-lang.org";
 const GODBOLT: &str = "https://godbolt.org/api/compiler/nightly/compile";
@@ -56,11 +57,7 @@ pub struct ApiResult {
 }
 impl ApiResult {
     pub fn format(&self) -> &str {
-        if self.stdout.is_empty() {
-            &self.stderr
-        } else {
-            &self.stdout
-        }
+        if self.stdout.is_empty() { &self.stderr } else { &self.stdout }
     }
 }
 
@@ -90,16 +87,7 @@ pub async fn godbolt(client: &Client, code: &str) -> Result<String, Error> {
 }
 
 #[allow(clippy::too_many_arguments)]
-pub async fn request(
-    client: &Client,
-    path: &str,
-    code: &str,
-    channel: Option<&str>,
-    mode: Option<&str>,
-    edition: Option<&str>,
-    crate_type: Option<&str>,
-    tests: Option<bool>,
-) -> Result<ApiResult, Error> {
+pub async fn request(client: &Client, path: &str, code: &str, channel: Option<&str>, mode: Option<&str>, edition: Option<&str>, crate_type: Option<&str>, tests: Option<bool>) -> Result<ApiResult, Error> {
     client
         .post(&format!("{API_BASE}/{path}"))
         .json(&json!({
@@ -116,33 +104,15 @@ pub async fn request(
         .await
 }
 
-pub async fn run(
-    client: &Client,
-    code: &str,
-    channel: Option<&str>,
-    mode: Option<&str>,
-    edition: Option<&str>,
-    crate_type: Option<&str>,
-    tests: Option<bool>,
-) -> Result<ApiResult, Error> {
+pub async fn run(client: &Client, code: &str, channel: Option<&str>, mode: Option<&str>, edition: Option<&str>, crate_type: Option<&str>, tests: Option<bool>) -> Result<ApiResult, Error> {
     request(client, "execute", code, channel, mode, edition, crate_type, tests).await
 }
 
-pub async fn miri(
-    client: &Client,
-    code: &str,
-    channel: Option<&str>,
-    opt: OptimizationLevel,
-) -> Result<ApiResult, Error> {
+pub async fn miri(client: &Client, code: &str, channel: Option<&str>, opt: OptimizationLevel) -> Result<ApiResult, Error> {
     request(client, "miri", code, channel, Some(opt.as_str()), None, None, None).await
 }
 
-pub async fn clippy(
-    client: &Client,
-    code: &str,
-    channel: Option<&str>,
-    opt: OptimizationLevel,
-) -> Result<ApiResult, Error> {
+pub async fn clippy(client: &Client, code: &str, channel: Option<&str>, opt: OptimizationLevel) -> Result<ApiResult, Error> {
     request(client, "clippy", code, channel, Some(opt.as_str()), None, None, None).await
 }
 
@@ -160,35 +130,16 @@ pub async fn run_miri(client: &Client, code: &str, channel: &str, opt: Optimizat
     miri(client, &code, Some(channel), opt).await
 }
 
-pub async fn run_clippy(
-    client: &Client,
-    code: &str,
-    channel: &str,
-    opt: OptimizationLevel,
-) -> Result<ApiResult, Error> {
+pub async fn run_clippy(client: &Client, code: &str, channel: &str, opt: OptimizationLevel) -> Result<ApiResult, Error> {
     let code = prepend_code(code);
 
     clippy(client, &code, Some(channel), opt).await
 }
 
-pub async fn run_binary(
-    client: &Client,
-    code: &str,
-    channel: &str,
-    opt: OptimizationLevel,
-) -> Result<ApiResult, Error> {
+pub async fn run_binary(client: &Client, code: &str, channel: &str, opt: OptimizationLevel) -> Result<ApiResult, Error> {
     let code = prepend_code(code);
 
-    run(
-        client,
-        code.borrow(),
-        Some(channel),
-        Some(opt.as_str()),
-        None,
-        None,
-        None,
-    )
-    .await
+    run(client, code.borrow(), Some(channel), Some(opt.as_str()), None, None, None).await
 }
 
 pub async fn run_benchmark(client: &Client, code: &str) -> Result<ApiResult, Error> {
@@ -200,8 +151,5 @@ pub async fn run_benchmark(client: &Client, code: &str) -> Result<ApiResult, Err
 pub async fn run_godbolt(client: &Client, code: &str) -> Result<ApiResult, Error> {
     let asm = godbolt(client, code).await?;
 
-    Ok(ApiResult {
-        stdout: asm,
-        stderr: String::new(),
-    })
+    Ok(ApiResult { stdout: asm, stderr: String::new() })
 }

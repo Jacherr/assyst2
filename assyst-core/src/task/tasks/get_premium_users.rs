@@ -1,8 +1,9 @@
-use crate::assyst::ThreadSafeAssyst;
-use crate::rest::patreon::{Patron, PatronTier};
 use assyst_common::config::CONFIG;
 use assyst_common::err;
 use tracing::debug;
+
+use crate::assyst::ThreadSafeAssyst;
+use crate::rest::patreon::{Patron, PatronTier};
 
 /// Synchronises Assyst with an updated list of patrons.
 pub async fn get_premium_users(assyst: ThreadSafeAssyst) {

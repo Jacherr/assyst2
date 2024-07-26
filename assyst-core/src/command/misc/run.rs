@@ -1,6 +1,7 @@
+use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
-use anyhow::Context;
+use anyhow::{bail, Context};
 use assyst_common::markdown::Markdown;
 use assyst_common::util::process::{exec_sync, exec_sync_in_dir, CommandOutput};
 use assyst_proc_macro::command;
@@ -11,15 +12,18 @@ use dash_vm::Vm;
 use serde::Deserialize;
 use tokio::fs;
 use toml::from_str;
+use twilight_model::application::interaction::application_command::CommandOptionValue;
+use twilight_util::builder::command::StringBuilder;
 
-use crate::command::arguments::Codeblock;
-use crate::command::flags::charge::ChargeFlags;
-use crate::command::flags::rust::RustFlags;
+use crate::command::arguments::{Codeblock, ParseArgument};
+use crate::command::flags::{flags_from_str, FlagDecode, FlagType};
 use crate::command::messagebuilder::{Attachment, MessageBuilder};
-use crate::command::{Availability, Category, CommandCtxt};
-use crate::define_commandgroup;
+use crate::command::{
+    Availability, Category, CommandCtxt, InteractionCommandParseCtxt, Label, RawMessageParseCtxt, TagParseError,
+};
 use crate::downloader::download_content;
 use crate::rest::rust::{run_benchmark, run_binary, run_clippy, run_godbolt, run_miri, OptimizationLevel};
+use crate::{define_commandgroup, flag_parse_argument};
 
 struct ExecutableDeletionDefer(String);
 impl Drop for ExecutableDeletionDefer {
@@ -27,6 +31,48 @@ impl Drop for ExecutableDeletionDefer {
         let _ = std::fs::remove_file(self.0.clone());
     }
 }
+
+#[derive(Default)]
+pub struct ChargeFlags {
+    pub verbose: bool,
+    pub llir: bool,
+    pub opt: u64,
+    pub valgrind: bool,
+}
+impl FlagDecode for ChargeFlags {
+    fn from_str(input: &str) -> anyhow::Result<Self>
+    where
+        Self: Sized,
+    {
+        let mut valid_flags = HashMap::new();
+        valid_flags.insert("verbose", FlagType::NoValue);
+        valid_flags.insert("llir", FlagType::NoValue);
+        valid_flags.insert("opt", FlagType::WithValue);
+        valid_flags.insert("valgrind", FlagType::NoValue);
+
+        let raw_decode = flags_from_str(input, valid_flags)?;
+        let opt = raw_decode
+            .get("opt")
+            .and_then(|x| x.as_deref())
+            .map(|x| x.parse::<u64>())
+            .unwrap_or(Ok(0))
+            .context("Failed to parse optimisation level")?;
+
+        let result = Self {
+            verbose: raw_decode.contains_key("verbose"),
+            llir: raw_decode.contains_key("llir"),
+            opt,
+            valgrind: raw_decode.contains_key("valgrind"),
+        };
+
+        if result.llir && result.valgrind {
+            bail!("Cannot set both valgrind and llir flags at the same time");
+        }
+
+        Ok(result)
+    }
+}
+flag_parse_argument! { ChargeFlags }
 
 #[command(
     description = "execute some charge",
@@ -134,6 +180,40 @@ pub async fn charge(ctxt: CommandCtxt<'_>, script: Codeblock, flags: ChargeFlags
 
     Ok(())
 }
+
+#[derive(Default)]
+pub struct RustFlags {
+    pub miri: bool,
+    pub asm: bool,
+    pub clippy: bool,
+    pub bench: bool,
+    pub release: bool,
+}
+impl FlagDecode for RustFlags {
+    fn from_str(input: &str) -> anyhow::Result<Self>
+    where
+        Self: Sized,
+    {
+        let mut valid_flags = HashMap::new();
+        valid_flags.insert("miri", FlagType::NoValue);
+        valid_flags.insert("release", FlagType::NoValue);
+        valid_flags.insert("asm", FlagType::NoValue);
+        valid_flags.insert("clippy", FlagType::NoValue);
+        valid_flags.insert("bench", FlagType::NoValue);
+
+        let raw_decode = flags_from_str(input, valid_flags)?;
+        let result = Self {
+            miri: raw_decode.contains_key("miri"),
+            asm: raw_decode.contains_key("asm"),
+            release: raw_decode.contains_key("release"),
+            clippy: raw_decode.contains_key("clippy"),
+            bench: raw_decode.contains_key("bench"),
+        };
+
+        Ok(result)
+    }
+}
+flag_parse_argument! { RustFlags }
 
 #[command(
     description = "execute some rust",

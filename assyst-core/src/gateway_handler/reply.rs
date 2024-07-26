@@ -16,37 +16,26 @@ use crate::rest::NORMAL_DISCORD_UPLOAD_LIMIT_BYTES;
 /// Trims a `String` in-place such that it fits in Discord's 2000 character message limit.
 fn trim_content_fits(content: &mut String) {
     if let Some((truncated_byte_index, _)) = content.char_indices().nth(2000) {
-        // If the content length exceeds 2000 characters, truncate it at the 2000th characters' byte index
+        // If the content length exceeds 2000 characters, truncate it at the 2000th characters' byte
+        // index
         content.truncate(truncated_byte_index);
     }
 }
 
 /// Gets the Filer URL for this attachment if it exceeds the guild's upload limit.
-async fn get_filer_url(
-    ctxt: &CommandCtxt<'_>,
-    content: Option<&String>,
-    data: Vec<u8>,
-) -> anyhow::Result<Option<String>> {
+async fn get_filer_url(ctxt: &CommandCtxt<'_>, content: Option<&String>, data: Vec<u8>) -> anyhow::Result<Option<String>> {
     let filer_url;
     let filer_formatted;
 
     if data.len() > NORMAL_DISCORD_UPLOAD_LIMIT_BYTES as usize {
         let guild_upload_limit = if let Some(guild_id) = ctxt.data.guild_id {
-            ctxt.assyst()
-                .rest_cache_handler
-                .get_guild_upload_limit_bytes(guild_id.get())
-                .await?
+            ctxt.assyst().rest_cache_handler.get_guild_upload_limit_bytes(guild_id.get()).await?
         } else {
             NORMAL_DISCORD_UPLOAD_LIMIT_BYTES
         };
 
         if data.len() > guild_upload_limit as usize {
-            filer_url = upload_to_filer(
-                ctxt.assyst().clone(),
-                data.clone(),
-                get_sig(&data).unwrap_or(Type::PNG).as_mime(),
-            )
-            .await?;
+            filer_url = upload_to_filer(ctxt.assyst().clone(), data.clone(), get_sig(&data).unwrap_or(Type::PNG).as_mime()).await?;
 
             if let Some(content) = content {
                 filer_formatted = format!("{content} {filer_url}");
@@ -62,12 +51,7 @@ async fn get_filer_url(
 pub async fn edit(ctxt: &CommandCtxt<'_>, builder: MessageBuilder, reply: ReplyInUse) -> anyhow::Result<()> {
     let allowed_mentions = AllowedMentions::default();
 
-    let mut message = ctxt
-        .data
-        .assyst
-        .http_client
-        .update_message(ctxt.data.channel_id, Id::new(reply.message_id))
-        .allowed_mentions(Some(&allowed_mentions));
+    let mut message = ctxt.data.assyst.http_client.update_message(ctxt.data.channel_id, Id::new(reply.message_id)).allowed_mentions(Some(&allowed_mentions));
 
     let mut content_clone = builder.content.clone();
 
@@ -85,11 +69,7 @@ pub async fn edit(ctxt: &CommandCtxt<'_>, builder: MessageBuilder, reply: ReplyI
             url = found_url;
             message = message.content(Some(&url));
         } else {
-            attachments = [TwilightAttachment::from_bytes(
-                attachment.name.into(),
-                attachment.data,
-                0,
-            )];
+            attachments = [TwilightAttachment::from_bytes(attachment.name.into(), attachment.data, 0)];
             message = message.attachments(&attachments);
             if builder.content.is_none() {
                 message = message.content(Some(""));
@@ -104,12 +84,7 @@ pub async fn edit(ctxt: &CommandCtxt<'_>, builder: MessageBuilder, reply: ReplyI
 async fn create_message(ctxt: &CommandCtxt<'_>, builder: MessageBuilder) -> anyhow::Result<()> {
     let allowed_mentions = AllowedMentions::default();
 
-    let mut message = ctxt
-        .data
-        .assyst
-        .http_client
-        .create_message(ctxt.data.channel_id)
-        .allowed_mentions(Some(&allowed_mentions));
+    let mut message = ctxt.data.assyst.http_client.create_message(ctxt.data.channel_id).allowed_mentions(Some(&allowed_mentions));
 
     if let Some(source_message) = ctxt.data.message {
         message = message.reply(source_message.id);
@@ -131,11 +106,7 @@ async fn create_message(ctxt: &CommandCtxt<'_>, builder: MessageBuilder) -> anyh
             url = found_url;
             message = message.content(&url);
         } else {
-            attachments = [TwilightAttachment::from_bytes(
-                attachment.name.into(),
-                attachment.data,
-                0,
-            )];
+            attachments = [TwilightAttachment::from_bytes(attachment.name.into(), attachment.data, 0)];
             message = message.attachments(&attachments);
             if builder.content.is_none() {
                 message = message.content("");
@@ -159,27 +130,13 @@ async fn create_message(ctxt: &CommandCtxt<'_>, builder: MessageBuilder) -> anyh
 }
 
 pub async fn reply_raw_message(ctxt: &CommandCtxt<'_>, builder: MessageBuilder) -> anyhow::Result<()> {
-    let reply_in_use = ctxt
-        .data
-        .assyst
-        .replies
-        .get_raw_message(ctxt.data.message.unwrap().id.get())
-        .and_then(|r| r.in_use());
+    let reply_in_use = ctxt.data.assyst.replies.get_raw_message(ctxt.data.message.unwrap().id.get()).and_then(|r| r.in_use());
 
-    if let Some(reply_in_use) = reply_in_use {
-        edit(ctxt, builder, reply_in_use).await
-    } else {
-        create_message(ctxt, builder).await
-    }
+    if let Some(reply_in_use) = reply_in_use { edit(ctxt, builder, reply_in_use).await } else { create_message(ctxt, builder).await }
 }
 
 pub async fn reply_interaction_command(ctxt: &CommandCtxt<'_>, builder: MessageBuilder) -> anyhow::Result<()> {
-    let reply_in_use = ctxt
-        .data
-        .assyst
-        .replies
-        .get_interaction_command(ctxt.data.interaction_id.unwrap().get())
-        .is_some();
+    let reply_in_use = ctxt.data.assyst.replies.get_interaction_command(ctxt.data.interaction_id.unwrap().get()).is_some();
 
     let c = ctxt.assyst().interaction_client();
     let mut response_data = InteractionResponseDataBuilder::new();
@@ -214,16 +171,9 @@ pub async fn reply_interaction_command(ctxt: &CommandCtxt<'_>, builder: MessageB
 
         update.await?;
     } else {
-        c.create_response(
-            ctxt.data.interaction_id.unwrap(),
-            &ctxt.data.interaction_token.clone().unwrap(),
-            &response,
-        )
-        .await?;
+        c.create_response(ctxt.data.interaction_id.unwrap(), &ctxt.data.interaction_token.clone().unwrap(), &response).await?;
 
-        ctxt.assyst()
-            .replies
-            .insert_interaction_command(ctxt.data.interaction_id.unwrap().get());
+        ctxt.assyst().replies.insert_interaction_command(ctxt.data.interaction_id.unwrap().get());
     }
 
     Ok(())

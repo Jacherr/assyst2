@@ -1,12 +1,13 @@
 #![warn(rust_2018_idioms)]
 #![feature(round_char_boundary, if_let_guard)]
 
+use std::cell::RefCell;
+use std::collections::HashMap;
+
 use assyst_common::util::filetype::Type;
 pub use context::{Context, NopContext};
 use errors::TResult;
 use parser::{Counter, ParseMode, Parser, SharedState};
-use std::cell::RefCell;
-use std::collections::HashMap;
 
 mod context;
 pub mod errors;
@@ -27,10 +28,7 @@ pub fn parse<C: Context>(input: &str, args: &[&str], mode: ParseMode, cx: C) -> 
 
     let output = Parser::new(input.as_bytes(), args, state, mode, &cx).parse_segment(true)?;
 
-    Ok(ParseResult {
-        output,
-        attachment: attachment.into_inner(),
-    })
+    Ok(ParseResult { output, attachment: attachment.into_inner() })
 }
 
 /// NOTE: be careful when bubbling up potential errors -- you most likely want to wrap them in
@@ -41,9 +39,8 @@ pub fn parse_with_parent(input: &str, parent: &Parser<'_>, side_effects: bool) -
 
 #[cfg(test)]
 mod tests {
-    use crate::errors::ErrorKind;
-
     use super::*;
+    use crate::errors::ErrorKind;
 
     macro_rules! test {
         ($mode:expr; $( $name:ident: $input:expr => $result:pat ),+ $(,)?) => {

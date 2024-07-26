@@ -1,15 +1,16 @@
 use std::collections::HashMap;
-
-use super::{flags_from_str, FlagDecode, FlagType, Label};
-
-use crate::command::arguments::ParseArgument;
-use crate::command::errors::TagParseError;
-use crate::command::flags::StringBuilder;
-use crate::command::{InteractionCommandParseCtxt, RawMessageParseCtxt};
-use crate::flag_parse_argument;
+use std::time::Duration;
 
 use anyhow::Context;
+use assyst_proc_macro::command;
 use twilight_model::application::interaction::application_command::CommandOptionValue;
+use twilight_util::builder::command::StringBuilder;
+
+use crate::command::arguments::{Image, ParseArgument};
+use crate::command::errors::TagParseError;
+use crate::command::flags::{flags_from_str, FlagDecode, FlagType};
+use crate::command::{Availability, Category, CommandCtxt, InteractionCommandParseCtxt, Label, RawMessageParseCtxt};
+use crate::flag_parse_argument;
 
 #[derive(Default)]
 pub struct BloomFlags {
@@ -50,3 +51,34 @@ impl FlagDecode for BloomFlags {
     }
 }
 flag_parse_argument! { BloomFlags }
+
+#[command(
+    description = "add bloom to an image",
+    cooldown = Duration::from_secs(2),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image] <flags>",
+    examples = ["https://link.to.my/image.png", "https://link.to.my/image.png --brightness 100 --sharpness 25 --radius 10"],
+    send_processing = true,
+    flag_descriptions = [
+        ("radius", "Bloom radius as a number"),
+        ("brightness", "Bloom brightness as a number"),
+        ("sharpness", "Bloom sharpness as a number"),
+    ]
+)]
+pub async fn bloom(ctxt: CommandCtxt<'_>, source: Image, flags: BloomFlags) -> anyhow::Result<()> {
+    let result = ctxt
+        .flux_handler()
+        .bloom(
+            source.0,
+            flags.radius,
+            flags.sharpness,
+            flags.brightness,
+            ctxt.data.author.id.get(),
+        )
+        .await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}

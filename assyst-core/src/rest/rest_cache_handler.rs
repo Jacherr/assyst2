@@ -1,26 +1,21 @@
-use moka::sync::Cache;
 use std::hash::Hash;
 use std::mem::size_of;
 use std::sync::Arc;
 use std::time::Duration;
+
+use moka::sync::Cache;
 use twilight_http::Client as HttpClient;
 use twilight_model::guild::{Permissions, PremiumTier};
 use twilight_model::id::marker::{ChannelMarker, GuildMarker, UserMarker};
 use twilight_model::id::Id;
 
-use super::{
-    NORMAL_DISCORD_UPLOAD_LIMIT_BYTES, PREMIUM_TIER2_DISCORD_UPLOAD_LIMIT_BYTES,
-    PREMIUM_TIER3_DISCORD_UPLOAD_LIMIT_BYTES,
-};
+use super::{NORMAL_DISCORD_UPLOAD_LIMIT_BYTES, PREMIUM_TIER2_DISCORD_UPLOAD_LIMIT_BYTES, PREMIUM_TIER3_DISCORD_UPLOAD_LIMIT_BYTES};
 
 trait TCacheV = Send + Sync + Clone + 'static;
 trait TCacheK = Hash + Send + Sync + Eq + Clone + 'static;
 
 fn default_cache<K: TCacheK, V: TCacheV>() -> Cache<K, V> {
-    Cache::builder()
-        .max_capacity(1000)
-        .time_to_idle(Duration::from_secs(60 * 5))
-        .build()
+    Cache::builder().max_capacity(1000).time_to_idle(Duration::from_secs(60 * 5)).build()
 }
 
 /// Rest cache handler for any common data structures loaded from a network resource.
@@ -55,10 +50,7 @@ impl RestCacheHandler {
         size += self.guild_upload_limits.entry_count() * size_of::<(u64, u64)>() as u64;
         size += self.channel_nsfw_status.entry_count() * size_of::<(u64, bool)>() as u64;
         size += self.guild_owners.entry_count() * size_of::<(u64, u64)>() as u64;
-        size += self
-            .web_download_urls
-            .iter()
-            .fold(0, |acc, x| acc + x.0.as_bytes().len()) as u64;
+        size += self.web_download_urls.iter().fold(0, |acc, x| acc + x.0.as_bytes().len()) as u64;
         size
     }
 
@@ -79,12 +71,7 @@ impl RestCacheHandler {
             return Ok(amount);
         };
 
-        let guild = self
-            .http_client
-            .guild(Id::<GuildMarker>::new(guild_id))
-            .await?
-            .model()
-            .await?;
+        let guild = self.http_client.guild(Id::<GuildMarker>::new(guild_id)).await?.model().await?;
 
         let tier = guild.premium_tier;
 
@@ -110,14 +97,7 @@ impl RestCacheHandler {
             return Ok(nsfw);
         }
 
-        let nsfw = self
-            .http_client
-            .channel(Id::<ChannelMarker>::new(channel_id))
-            .await?
-            .model()
-            .await?
-            .nsfw
-            .unwrap_or(false);
+        let nsfw = self.http_client.channel(Id::<ChannelMarker>::new(channel_id)).await?.model().await?.nsfw.unwrap_or(false);
 
         self.channel_nsfw_status.insert(channel_id, nsfw);
 
@@ -133,14 +113,7 @@ impl RestCacheHandler {
             return Ok(owner);
         }
 
-        let owner = self
-            .http_client
-            .guild(Id::<GuildMarker>::new(guild_id))
-            .await?
-            .model()
-            .await?
-            .owner_id
-            .get();
+        let owner = self.http_client.guild(Id::<GuildMarker>::new(guild_id)).await?.model().await?.owner_id.get();
 
         self.guild_owners.insert(guild_id, owner);
 
@@ -155,31 +128,14 @@ impl RestCacheHandler {
         let owner = self.get_guild_owner(guild_id).await?;
 
         // figure out permissions of the user through bitwise operations
-        let member = self
-            .http_client
-            .guild_member(Id::<GuildMarker>::new(guild_id), Id::<UserMarker>::new(user_id))
-            .await?
-            .model()
-            .await
-            .unwrap();
+        let member = self.http_client.guild_member(Id::<GuildMarker>::new(guild_id), Id::<UserMarker>::new(user_id)).await?.model().await.unwrap();
 
-        let roles = self
-            .http_client
-            .roles(Id::<GuildMarker>::new(guild_id))
-            .await?
-            .models()
-            .await
-            .expect("Failed to deserialize body when fetching guild roles");
+        let roles = self.http_client.roles(Id::<GuildMarker>::new(guild_id)).await?.models().await.expect("Failed to deserialize body when fetching guild roles");
 
-        let member_roles = roles
-            .iter()
-            .filter(|r| member.roles.contains(&r.id))
-            .collect::<Vec<_>>();
+        let member_roles = roles.iter().filter(|r| member.roles.contains(&r.id)).collect::<Vec<_>>();
 
         let member_permissions = member_roles.iter().fold(0, |a, r| a | r.permissions.bits());
-        let member_is_manager = member_permissions & Permissions::ADMINISTRATOR.bits()
-            == Permissions::ADMINISTRATOR.bits()
-            || member_permissions & Permissions::MANAGE_GUILD.bits() == Permissions::MANAGE_GUILD.bits();
+        let member_is_manager = member_permissions & Permissions::ADMINISTRATOR.bits() == Permissions::ADMINISTRATOR.bits() || member_permissions & Permissions::MANAGE_GUILD.bits() == Permissions::MANAGE_GUILD.bits();
 
         Ok(owner == user_id || member_is_manager)
     }

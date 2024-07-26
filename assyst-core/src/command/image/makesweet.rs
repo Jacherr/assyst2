@@ -16,10 +16,7 @@ use crate::command::{Availability, Category, CommandCtxt};
     send_processing = true
 )]
 pub async fn back_tattoo(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt
-        .flux_handler()
-        .back_tattoo(source.0, ctxt.data.author.id.get())
-        .await?;
+    let result = ctxt.flux_handler().back_tattoo(source.0, ctxt.data.author.id.get()).await?;
 
     ctxt.reply(result).await?;
 
@@ -36,10 +33,7 @@ pub async fn back_tattoo(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result
     send_processing = true
 )]
 pub async fn billboard(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt
-        .flux_handler()
-        .billboard(source.0, ctxt.data.author.id.get())
-        .await?;
+    let result = ctxt.flux_handler().billboard(source.0, ctxt.data.author.id.get()).await?;
 
     ctxt.reply(result).await?;
 
@@ -73,10 +67,7 @@ pub async fn book(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
     send_processing = true
 )]
 pub async fn circuitboard(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt
-        .flux_handler()
-        .circuitboard(source.0, ctxt.data.author.id.get())
-        .await?;
+    let result = ctxt.flux_handler().circuitboard(source.0, ctxt.data.author.id.get()).await?;
 
     ctxt.reply(result).await?;
 
@@ -127,10 +118,7 @@ pub async fn flag2(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
     send_processing = true
 )]
 pub async fn fortunecookie(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt
-        .flux_handler()
-        .fortune_cookie(source.0, ctxt.data.author.id.get())
-        .await?;
+    let result = ctxt.flux_handler().fortune_cookie(source.0, ctxt.data.author.id.get()).await?;
 
     ctxt.reply(result).await?;
 
@@ -147,10 +135,7 @@ pub async fn fortunecookie(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Resu
     send_processing = true
 )]
 pub async fn heartlocket(ctxt: CommandCtxt<'_>, source: Image, text: RestNoFlags) -> anyhow::Result<()> {
-    let result = ctxt
-        .flux_handler()
-        .heart_locket(source.0, text.0, ctxt.data.author.id.get())
-        .await?;
+    let result = ctxt.flux_handler().heart_locket(source.0, text.0, ctxt.data.author.id.get()).await?;
 
     ctxt.reply(result).await?;
 
@@ -202,10 +187,7 @@ pub async fn toaster(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()>
     send_processing = true
 )]
 pub async fn valentine(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt
-        .flux_handler()
-        .valentine(source.0, ctxt.data.author.id.get())
-        .await?;
+    let result = ctxt.flux_handler().valentine(source.0, ctxt.data.author.id.get()).await?;
 
     ctxt.reply(result).await?;
 

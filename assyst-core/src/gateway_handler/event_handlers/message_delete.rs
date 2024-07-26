@@ -14,10 +14,6 @@ pub async fn handle(assyst: ThreadSafeAssyst, message: MessageDelete) {
     if let Some(reply) = assyst.replies.get_raw_message(message.id.get())
         && let ReplyState::InUse(reply) = reply.state
     {
-        _ = assyst
-            .http_client
-            .delete_message(message.channel_id, Id::new(reply.message_id))
-            .await
-            .inspect_err(|e| err!("{e}"));
+        _ = assyst.http_client.delete_message(message.channel_id, Id::new(reply.message_id)).await.inspect_err(|e| err!("{e}"));
     }
 }

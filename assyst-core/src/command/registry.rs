@@ -4,10 +4,9 @@ use std::sync::OnceLock;
 use tracing::info;
 use twilight_model::application::command::Command as InteractionCommand;
 
+use super::{fun, image, misc, services, TCommand};
 use crate::assyst::ThreadSafeAssyst;
 use crate::command::CommandMetadata;
-
-use super::{fun, image, misc, services, TCommand};
 
 macro_rules! declare_commands {
     ($($name:path),*) => {
@@ -29,9 +28,9 @@ declare_commands!(
     image::audio::siren_command,
     image::audio::sweden_command,
     image::audio::terraria_command,
-    image::bloom_command,
+    image::bloom::bloom_command,
     image::blur_command,
-    image::caption_command,
+    image::caption::caption_command,
     image::deepfry_command,
     image::fisheye_command,
     image::flip_command,
@@ -70,7 +69,7 @@ declare_commands!(
     image::reverse_command,
     image::rotate_command,
     image::scramble_command,
-    image::speechbubble_command,
+    image::speechbubble::speechbubble_command,
     image::speed_command,
     image::spin_command,
     image::spread_command,

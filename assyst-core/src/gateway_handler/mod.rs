@@ -1,7 +1,6 @@
 #![allow(clippy::match_single_binding, clippy::single_match)] // shh...
-use crate::assyst::ThreadSafeAssyst;
-
 use self::incoming_event::IncomingEvent;
+use crate::assyst::ThreadSafeAssyst;
 
 pub mod event_handlers;
 pub mod incoming_event;

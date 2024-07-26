@@ -1,9 +1,9 @@
 use std::time::Instant;
 
-use super::error::ParseError;
-use super::preprocess::preprocess;
 use twilight_model::channel::Message;
 
+use super::error::ParseError;
+use super::preprocess::preprocess;
 use crate::command::registry::find_command_by_name;
 use crate::command::{ExecutionTimings, TCommand};
 use crate::ThreadSafeAssyst;
@@ -45,12 +45,7 @@ pub struct ParseResult<'a> {
 /// Once all steps are complete, a Command is returned, ready for execution.
 /// Note that metadata is checked *during* execution (i.e., in the base command's `Command::execute`
 /// implementation, see [`crate::command::check_metadata`])
-pub async fn parse_message_into_command(
-    assyst: ThreadSafeAssyst,
-    message: &Message,
-    processing_time_start: Instant,
-    from_edit: bool,
-) -> Result<Option<ParseResult>, ParseError> {
+pub async fn parse_message_into_command(assyst: ThreadSafeAssyst, message: &Message, processing_time_start: Instant, from_edit: bool) -> Result<Option<ParseResult>, ParseError> {
     let parse_start = Instant::now();
     let preprocess_start = Instant::now();
 
@@ -59,8 +54,8 @@ pub async fn parse_message_into_command(
     let preprocess_time = preprocess_start.elapsed();
 
     // commands can theoretically have spaces in their name so we need to try and identify the
-    // set of 'words' in source text to associate with a command name (essentially finding the divide
-    // between command name and command arguments)
+    // set of 'words' in source text to associate with a command name (essentially finding the
+    // divide between command name and command arguments)
     let command_text = &message.content[preprocess.prefix.len()..];
 
     let mut args = command_text.split_ascii_whitespace();

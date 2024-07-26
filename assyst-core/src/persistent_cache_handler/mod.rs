@@ -1,6 +1,4 @@
-use assyst_common::cache::{
-    CacheJob, CacheJobSend, CacheResponse, CacheResponseSend, GuildCreateData, GuildDeleteData, ReadyData,
-};
+use assyst_common::cache::{CacheJob, CacheJobSend, CacheResponse, CacheResponseSend, GuildCreateData, GuildDeleteData, ReadyData};
 use assyst_common::pipe::Pipe;
 use assyst_common::unwrap_enum_variant;
 use tokio::spawn;
@@ -33,7 +31,8 @@ impl PersistentCacheHandler {
                     let (tx, data) = rx.recv().await.unwrap();
 
                     if let Err(e) = pipe.write_object(data).await {
-                        // safe to unwrap because no situation in which the channel should be dropped
+                        // safe to unwrap because no situation in which the channel should be
+                        // dropped
                         tx.send(Err(e)).unwrap();
                         break;
                     };
@@ -62,24 +61,18 @@ impl PersistentCacheHandler {
 
     /// Handles a READY event, caching its guilds. Returns the number of newly cached guilds.
     pub async fn handle_ready_event(&self, event: Ready) -> anyhow::Result<u64> {
-        self.run_cache_job(CacheJob::HandleReady(ReadyData::from(event)))
-            .await
-            .map(|x| unwrap_enum_variant!(x, CacheResponse::NewGuildsFromReady))
+        self.run_cache_job(CacheJob::HandleReady(ReadyData::from(event))).await.map(|x| unwrap_enum_variant!(x, CacheResponse::NewGuildsFromReady))
     }
 
     /// Handles a GUILD_CREATE. This method returns a bool which states if this guild is new or not.
     /// A new guild is one that was not received during the start-up of the gateway connection.
     pub async fn handle_guild_create_event(&self, event: GuildCreate) -> anyhow::Result<bool> {
-        self.run_cache_job(CacheJob::HandleGuildCreate(GuildCreateData::from(event)))
-            .await
-            .map(|x| unwrap_enum_variant!(x, CacheResponse::ShouldHandleGuildCreate))
+        self.run_cache_job(CacheJob::HandleGuildCreate(GuildCreateData::from(event))).await.map(|x| unwrap_enum_variant!(x, CacheResponse::ShouldHandleGuildCreate))
     }
 
     /// Handles a GUILD_DELETE. This method returns a bool which states if the bot was actually
     /// kicked from this guild.
     pub async fn handle_guild_delete_event(&self, event: GuildDelete) -> anyhow::Result<bool> {
-        self.run_cache_job(CacheJob::HandleGuildDelete(GuildDeleteData::from(event)))
-            .await
-            .map(|x| unwrap_enum_variant!(x, CacheResponse::ShouldHandleGuildDelete))
+        self.run_cache_job(CacheJob::HandleGuildDelete(GuildDeleteData::from(event))).await.map(|x| unwrap_enum_variant!(x, CacheResponse::ShouldHandleGuildDelete))
     }
 }

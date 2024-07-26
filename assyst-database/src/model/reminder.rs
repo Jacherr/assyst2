@@ -1,5 +1,6 @@
-use crate::DatabaseHandler;
 use std::time::{SystemTime, UNIX_EPOCH};
+
+use crate::DatabaseHandler;
 
 #[derive(sqlx::FromRow, Debug)]
 pub struct Reminder {
@@ -16,44 +17,23 @@ impl Reminder {
     pub async fn fetch_expiring_max(handler: &DatabaseHandler, time_delta: i64) -> Result<Vec<Self>, sqlx::Error> {
         let query = "SELECT * FROM reminders WHERE timestamp < $1";
 
-        let unix: i64 = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards")
-            .as_millis()
-            .try_into()
-            .expect("count not fit u128 into target type");
+        let unix: i64 = SystemTime::now().duration_since(UNIX_EPOCH).expect("Time went backwards").as_millis().try_into().expect("count not fit u128 into target type");
 
-        sqlx::query_as::<_, Self>(query)
-            .bind(unix + time_delta)
-            .fetch_all(&handler.pool)
-            .await
+        sqlx::query_as::<_, Self>(query).bind(unix + time_delta).fetch_all(&handler.pool).await
     }
 
     /// Fetch all reminders within a certain count for a user ID
-    pub async fn fetch_user_reminders(
-        handler: &DatabaseHandler,
-        user: u64,
-        count: u64,
-    ) -> Result<Vec<Self>, sqlx::Error> {
+    pub async fn fetch_user_reminders(handler: &DatabaseHandler, user: u64, count: u64) -> Result<Vec<Self>, sqlx::Error> {
         let query = r#"SELECT * FROM reminders WHERE user_id = $1 ORDER BY timestamp ASC LIMIT $2"#;
 
-        sqlx::query_as::<_, Self>(query)
-            .bind(user as i64)
-            .bind(count as i64)
-            .fetch_all(&handler.pool)
-            .await
+        sqlx::query_as::<_, Self>(query).bind(user as i64).bind(count as i64).fetch_all(&handler.pool).await
     }
 
     /// True on successful remove, false otherwise
     pub async fn remove(&self, handler: &DatabaseHandler) -> Result<bool, sqlx::Error> {
         let query = r#"DELETE FROM reminders WHERE user_id = $1 AND id = $2 RETURNING *"#;
 
-        sqlx::query(query)
-            .bind(self.user_id)
-            .bind(self.id)
-            .fetch_all(&handler.pool)
-            .await
-            .map(|s| !s.is_empty())
+        sqlx::query(query).bind(self.user_id).bind(self.id).fetch_all(&handler.pool).await.map(|s| !s.is_empty())
     }
 
     /// Add a new reminder
@@ -68,6 +48,7 @@ impl Reminder {
             .bind(self.message_id)
             .bind(&*self.message)
             .execute(&handler.pool)
-            .await.map(|_| ())
+            .await
+            .map(|_| ())
     }
 }

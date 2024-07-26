@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::io::{Cursor, Write};
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -10,16 +11,43 @@ use rand::{thread_rng, Rng};
 use tokio::sync::Mutex;
 use tokio::task::JoinSet;
 use tokio::time::{sleep, timeout};
+use twilight_model::application::interaction::application_command::CommandOptionValue;
+use twilight_util::builder::command::StringBuilder;
 use zip::write::SimpleFileOptions;
 use zip::ZipWriter;
 
-use crate::command::arguments::Word;
-use crate::command::flags::download::DownloadFlags;
+use crate::command::arguments::{ParseArgument, Word};
+use crate::command::errors::TagParseError;
+use crate::command::flags::{flags_from_str, FlagDecode, FlagType};
 use crate::command::messagebuilder::Attachment;
-use crate::command::CommandCtxt;
-
-use crate::command::{Availability, Category};
+use crate::command::{Availability, Category, CommandCtxt, InteractionCommandParseCtxt, Label, RawMessageParseCtxt};
+use crate::flag_parse_argument;
 use crate::rest::web_media_download::{download_web_media, get_youtube_playlist_entries, WebDownloadOpts};
+
+#[derive(Default)]
+pub struct DownloadFlags {
+    pub audio: bool,
+    pub quality: u64,
+    pub verbose: bool,
+}
+impl FlagDecode for DownloadFlags {
+    fn from_str(input: &str) -> anyhow::Result<Self> {
+        let mut valid_flags = HashMap::new();
+        valid_flags.insert("quality", FlagType::WithValue);
+        valid_flags.insert("audio", FlagType::NoValue);
+        valid_flags.insert("verbose", FlagType::NoValue);
+
+        let raw_decode = flags_from_str(input, valid_flags)?;
+        let result = Self {
+            audio: raw_decode.contains_key("audio"),
+            quality: raw_decode.get("quality").unwrap_or(&None).clone().unwrap_or("720".to_owned()).parse().context("Provided quality is invalid")?,
+            verbose: raw_decode.contains_key("verbose"),
+        };
+
+        Ok(result)
+    }
+}
+flag_parse_argument! { DownloadFlags }
 
 #[command(
     name = "download",
@@ -107,27 +135,12 @@ pub async fn download(ctxt: CommandCtxt<'_>, url: Word, options: DownloadFlags) 
 
                         let _ = z_lock
                             .start_file(
-                                format!(
-                                    "{}_{}.{}",
-                                    sanitise_filename(&title),
-                                    SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis(),
-                                    r#type.as_str()
-                                ),
+                                format!("{}_{}.{}", sanitise_filename(&title), SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis(), r#type.as_str()),
                                 SimpleFileOptions::default(),
                             )
-                            .map_err(|e| {
-                                failed
-                                    .lock()
-                                    .unwrap()
-                                    .push(format!("{url}: failed to start file ({e:?})"))
-                            });
+                            .map_err(|e| failed.lock().unwrap().push(format!("{url}: failed to start file ({e:?})")));
 
-                        let _ = z_lock.write_all(&m).map_err(|e| {
-                            failed
-                                .lock()
-                                .unwrap()
-                                .push(format!("{url}: failed to write file ({e:?})"))
-                        });
+                        let _ = z_lock.write_all(&m).map_err(|e| failed.lock().unwrap().push(format!("{url}: failed to write file ({e:?})")));
                     },
                     Ok(Err(e)) => {
                         failed.lock().unwrap().push(format!("{url}: {e:?}"));
@@ -145,23 +158,16 @@ pub async fn download(ctxt: CommandCtxt<'_>, url: Word, options: DownloadFlags) 
         while let Some(v) = video_tasks.join_next().await {
             count += 1;
             if count % 5 == 0 {
-                ctxt.reply(format!("{main_msg}\nDownloaded {count}/{len} videos."))
-                    .await?;
+                ctxt.reply(format!("{main_msg}\nDownloaded {count}/{len} videos.")).await?;
             }
             joined.push(v?);
         }
 
-        let finished = Arc::into_inner(zip)
-            .context("`Arc` has more than one strong reference")?
-            .into_inner();
+        let finished = Arc::into_inner(zip).context("`Arc` has more than one strong reference")?.into_inner();
         let finished = finished.finish().context("Failed to create ZIP")?;
         let out = finished.clone().into_inner();
 
-        ctxt.reply(format!(
-            "Uploading ZIP. The ZIP is {}, so uploading may take some time.",
-            human_bytes::human_bytes(out.len() as f64)
-        ))
-        .await?;
+        ctxt.reply(format!("Uploading ZIP. The ZIP is {}, so uploading may take some time.", human_bytes::human_bytes(out.len() as f64))).await?;
 
         ctxt.reply((
             Attachment {
@@ -190,14 +196,7 @@ pub async fn download(ctxt: CommandCtxt<'_>, url: Word, options: DownloadFlags) 
     } else {
         let result = download_web_media(ctxt.assyst().clone(), &url.0, opts).await?;
 
-        ctxt.reply((
-            result,
-            &format!(
-                "Took {}",
-                format_duration(&ctxt.data.execution_timings.processing_time_start.elapsed())
-            )[..],
-        ))
-        .await?;
+        ctxt.reply((result, &format!("Took {}", format_duration(&ctxt.data.execution_timings.processing_time_start.elapsed()))[..])).await?;
     }
 
     Ok(())

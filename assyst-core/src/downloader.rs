@@ -2,12 +2,13 @@ use core::fmt;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 
-use crate::assyst::Assyst;
 use assyst_common::config::CONFIG;
 use bytes::Bytes;
 use futures_util::{Stream, StreamExt};
 use human_bytes::human_bytes;
 use reqwest::{Client, StatusCode, Url};
+
+use crate::assyst::Assyst;
 
 pub const ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES: usize = 250_000_000;
 static PROXY_NUM: AtomicUsize = AtomicUsize::new(0);
@@ -45,11 +46,7 @@ fn get_next_proxy() -> &'static str {
     (&config.urls.proxy[PROXY_NUM.fetch_add(1, Ordering::Relaxed) % len]) as _
 }
 
-async fn download_with_proxy(
-    client: &Client,
-    url: &str,
-    limit: usize,
-) -> Result<impl Stream<Item = Result<Bytes, reqwest::Error>>, DownloadError> {
+async fn download_with_proxy(client: &Client, url: &str, limit: usize) -> Result<impl Stream<Item = Result<Bytes, reqwest::Error>>, DownloadError> {
     let resp = client
         .get(&format!("{}/proxy", get_next_proxy()))
         .query(&[("url", url), ("limit", &limit.to_string())])
@@ -65,16 +62,8 @@ async fn download_with_proxy(
     Ok(resp.bytes_stream())
 }
 
-async fn download_no_proxy(
-    client: &Client,
-    url: &str,
-) -> Result<impl Stream<Item = Result<Bytes, reqwest::Error>>, DownloadError> {
-    Ok(client
-        .get(url)
-        .send()
-        .await
-        .map_err(DownloadError::Reqwest)?
-        .bytes_stream())
+async fn download_no_proxy(client: &Client, url: &str) -> Result<impl Stream<Item = Result<Bytes, reqwest::Error>>, DownloadError> {
+    Ok(client.get(url).send().await.map_err(DownloadError::Reqwest)?.bytes_stream())
 }
 
 async fn read_stream<S>(mut stream: S, limit: usize) -> Result<Vec<u8>, DownloadError>
@@ -95,12 +84,7 @@ where
 }
 
 /// Attempts to download a resource from a URL.
-pub async fn download_content(
-    assyst: &Assyst,
-    url: &str,
-    limit: usize,
-    untrusted: bool,
-) -> Result<Vec<u8>, DownloadError> {
+pub async fn download_content(assyst: &Assyst, url: &str, limit: usize, untrusted: bool) -> Result<Vec<u8>, DownloadError> {
     const WHITLISTED_DOMAINS: &[&str] = &[
         "tenor.com",
         "jacher.io",

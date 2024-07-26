@@ -1,12 +1,12 @@
 use std::time::{Duration, Instant};
 
-use crate::assyst::ThreadSafeAssyst;
 use assyst_common::config::CONFIG;
 use assyst_database::model::global_blacklist::GlobalBlacklist;
 use assyst_database::model::prefix::Prefix;
 use twilight_model::channel::message::MessageType;
 use twilight_model::channel::Message;
 
+use crate::assyst::ThreadSafeAssyst;
 use crate::gateway_handler::message_parser::error::PreParseError;
 
 /// The resultant values from the preprocessing operation. Used later in parsing and execution.
@@ -43,11 +43,7 @@ pub fn message_mention_prefix(content: &str) -> Option<String> {
 /// 1. prefix override (disabling other prefixes)
 /// 2. mention prefix
 /// 3. no prefix/guild prefix (depending on context)
-pub async fn parse_prefix(
-    assyst: ThreadSafeAssyst,
-    message: &Message,
-    is_in_dm: bool,
-) -> Result<String, PreParseError> {
+pub async fn parse_prefix(assyst: ThreadSafeAssyst, message: &Message, is_in_dm: bool) -> Result<String, PreParseError> {
     let parsed_prefix = if let Some(ref r#override) = CONFIG.dev.prefix_override
         && !r#override.is_empty()
     {
@@ -64,14 +60,9 @@ pub async fn parse_prefix(
             Ok(Some(p)) => p.prefix,
             // no prefix in db/cache, add default to db
             Ok(None) => {
-                let default_prefix = Prefix {
-                    prefix: CONFIG.prefix.default.clone(),
-                };
+                let default_prefix = Prefix { prefix: CONFIG.prefix.default.clone() };
 
-                default_prefix
-                    .set(&assyst.database_handler, guild_id)
-                    .await
-                    .map_err(|e| PreParseError::Failure(format!("failed to set default prefix: {e}")))?;
+                default_prefix.set(&assyst.database_handler, guild_id).await.map_err(|e| PreParseError::Failure(format!("failed to set default prefix: {e}")))?;
 
                 CONFIG.prefix.default.clone()
             },
@@ -94,9 +85,7 @@ pub async fn user_globally_blacklisted(assyst: ThreadSafeAssyst, id: u64) -> Res
     let blacklisted = GlobalBlacklist::is_blacklisted(&assyst.database_handler, id).await;
     match blacklisted {
         Ok(x) => Ok(x),
-        Err(error) => Err(PreParseError::Failure(format!(
-            "failed to fetch global blacklist: {error}",
-        ))),
+        Err(error) => Err(PreParseError::Failure(format!("failed to fetch global blacklist: {error}",))),
     }
 }
 
@@ -111,11 +100,7 @@ pub async fn user_globally_blacklisted(assyst: ThreadSafeAssyst, id: u64) -> Res
 /// - Checking that the message starts with the correct prefix for the context, and returning any
 ///   identified prefix,
 /// - Fetching all command restrictions for handling later once the command has been determined.
-pub async fn preprocess(
-    assyst: ThreadSafeAssyst,
-    message: &Message,
-    from_edit: bool,
-) -> Result<PreprocessResult, PreParseError> {
+pub async fn preprocess(assyst: ThreadSafeAssyst, message: &Message, from_edit: bool) -> Result<PreprocessResult, PreParseError> {
     // check author is not bot or webhook
     if message.author.bot || message.webhook_id.is_some() {
         return Err(PreParseError::UserIsBotOrWebhook(Some(message.author.id.get())));

@@ -4,7 +4,6 @@ use assyst_proc_macro::command;
 
 use super::arguments::Rest;
 use super::CommandCtxt;
-
 use crate::command::{Availability, Category};
 use crate::rest::cooltext::burn_text;
 use crate::rest::r34::get_random_r34;

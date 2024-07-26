@@ -7,9 +7,7 @@ use proc_macro2::Span;
 use quote::{quote, ToTokens};
 use syn::punctuated::Punctuated;
 use syn::token::Bracket;
-use syn::{
-    parse_macro_input, parse_quote, Expr, ExprArray, ExprLit, FnArg, Ident, Item, Lit, LitBool, LitStr, Meta, Pat, PatType, Token, Type
-};
+use syn::{parse_macro_input, parse_quote, Expr, ExprArray, ExprLit, FnArg, Ident, Item, Lit, LitBool, LitStr, Meta, Pat, PatType, Token, Type};
 
 struct CommandAttributes(syn::punctuated::Punctuated<syn::Meta, Token![,]>);
 
@@ -48,9 +46,7 @@ impl syn::parse::Parse for CommandAttributes {
 pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
     let CommandAttributes(attrs) = syn::parse_macro_input!(attrs as CommandAttributes);
 
-    let Item::Fn(item) = parse_macro_input!(func as syn::Item) else {
-        panic!("#[command] applied to non-function")
-    };
+    let Item::Fn(item) = parse_macro_input!(func as syn::Item) else { panic!("#[command] applied to non-function") };
 
     let fn_name = &item.sig.ident;
     let struct_name = Ident::new(&format!("{}_command", item.sig.ident), Span::call_site());
@@ -59,10 +55,7 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
 
     for attr in attrs {
         if let Meta::NameValue(meta) = attr {
-            let ident = meta
-                .path
-                .get_ident()
-                .expect("#[command] attribute key should be an identifier");
+            let ident = meta.path.get_ident().expect("#[command] attribute key should be an identifier");
 
             fields.insert(ident.to_string(), meta.value);
         }
@@ -74,9 +67,9 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
     let mut interaction_parse_exprs = Vec::new();
     let mut command_option_exprs = Vec::new();
 
-    // sanity check that the first parameter is the `ctxt`, and exclude it from the list of arguments
-    // it wouldn't compile anyway since `CommandCtxt` can't be parsed as an argument (doesn't implement
-    // the trait)
+    // sanity check that the first parameter is the `ctxt`, and exclude it from the list of
+    // arguments it wouldn't compile anyway since `CommandCtxt` can't be parsed as an argument
+    // (doesn't implement the trait)
     // but this gives us a more useful error
     verify_input_is_ctxt(&item.sig.inputs);
 

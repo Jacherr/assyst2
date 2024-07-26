@@ -15,13 +15,7 @@ use crate::assyst::ThreadSafeAssyst;
 /// after a gateway restart.
 pub async fn handle(assyst: ThreadSafeAssyst, event: Ready) {
     if let Some(shard) = event.shard {
-        info!(
-            "Shard {} (total {}): {} in {} guilds",
-            shard.number(),
-            shard.total(),
-            "READY".fg_green(),
-            event.guilds.len()
-        )
+        info!("Shard {} (total {}): {} in {} guilds", shard.number(), shard.total(), "READY".fg_green(), event.guilds.len())
     }
 
     if event.guilds.iter().any(|x| x.id.get() == CONFIG.dev.dev_guild) && CONFIG.dev.dev_message {

@@ -1,9 +1,9 @@
+use std::error::Error;
 use std::fmt::Display;
 
 use assyst_common::config::CONFIG;
 use reqwest::{Client, Error as ReqwestError};
 use serde::Deserialize;
-use std::error::Error;
 
 const MAX_ATTEMPTS: u8 = 5;
 
@@ -20,11 +20,7 @@ pub enum TranslateError {
 impl Display for TranslateError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TranslateError::Reqwest(e) => write!(
-                f,
-                "A network error occurred: {}",
-                e.to_string().replace(&CONFIG.urls.bad_translation, "[bt]")
-            ),
+            TranslateError::Reqwest(e) => write!(f, "A network error occurred: {}", e.to_string().replace(&CONFIG.urls.bad_translation, "[bt]")),
             TranslateError::Raw(s) => write!(f, "{s}"),
         }
     }
@@ -44,13 +40,7 @@ pub struct TranslateResult {
     pub result: Translation,
 }
 
-async fn translate_retry(
-    client: &Client,
-    text: &str,
-    target: Option<&str>,
-    count: Option<u32>,
-    additional_data: Option<&[(&str, String)]>,
-) -> Result<TranslateResult, TranslateError> {
+async fn translate_retry(client: &Client, text: &str, target: Option<&str>, count: Option<u32>, additional_data: Option<&[(&str, String)]>) -> Result<TranslateResult, TranslateError> {
     let mut query_args = vec![("text", text.to_owned())];
 
     if let Some(target) = target {
@@ -67,24 +57,10 @@ async fn translate_retry(
         }
     }
 
-    client
-        .get(&CONFIG.urls.bad_translation)
-        .query(&query_args)
-        .send()
-        .await
-        .map_err(TranslateError::Reqwest)?
-        .json()
-        .await
-        .map_err(TranslateError::Reqwest)
+    client.get(&CONFIG.urls.bad_translation).query(&query_args).send().await.map_err(TranslateError::Reqwest)?.json().await.map_err(TranslateError::Reqwest)
 }
 
-async fn translate(
-    client: &Client,
-    text: &str,
-    target: Option<&str>,
-    count: Option<u32>,
-    additional_data: Option<&[(&str, String)]>,
-) -> Result<TranslateResult, TranslateError> {
+async fn translate(client: &Client, text: &str, target: Option<&str>, count: Option<u32>, additional_data: Option<&[(&str, String)]>) -> Result<TranslateResult, TranslateError> {
     let mut attempt = 0;
 
     while attempt <= MAX_ATTEMPTS {
@@ -103,11 +79,7 @@ pub async fn bad_translate(client: &Client, text: &str) -> Result<TranslateResul
     translate(client, text, None, None, None).await
 }
 
-pub async fn bad_translate_with_count(
-    client: &Client,
-    text: &str,
-    count: u32,
-) -> Result<TranslateResult, TranslateError> {
+pub async fn bad_translate_with_count(client: &Client, text: &str, count: u32) -> Result<TranslateResult, TranslateError> {
     translate(client, text, None, Some(count), None).await
 }
 
