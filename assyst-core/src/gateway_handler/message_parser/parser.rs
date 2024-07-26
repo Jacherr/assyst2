@@ -45,7 +45,12 @@ pub struct ParseResult<'a> {
 /// Once all steps are complete, a Command is returned, ready for execution.
 /// Note that metadata is checked *during* execution (i.e., in the base command's `Command::execute`
 /// implementation, see [`crate::command::check_metadata`])
-pub async fn parse_message_into_command(assyst: ThreadSafeAssyst, message: &Message, processing_time_start: Instant, from_edit: bool) -> Result<Option<ParseResult>, ParseError> {
+pub async fn parse_message_into_command(
+    assyst: ThreadSafeAssyst,
+    message: &Message,
+    processing_time_start: Instant,
+    from_edit: bool,
+) -> Result<Option<ParseResult>, ParseError> {
     let parse_start = Instant::now();
     let preprocess_start = Instant::now();
 

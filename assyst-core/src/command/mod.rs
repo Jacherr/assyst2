@@ -122,7 +122,13 @@ impl CommandGroupingInteractionInfo {
         for member in group {
             let subcommand_description = subcommands
                 .iter()
-                .find_map(|x| if x.0 == member.0 { Some(x.1.metadata().description.to_owned()) } else { None })
+                .find_map(|x| {
+                    if x.0 == member.0 {
+                        Some(x.1.metadata().description.to_owned())
+                    } else {
+                        None
+                    }
+                })
                 .unwrap_or(format!("{} subcommand", member.0));
 
             let mut subcommand = SubCommandBuilder::new(member.0.clone(), subcommand_description);
@@ -280,7 +286,10 @@ impl<'a, T: Clone> ParseCtxt<'a, T> {
         let _: &T = &self.args;
         let _: &CommandCtxt<'a> = &self.cx;
 
-        Self { cx: self.cx.clone(), args: self.args.clone() }
+        Self {
+            cx: self.cx.clone(),
+            args: self.args.clone(),
+        }
     }
 }
 
@@ -310,7 +319,10 @@ pub type Label = Option<(String, String)>;
 
 impl<'a> ParseCtxt<'a, RawMessageArgsIter<'a>> {
     pub fn new(ctxt: CommandCtxt<'a>, args: &'a str) -> Self {
-        Self { args: args.split_ascii_whitespace(), cx: ctxt }
+        Self {
+            args: args.split_ascii_whitespace(),
+            cx: ctxt,
+        }
     }
 
     /// Eagerly takes a word.
@@ -323,8 +335,15 @@ impl<'a> ParseCtxt<'a, RawMessageArgsIter<'a>> {
     /// The rest of the message, excluding flags.
     pub fn rest(&mut self, label: Label) -> Result<String, TagParseError> {
         // todo: handle newlines etc with
-        let raw = self.args.remainder().ok_or(TagParseError::ArgsExhausted(ArgsExhausted(label)))?;
-        let (args, flags) = if let Some(idx) = raw.find("--") { (&raw[..idx], &raw[idx..]) } else { (raw, "") };
+        let raw = self
+            .args
+            .remainder()
+            .ok_or(TagParseError::ArgsExhausted(ArgsExhausted(label)))?;
+        let (args, flags) = if let Some(idx) = raw.find("--") {
+            (&raw[..idx], &raw[idx..])
+        } else {
+            (raw, "")
+        };
 
         self.args = flags.split_ascii_whitespace();
 
@@ -338,7 +357,10 @@ impl<'a> ParseCtxt<'a, RawMessageArgsIter<'a>> {
 
 impl<'a> ParseCtxt<'a, InteractionMessageArgsIter<'a>> {
     pub fn new(ctxt: CommandCtxt<'a>, args: &'a [CommandDataOption]) -> Self {
-        Self { args: args.iter(), cx: ctxt }
+        Self {
+            args: args.iter(),
+            cx: ctxt,
+        }
     }
 
     /// Eagerly takes an option.
@@ -379,12 +401,22 @@ impl<'a> CommandCtxt<'a> {
     }
 }
 
-pub async fn check_metadata(metadata: &'static CommandMetadata, ctxt: &mut CommandCtxt<'_>) -> Result<(), ExecutionError> {
+pub async fn check_metadata(
+    metadata: &'static CommandMetadata,
+    ctxt: &mut CommandCtxt<'_>,
+) -> Result<(), ExecutionError> {
     if metadata.age_restricted {
-        let channel_age_restricted = ctxt.assyst().rest_cache_handler.channel_is_age_restricted(ctxt.data.channel_id.get()).await.unwrap_or(false);
+        let channel_age_restricted = ctxt
+            .assyst()
+            .rest_cache_handler
+            .channel_is_age_restricted(ctxt.data.channel_id.get())
+            .await
+            .unwrap_or(false);
 
         if !channel_age_restricted {
-            return Err(ExecutionError::MetadataCheck(MetadataCheckError::IllegalAgeRestrictedCommand));
+            return Err(ExecutionError::MetadataCheck(
+                MetadataCheckError::IllegalAgeRestrictedCommand,
+            ));
         };
     };
 
@@ -397,8 +429,16 @@ pub async fn check_metadata(metadata: &'static CommandMetadata, ctxt: &mut Comma
         },
         Availability::ServerManagers => {
             if let Some(guild_id) = ctxt.data.guild_id {
-                if !ctxt.assyst().rest_cache_handler.user_is_guild_manager(guild_id.get(), ctxt.data.author.id.get()).await.unwrap_or(false) {
-                    return Err(ExecutionError::MetadataCheck(MetadataCheckError::GuildManagerOnlyCommand));
+                if !ctxt
+                    .assyst()
+                    .rest_cache_handler
+                    .user_is_guild_manager(guild_id.get(), ctxt.data.author.id.get())
+                    .await
+                    .unwrap_or(false)
+                {
+                    return Err(ExecutionError::MetadataCheck(
+                        MetadataCheckError::GuildManagerOnlyCommand,
+                    ));
                 }
             }
         },
@@ -407,17 +447,24 @@ pub async fn check_metadata(metadata: &'static CommandMetadata, ctxt: &mut Comma
 
     if !CONFIG.dev.admin_users.contains(&ctxt.data.author.id.get()) {
         // ratelimit check
-        let id = ctxt.data.guild_id.map_or_else(|| ctxt.data.author.id.get(), |id| id.get());
+        let id = ctxt
+            .data
+            .guild_id
+            .map_or_else(|| ctxt.data.author.id.get(), |id| id.get());
         let last_command_invoked = ctxt.assyst().command_ratelimits.get(id, metadata.name);
         if let Some(invocation_time) = last_command_invoked {
             let elapsed = invocation_time.elapsed();
             if elapsed < metadata.cooldown {
-                return Err(ExecutionError::MetadataCheck(MetadataCheckError::CommandOnCooldown(metadata.cooldown - elapsed)));
+                return Err(ExecutionError::MetadataCheck(MetadataCheckError::CommandOnCooldown(
+                    metadata.cooldown - elapsed,
+                )));
             }
         }
 
         // update/set new last invocation time
-        ctxt.assyst().command_ratelimits.insert(id, metadata.name, Instant::now());
+        ctxt.assyst()
+            .command_ratelimits
+            .insert(id, metadata.name, Instant::now());
     }
 
     if metadata.send_processing && ctxt.data.source == Source::RawMessage {
@@ -432,11 +479,17 @@ pub async fn check_metadata(metadata: &'static CommandMetadata, ctxt: &mut Comma
 
         ctxt.assyst()
             .interaction_client()
-            .create_response(ctxt.data.interaction_id.unwrap(), &ctxt.data.interaction_token.clone().unwrap(), &response)
+            .create_response(
+                ctxt.data.interaction_id.unwrap(),
+                &ctxt.data.interaction_token.clone().unwrap(),
+                &response,
+            )
             .await
             .map_err(|e| ExecutionError::Parse(errors::TagParseError::TwilightHttp(Box::new(e))))?;
 
-        ctxt.assyst().replies.insert_interaction_command(ctxt.data.interaction_id.unwrap().get());
+        ctxt.assyst()
+            .replies
+            .insert_interaction_command(ctxt.data.interaction_id.unwrap().get());
     }
     Ok(())
 }

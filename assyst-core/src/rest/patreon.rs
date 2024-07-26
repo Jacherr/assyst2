@@ -173,7 +173,14 @@ pub async fn get_patrons(assyst: ThreadSafeAssyst) -> anyhow::Result<Vec<Patron>
 
     let access_token = get_patreon_access_token(assyst.clone()).await?;
 
-    let response = assyst.reqwest_client.get(ROUTE).header(reqwest::header::AUTHORIZATION, &format!("Bearer {access_token}")).send().await?.json::<Response>().await?;
+    let response = assyst
+        .reqwest_client
+        .get(ROUTE)
+        .header(reqwest::header::AUTHORIZATION, &format!("Bearer {access_token}"))
+        .send()
+        .await?
+        .json::<Response>()
+        .await?;
 
     let mut entitled_tiers: HashMap<String, PatronTier> = HashMap::new();
     let mut discord_connections: HashMap<String, u64> = HashMap::new();
@@ -189,7 +196,11 @@ pub async fn get_patrons(assyst: ThreadSafeAssyst) -> anyhow::Result<Vec<Patron>
 
     for i in response.included {
         let id = i.id.clone();
-        let discord = i.attributes.social_connections.as_ref().map(|s| s.discord.as_ref().map(|d| d.user_id.clone()));
+        let discord = i
+            .attributes
+            .social_connections
+            .as_ref()
+            .map(|s| s.discord.as_ref().map(|d| d.user_id.clone()));
 
         if let Some(Some(d)) = discord {
             discord_connections.insert(id, d.parse::<u64>().unwrap());
@@ -202,7 +213,11 @@ pub async fn get_patrons(assyst: ThreadSafeAssyst) -> anyhow::Result<Vec<Patron>
 
         let discord = discord_connections.get(&patron_id);
         if let Some(d) = discord {
-            patrons.push(Patron { user_id: *d, tier, _admin: false });
+            patrons.push(Patron {
+                user_id: *d,
+                tier,
+                _admin: false,
+            });
         };
     }
 

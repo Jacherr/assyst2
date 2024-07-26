@@ -41,7 +41,13 @@ impl Pipe {
                 break p;
             } else if let Err(e) = pipe {
                 attempts += 1;
-                warn!("{}: connection failed ({}/{:?}): {}", pipe_location, attempts, limit, e.to_string());
+                warn!(
+                    "{}: connection failed ({}/{:?}): {}",
+                    pipe_location,
+                    attempts,
+                    limit,
+                    e.to_string()
+                );
                 if let Some(l) = limit {
                     if attempts >= l {
                         bail!("timed out waiting for connection");

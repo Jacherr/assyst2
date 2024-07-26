@@ -10,7 +10,13 @@ pub const MAX_TIMESTAMP: u64 = 8640000000000000;
 
 /// Attempts to resolve a guild's owner's user ID
 pub async fn get_guild_owner(http: &Client, guild_id: u64) -> anyhow::Result<u64> {
-    Ok(http.guild(Id::<GuildMarker>::new(guild_id)).await?.model().await?.owner_id.get())
+    Ok(http
+        .guild(Id::<GuildMarker>::new(guild_id))
+        .await?
+        .model()
+        .await?
+        .owner_id
+        .get())
 }
 
 pub fn get_default_avatar_url(user: &User) -> String {
@@ -31,13 +37,24 @@ pub fn get_avatar_url(user: &User) -> String {
         None => return get_default_avatar_url(user),
     };
 
-    let ext = if avatar.bytes().starts_with("a_".as_bytes()) { "gif" } else { "png" };
+    let ext = if avatar.bytes().starts_with("a_".as_bytes()) {
+        "gif"
+    } else {
+        "png"
+    };
 
-    format!("https://cdn.discordapp.com/avatars/{}/{}.{}?size=1024", user.id, avatar, ext)
+    format!(
+        "https://cdn.discordapp.com/avatars/{}/{}.{}?size=1024",
+        user.id, avatar, ext
+    )
 }
 
 pub fn id_from_mention(word: &str) -> Option<u64> {
-    USER_MENTION.captures(word).and_then(|user_id_capture| user_id_capture.get(1)).map(|id| id.as_str()).and_then(|id| id.parse::<u64>().ok())
+    USER_MENTION
+        .captures(word)
+        .and_then(|user_id_capture| user_id_capture.get(1))
+        .map(|id| id.as_str())
+        .and_then(|id| id.parse::<u64>().ok())
 }
 
 pub fn format_tag(user: &User) -> String {
@@ -57,5 +74,9 @@ pub fn dm_message_link(channel_id: u64, message_id: u64) -> String {
 /// Attempts to return the timestamp as a Discord timestamp,
 /// and falls back to [`format_time`] if Discord were to render it as "Invalid Date"
 pub fn format_discord_timestamp(input: u64) -> String {
-    if input <= MAX_TIMESTAMP { format!("<t:{}:R>", input / 1000) } else { format_time(input) }
+    if input <= MAX_TIMESTAMP {
+        format!("<t:{}:R>", input / 1000)
+    } else {
+        format_time(input)
+    }
 }

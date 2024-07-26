@@ -28,7 +28,10 @@ pub fn parse<C: Context>(input: &str, args: &[&str], mode: ParseMode, cx: C) -> 
 
     let output = Parser::new(input.as_bytes(), args, state, mode, &cx).parse_segment(true)?;
 
-    Ok(ParseResult { output, attachment: attachment.into_inner() })
+    Ok(ParseResult {
+        output,
+        attachment: attachment.into_inner(),
+    })
 }
 
 /// NOTE: be careful when bubbling up potential errors -- you most likely want to wrap them in

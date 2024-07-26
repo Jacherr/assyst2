@@ -115,7 +115,10 @@ pub struct Error {
 pub type TResult<T> = Result<T, Error>;
 
 pub fn wrap_anyhow(at: Range<usize>, res: anyhow::Error) -> Error {
-    err(ErrorKind::Unknown { span: at, message: res.to_string() })
+    err(ErrorKind::Unknown {
+        span: at,
+        message: res.to_string(),
+    })
 }
 
 struct LineData<'a> {
@@ -125,20 +128,28 @@ struct LineData<'a> {
 }
 
 fn line_data(source: &str, span: Range<usize>) -> LineData<'_> {
-    let start_index = rfind(source[..span.start.min(source.len())].as_bytes(), b"\n").map(|x| x + 1).unwrap_or(0);
+    let start_index = rfind(source[..span.start.min(source.len())].as_bytes(), b"\n")
+        .map(|x| x + 1)
+        .unwrap_or(0);
 
     let end_index = if span.end >= source.len() {
         // Allow pointing at one past the input buffer
         source.len()
     } else {
-        memchr::memchr(b'\n', source[span.end..].as_bytes()).map(|x| x + span.end).unwrap_or(source.len())
+        memchr::memchr(b'\n', source[span.end..].as_bytes())
+            .map(|x| x + span.end)
+            .unwrap_or(source.len())
     };
 
     let relative_span_lo = span.start - start_index;
     let relative_span_hi = span.end - start_index;
 
     let line = &source[start_index..end_index.min(source.len())];
-    LineData { relative_span_lo, relative_span_hi, line }
+    LineData {
+        relative_span_lo,
+        relative_span_hi,
+        line,
+    }
 }
 
 pub enum DiagnosticKind {
@@ -185,7 +196,11 @@ impl<'buf> DiagnosticBuilder<'buf> {
 
             match span.clone() {
                 Some(span) => {
-                    let LineData { relative_span_lo, relative_span_hi, line } = line_data(self.src, span);
+                    let LineData {
+                        relative_span_lo,
+                        relative_span_hi,
+                        line,
+                    } = line_data(self.src, span);
 
                     out += &" | ".fg_blue();
                     out += line;
@@ -327,13 +342,17 @@ pub fn format_error(src: &str, err: Error) -> String {
             });
             db.span_notes.push(Note {
                 kind: NoteKind::Help,
-                message: "... or handle the out-of-bounds case explicitly with {if:{argslen}|>|index|{arg:index}|...}".into(),
+                message: "... or handle the out-of-bounds case explicitly with {if:{argslen}|>|index|{arg:index}|...}"
+                    .into(),
                 span: None,
             });
         },
         ErrorKind::ArgParseError {
             span,
-            err: subtags::ParseError::U64FromStrError(er, input) | subtags::ParseError::I64FromStrError(er, input) | subtags::ParseError::UsizeFromStrError(er, input),
+            err:
+                subtags::ParseError::U64FromStrError(er, input)
+                | subtags::ParseError::I64FromStrError(er, input)
+                | subtags::ParseError::UsizeFromStrError(er, input),
         } => {
             db.message = Some(format!("failed to parse '{input}' as a number").into());
             db.kind = DiagnosticKind::Error;
@@ -357,10 +376,19 @@ pub fn format_error(src: &str, err: Error) -> String {
                 span: Some(span),
             });
         },
-        ErrorKind::ArgParseError { span, err: ParseError::MissingArgument } => simple_span_diag(&mut db, format_args!("another argument is expected"), Some(span)),
+        ErrorKind::ArgParseError {
+            span,
+            err: ParseError::MissingArgument,
+        } => simple_span_diag(&mut db, format_args!("another argument is expected"), Some(span)),
 
-        ErrorKind::ArgParseError { span, err: ParseError::NotEnoughArguments } => simple_span_diag(&mut db, format_args!("more arguments are expected"), Some(span)),
-        ErrorKind::ArgParseError { span, err: ParseError::Other(other) } => simple_span_diag(&mut db, format_args!("{other}"), Some(span)),
+        ErrorKind::ArgParseError {
+            span,
+            err: ParseError::NotEnoughArguments,
+        } => simple_span_diag(&mut db, format_args!("more arguments are expected"), Some(span)),
+        ErrorKind::ArgParseError {
+            span,
+            err: ParseError::Other(other),
+        } => simple_span_diag(&mut db, format_args!("{other}"), Some(span)),
         ErrorKind::IterLimit { pos } => {
             db.message = Some("tag iteration limit exceeded".into());
             db.span_notes.push(Note {
@@ -369,7 +397,10 @@ pub fn format_error(src: &str, err: Error) -> String {
                 span: Some(char_index_to_span(src, pos)),
             });
         },
-        ErrorKind::MissingClosingBrace { expected_position, tag_start } => {
+        ErrorKind::MissingClosingBrace {
+            expected_position,
+            tag_start,
+        } => {
             db.message = Some("missing closing brace".into());
             db.span_notes.push(Note {
                 kind: NoteKind::Error,
@@ -397,16 +428,58 @@ pub fn format_error(src: &str, err: Error) -> String {
                 span: None,
             });
         },
-        ErrorKind::VarLimit { span } => simple_span_diag(&mut db, format_args!("cannot define more than {} variables", limits::MAX_VARIABLES), Some(span)),
-        ErrorKind::VarKeyLengthLimit { span, length } => simple_span_diag(&mut db, format_args!("variable name has too many characters ({}>{})", length, limits::MAX_VARIABLE_KEY_LENGTH,), Some(span)),
-        ErrorKind::VarValueLengthLimit { span, length } => simple_span_diag(&mut db, format_args!("variable value is too long ({}>{})", length, limits::MAX_VARIABLE_VALUE_LENGTH,), Some(span)),
-        ErrorKind::RequestLimit { span } => simple_span_diag(&mut db, format_args!("maximum number of http requests ({}) reached", limits::MAX_REQUESTS), Some(span)),
-        ErrorKind::IfMissingStmt { span } => simple_span_diag(&mut db, format_args!("`if` tag is missing a value to compare"), Some(span)),
-        ErrorKind::IfMissingCmp { span } => simple_span_diag(&mut db, format_args!("`if` tag is missing a comparator"), Some(span)),
-        ErrorKind::IfMissingValue { span } => simple_span_diag(&mut db, format_args!("`if` tag is missing a condition that the value is compared to"), Some(span)),
-        ErrorKind::IfMissingThen { span } => simple_span_diag(&mut db, format_args!("`if` tag is missing a 'then' branch"), Some(span)),
-        ErrorKind::IfMissingElse { span } => simple_span_diag(&mut db, format_args!("`if` tag is missing an 'else' branch"), Some(span)),
-        ErrorKind::IfInvalidCmp { span } => simple_span_diag(&mut db, format_args!("an invalid comparator was used"), Some(span)),
+        ErrorKind::VarLimit { span } => simple_span_diag(
+            &mut db,
+            format_args!("cannot define more than {} variables", limits::MAX_VARIABLES),
+            Some(span),
+        ),
+        ErrorKind::VarKeyLengthLimit { span, length } => simple_span_diag(
+            &mut db,
+            format_args!(
+                "variable name has too many characters ({}>{})",
+                length,
+                limits::MAX_VARIABLE_KEY_LENGTH,
+            ),
+            Some(span),
+        ),
+        ErrorKind::VarValueLengthLimit { span, length } => simple_span_diag(
+            &mut db,
+            format_args!(
+                "variable value is too long ({}>{})",
+                length,
+                limits::MAX_VARIABLE_VALUE_LENGTH,
+            ),
+            Some(span),
+        ),
+        ErrorKind::RequestLimit { span } => simple_span_diag(
+            &mut db,
+            format_args!("maximum number of http requests ({}) reached", limits::MAX_REQUESTS),
+            Some(span),
+        ),
+        ErrorKind::IfMissingStmt { span } => simple_span_diag(
+            &mut db,
+            format_args!("`if` tag is missing a value to compare"),
+            Some(span),
+        ),
+        ErrorKind::IfMissingCmp { span } => {
+            simple_span_diag(&mut db, format_args!("`if` tag is missing a comparator"), Some(span))
+        },
+        ErrorKind::IfMissingValue { span } => simple_span_diag(
+            &mut db,
+            format_args!("`if` tag is missing a condition that the value is compared to"),
+            Some(span),
+        ),
+        ErrorKind::IfMissingThen { span } => {
+            simple_span_diag(&mut db, format_args!("`if` tag is missing a 'then' branch"), Some(span))
+        },
+        ErrorKind::IfMissingElse { span } => simple_span_diag(
+            &mut db,
+            format_args!("`if` tag is missing an 'else' branch"),
+            Some(span),
+        ),
+        ErrorKind::IfInvalidCmp { span } => {
+            simple_span_diag(&mut db, format_args!("an invalid comparator was used"), Some(span))
+        },
         ErrorKind::Nested { .. } => unreachable!("nested tag errors are handled separately"),
         ErrorKind::Unknown { message, span } => {
             db.message = Some(message.into());

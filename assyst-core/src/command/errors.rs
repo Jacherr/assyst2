@@ -51,10 +51,18 @@ pub enum MetadataCheckError {
 impl Display for MetadataCheckError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            MetadataCheckError::CommandOnCooldown(time_left) => write!(f, "This command is on cooldown for {:.2} seconds.", time_left.as_millis() as f64 / 1000.0),
-            MetadataCheckError::IllegalAgeRestrictedCommand => f.write_str("This command is only available in age restricted channels."),
+            MetadataCheckError::CommandOnCooldown(time_left) => write!(
+                f,
+                "This command is on cooldown for {:.2} seconds.",
+                time_left.as_millis() as f64 / 1000.0
+            ),
+            MetadataCheckError::IllegalAgeRestrictedCommand => {
+                f.write_str("This command is only available in age restricted channels.")
+            },
             MetadataCheckError::DevOnlyCommand => f.write_str("This command is limited to the Assyst developers only."),
-            MetadataCheckError::GuildManagerOnlyCommand => f.write_str("This command is limited to server managers only."),
+            MetadataCheckError::GuildManagerOnlyCommand => {
+                f.write_str("This command is limited to server managers only.")
+            },
         }
     }
 }
@@ -100,7 +108,12 @@ pub enum TagParseError {
 impl GetErrorSeverity for TagParseError {
     fn get_severity(&self) -> ErrorSeverity {
         match self {
-            Self::TwilightHttp(..) | Self::TwilightDeserialize(..) | Self::DownloadError(..) | Self::UnsupportedSticker(..) | Self::Reqwest(..) | Self::NoInteractionSubcommandProvided => ErrorSeverity::High,
+            Self::TwilightHttp(..)
+            | Self::TwilightDeserialize(..)
+            | Self::DownloadError(..)
+            | Self::UnsupportedSticker(..)
+            | Self::Reqwest(..)
+            | Self::NoInteractionSubcommandProvided => ErrorSeverity::High,
             _ => ErrorSeverity::Low,
         }
     }
@@ -118,7 +131,9 @@ impl Display for TagParseError {
             TagParseError::ArgsExhausted(ArgsExhausted(Some((name, _)))) => {
                 write!(f, "the argument '{name}' is required but was not found")
             },
-            TagParseError::ArgsExhausted(ArgsExhausted(None)) => f.write_str("an argument is required but none were found"),
+            TagParseError::ArgsExhausted(ArgsExhausted(None)) => {
+                f.write_str("an argument is required but none were found")
+            },
             TagParseError::SubcommandArgsExhausted(_) => f.write_str("no valid subcommand was given"),
             TagParseError::ParseIntError(err) => {
                 write!(f, "failed to parse an argument as a whole number: {err}")
@@ -147,17 +162,28 @@ impl Display for TagParseError {
             TagParseError::NoEmbed => f.write_str("an embed was expected but none were found"),
             TagParseError::NoEmoji => f.write_str("an emoji argument was expected but none were found"),
             TagParseError::NoSticker => f.write_str("a sticker was expected but none were found"),
-            TagParseError::NoImageInHistory => f.write_str("an image was expected in the channel but no image could be found"),
-            TagParseError::NoImageFound => f.write_str("an image was expected as an argument, but no image could be found"),
+            TagParseError::NoImageInHistory => {
+                f.write_str("an image was expected in the channel but no image could be found")
+            },
+            TagParseError::NoImageFound => {
+                f.write_str("an image was expected as an argument, but no image could be found")
+            },
             TagParseError::MediaDownloadFail => f.write_str("failed to download media content"),
             TagParseError::InvalidSubcommand(name) => {
                 write!(f, "no subcommand found for given subcommand name {name}")
             },
             TagParseError::MismatchedCommandOptionType((expected, received)) => {
-                write!(f, "Command option mismatch between expected ({expected}) and received ({received:?})")
+                write!(
+                    f,
+                    "Command option mismatch between expected ({expected}) and received ({received:?})"
+                )
             },
-            TagParseError::NoInteractionSubcommandProvided => f.write_str("Attempted to execute an interaction base command on a command group"),
-            TagParseError::InteractionCommandIsBaseSubcommand => f.write_str("Interaction subcommand is base subcommand"),
+            TagParseError::NoInteractionSubcommandProvided => {
+                f.write_str("Attempted to execute an interaction base command on a command group")
+            },
+            TagParseError::InteractionCommandIsBaseSubcommand => {
+                f.write_str("Interaction subcommand is base subcommand")
+            },
             TagParseError::FlagParseError(x) => write!(f, "Error parsing command flags ({x})"),
         }
     }

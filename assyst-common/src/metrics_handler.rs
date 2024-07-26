@@ -51,7 +51,9 @@ impl MetricsHandler {
         let memory_usages = get_processes_mem_usage();
 
         for usage in memory_usages {
-            self.memory_usage.with_label_values(&[usage.0]).set((usage.1 / 1024 / 1024) as i64);
+            self.memory_usage
+                .with_label_values(&[usage.0])
+                .set((usage.1 / 1024 / 1024) as i64);
         }
     }
 

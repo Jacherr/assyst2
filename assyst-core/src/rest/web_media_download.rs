@@ -35,7 +35,11 @@ impl WebDownloadOpts {
     pub fn from_download_flags(flags: DownloadFlags) -> Self {
         Self {
             audio_only: Some(flags.audio),
-            quality: if flags.quality != 0 { Some(flags.quality.to_string()) } else { None },
+            quality: if flags.quality != 0 {
+                Some(flags.quality.to_string())
+            } else {
+                None
+            },
             api_url_override: None,
             verbose: flags.verbose,
         }
@@ -90,10 +94,16 @@ async fn test_route(assyst: ThreadSafeAssyst, url: &str) -> bool {
     let elapsed = start.elapsed();
 
     if success && elapsed < TEST_URL_TIMEOUT {
-        debug!("Web download URL {url} took {} to download test media", format_duration(&elapsed));
+        debug!(
+            "Web download URL {url} took {} to download test media",
+            format_duration(&elapsed)
+        );
     } else if elapsed < TEST_URL_TIMEOUT {
         let err = res.unwrap_err();
-        debug!("Web download URL {url} failed to download test media ({})", err.to_string());
+        debug!(
+            "Web download URL {url} failed to download test media ({})",
+            err.to_string()
+        );
     }
 
     success && (elapsed < TEST_URL_TIMEOUT)
@@ -140,7 +150,14 @@ pub async fn get_web_download_api_urls(assyst: ThreadSafeAssyst) -> anyhow::Resu
         })
         .collect::<Vec<_>>();
 
-    let valid_urls = join_all(test_urls).await.into_iter().filter_map(|res| res.ok()).map(|res| res.unwrap()).filter(|res| res.1).map(|res| res.0).collect::<Vec<_>>();
+    let valid_urls = join_all(test_urls)
+        .await
+        .into_iter()
+        .filter_map(|res| res.ok())
+        .map(|res| res.unwrap())
+        .filter(|res| res.1)
+        .map(|res| res.0)
+        .collect::<Vec<_>>();
 
     Ok(valid_urls)
 }
@@ -203,10 +220,12 @@ pub async fn download_web_media(assyst: ThreadSafeAssyst, url: &str, opts: WebDo
                                 Ok(j) => {
                                     let mut e = j.text;
                                     if e.contains("i couldn't process your request :(") {
-                                        e = "The web downloader could not process your request. Please try again later.".to_owned()
+                                        e = "The web downloader could not process your request. Please try again later."
+                                            .to_owned()
                                     } else if e.contains("i couldn't connect to the service api.") {
                                         e = "The web downloader could not connect to the service API. Please try again later.".to_owned()
-                                    } else if e.contains("couldn't get this youtube video because it requires sign in") {
+                                    } else if e.contains("couldn't get this youtube video because it requires sign in")
+                                    {
                                         e = "YouTube has blocked video downloading. Please try again later.".to_owned()
                                     }
 
@@ -227,7 +246,12 @@ pub async fn download_web_media(assyst: ThreadSafeAssyst, url: &str, opts: WebDo
         if let Some(r) = req_result_url {
             debug!("downloading from url {r} for web media {url}");
 
-            let media = match timeout(Duration::from_secs(120), download_content(&assyst, &r, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES, false)).await {
+            let media = match timeout(
+                Duration::from_secs(120),
+                download_content(&assyst, &r, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES, false),
+            )
+            .await
+            {
                 Ok(Ok(m)) => m,
                 Ok(Err(e)) => {
                     err = format!("Failed to download media: {e}");
@@ -258,7 +282,10 @@ pub async fn get_youtube_playlist_entries(url: &str) -> anyhow::Result<Vec<(Stri
     command.args(["--flat-playlist", "--no-warnings", "-q", "-i", "-J", url]);
     let result = command.output().await.context("Failed to get playlist entries")?;
     if !result.status.success() {
-        bail!("Failed to get playlist entries: {}", string_from_likely_utf8(result.stderr));
+        bail!(
+            "Failed to get playlist entries: {}",
+            string_from_likely_utf8(result.stderr)
+        );
     }
 
     let output = string_from_likely_utf8(result.stdout);
@@ -268,5 +295,8 @@ pub async fn get_youtube_playlist_entries(url: &str) -> anyhow::Result<Vec<(Stri
     let mut entries = playlist.entries;
     entries.sort_by(|x, y| y.duration.unwrap_or(0).cmp(&x.duration.unwrap_or(0)));
 
-    Ok(entries.iter().map(|x| (x.title.clone(), x.url.clone())).collect::<Vec<_>>())
+    Ok(entries
+        .iter()
+        .map(|x| (x.title.clone(), x.url.clone()))
+        .collect::<Vec<_>>())
 }

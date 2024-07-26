@@ -6,7 +6,9 @@ use either::Either;
 use rand::Rng;
 
 use crate::errors::{err, err_res, wrap_anyhow, ErrorKind, TResult};
-use crate::parser::limits::{MAX_DEPTH, MAX_STRING_LENGTH, MAX_VARIABLES, MAX_VARIABLE_KEY_LENGTH, MAX_VARIABLE_VALUE_LENGTH};
+use crate::parser::limits::{
+    MAX_DEPTH, MAX_STRING_LENGTH, MAX_VARIABLES, MAX_VARIABLE_KEY_LENGTH, MAX_VARIABLE_VALUE_LENGTH,
+};
 use crate::parser::Parser;
 
 /// Ensures that the HTTP request limit has not been hit yet
@@ -70,7 +72,10 @@ impl<T: ParseTagArgument> ParseTagArgument for Rest<T> {
             args_consumed += t.args_consumed;
             results.push(t.value);
         }
-        Ok(ParseSuccess { value: Rest(results), args_consumed })
+        Ok(ParseSuccess {
+            value: Rest(results),
+            args_consumed,
+        })
     }
 }
 
@@ -89,7 +94,10 @@ impl<const N: usize, T: ParseTagArgument> ParseTagArgument for Atleast<N, T> {
 
 impl ParseTagArgument for () {
     fn parse_from_args(_: &Parser<'_>, _: &[String]) -> Result<ParseSuccess<Self>, ParseError> {
-        Ok(ParseSuccess { value: (), args_consumed: 0 })
+        Ok(ParseSuccess {
+            value: (),
+            args_consumed: 0,
+        })
     }
 }
 
@@ -120,7 +128,10 @@ impl<A: ParseTagArgument> ParseTagArgument for Option<A> {
             })
         } else {
             // TODO: maybe throw an error if kind != MissingArgument ??
-            Ok(ParseSuccess { value: None, args_consumed: 0 })
+            Ok(ParseSuccess {
+                value: None,
+                args_consumed: 0,
+            })
         }
     }
 }
@@ -130,7 +141,12 @@ impl ParseTagArgument for usize {
         let [arg, ..] = args else {
             return Err(ParseError::MissingArgument);
         };
-        arg.parse().map_err(|err| ParseError::UsizeFromStrError(err, arg.into())).map(|value| ParseSuccess { value, args_consumed: 1 })
+        arg.parse()
+            .map_err(|err| ParseError::UsizeFromStrError(err, arg.into()))
+            .map(|value| ParseSuccess {
+                value,
+                args_consumed: 1,
+            })
     }
 }
 
@@ -141,9 +157,14 @@ impl ParseTagArgument for Mention {
         let [mention, ..] = args else {
             return Err(ParseError::MissingArgument);
         };
-        let id = id_from_mention(mention).or_else(|| parser.context().user_id().ok()).ok_or_else(|| ParseError::Other("Invalid mention".to_string()))?;
+        let id = id_from_mention(mention)
+            .or_else(|| parser.context().user_id().ok())
+            .ok_or_else(|| ParseError::Other("Invalid mention".to_string()))?;
 
-        Ok(ParseSuccess { value: Mention(id), args_consumed: 1 })
+        Ok(ParseSuccess {
+            value: Mention(id),
+            args_consumed: 1,
+        })
     }
 }
 
@@ -152,7 +173,12 @@ impl ParseTagArgument for u64 {
         let [arg, ..] = args else {
             return Err(ParseError::MissingArgument);
         };
-        arg.parse().map_err(|err| ParseError::U64FromStrError(err, arg.into())).map(|value| ParseSuccess { value, args_consumed: 1 })
+        arg.parse()
+            .map_err(|err| ParseError::U64FromStrError(err, arg.into()))
+            .map(|value| ParseSuccess {
+                value,
+                args_consumed: 1,
+            })
     }
 }
 
@@ -161,7 +187,12 @@ impl ParseTagArgument for f64 {
         let [arg, ..] = args else {
             return Err(ParseError::MissingArgument);
         };
-        arg.parse().map_err(|err| ParseError::F64FromStrError(err, arg.into())).map(|value| ParseSuccess { value, args_consumed: 1 })
+        arg.parse()
+            .map_err(|err| ParseError::F64FromStrError(err, arg.into()))
+            .map(|value| ParseSuccess {
+                value,
+                args_consumed: 1,
+            })
     }
 }
 
@@ -170,7 +201,12 @@ impl ParseTagArgument for i64 {
         let [arg, ..] = args else {
             return Err(ParseError::MissingArgument);
         };
-        arg.parse().map_err(|err| ParseError::I64FromStrError(err, arg.into())).map(|value| ParseSuccess { value, args_consumed: 1 })
+        arg.parse()
+            .map_err(|err| ParseError::I64FromStrError(err, arg.into()))
+            .map(|value| ParseSuccess {
+                value,
+                args_consumed: 1,
+            })
     }
 }
 
@@ -179,7 +215,10 @@ impl ParseTagArgument for String {
         let [arg, ..] = args else {
             return Err(ParseError::MissingArgument);
         };
-        Ok(ParseSuccess { value: arg.clone(), args_consumed: 1 })
+        Ok(ParseSuccess {
+            value: arg.clone(),
+            args_consumed: 1,
+        })
     }
 }
 
@@ -189,8 +228,14 @@ where
     B: ParseTagArgument,
 {
     fn parse_from_args(parser: &Parser<'_>, args: &[String]) -> Result<ParseSuccess<Self>, ParseError> {
-        let ParseSuccess { value: a, args_consumed: a_consumed } = A::parse_from_args(parser, args)?;
-        let ParseSuccess { value: b, args_consumed: b_consumed } = B::parse_from_args(parser, &args[a_consumed..])?;
+        let ParseSuccess {
+            value: a,
+            args_consumed: a_consumed,
+        } = A::parse_from_args(parser, args)?;
+        let ParseSuccess {
+            value: b,
+            args_consumed: b_consumed,
+        } = B::parse_from_args(parser, &args[a_consumed..])?;
         Ok(ParseSuccess {
             value: (a, b),
             args_consumed: a_consumed + b_consumed,
@@ -204,13 +249,22 @@ pub trait Subtag {
 
 impl<A: ParseTagArgument> Subtag for fn(&mut Parser<'_>, A) -> TResult<String> {
     fn exec(&self, parser: &mut Parser<'_>, args: &[String]) -> TResult<String> {
-        let ParseSuccess { value, .. } = A::parse_from_args(parser, args).map_err(|er| err(ErrorKind::ArgParseError { err: er, span: parser.span() }))?;
+        let ParseSuccess { value, .. } = A::parse_from_args(parser, args).map_err(|er| {
+            err(ErrorKind::ArgParseError {
+                err: er,
+                span: parser.span(),
+            })
+        })?;
         self(parser, value)
     }
 }
 
 /// Convenience wrapper function that doesn't require ugly casts
-pub fn exec<A: ParseTagArgument>(p: &mut Parser<'_>, args: &[String], f: fn(&mut Parser<'_>, A) -> TResult<String>) -> TResult<String> {
+pub fn exec<A: ParseTagArgument>(
+    p: &mut Parser<'_>,
+    args: &[String],
+    f: fn(&mut Parser<'_>, A) -> TResult<String>,
+) -> TResult<String> {
     Subtag::exec(&f, p, args)
 }
 
@@ -263,11 +317,17 @@ pub fn set(parser: &mut Parser<'_>, (key, value): (String, String)) -> TResult<S
         }
 
         if key.len() > MAX_VARIABLE_KEY_LENGTH {
-            return err_res(ErrorKind::VarKeyLengthLimit { span: parser.span(), length: key.len() });
+            return err_res(ErrorKind::VarKeyLengthLimit {
+                span: parser.span(),
+                length: key.len(),
+            });
         }
 
         if value.len() > MAX_VARIABLE_VALUE_LENGTH {
-            return err_res(ErrorKind::VarValueLengthLimit { span: parser.span(), length: value.len() });
+            return err_res(ErrorKind::VarValueLengthLimit {
+                span: parser.span(),
+                length: value.len(),
+            });
         }
 
         vars.insert(key, value);
@@ -277,7 +337,9 @@ pub fn set(parser: &mut Parser<'_>, (key, value): (String, String)) -> TResult<S
 }
 
 pub fn get(parser: &mut Parser<'_>, key: String) -> TResult<String> {
-    parser.state().with_variables(|vars| -> TResult<String> { Ok(vars.get(&key).cloned().unwrap_or_default()) })
+    parser
+        .state()
+        .with_variables(|vars| -> TResult<String> { Ok(vars.get(&key).cloned().unwrap_or_default()) })
 }
 
 pub fn delete(parser: &mut Parser<'_>, key: String) -> TResult<String> {
@@ -441,7 +503,11 @@ pub fn note(parser: &mut Parser<'_>) -> TResult<String> {
 }
 
 pub fn ignore(parser: &mut Parser<'_>) -> TResult<String> {
-    let result = if parser.eat_separator() { parser.parse_segment(false)? } else { String::new() };
+    let result = if parser.eat_separator() {
+        parser.parse_segment(false)?
+    } else {
+        String::new()
+    };
 
     try_eat_closing_brace(parser)?;
     Ok(result)
@@ -452,7 +518,10 @@ pub fn mention(parser: &mut Parser<'_>, id: Option<u64>) -> TResult<String> {
         "<@{}>",
         match id {
             Some(id) => id,
-            None => parser.context().user_id().map_err(|err| wrap_anyhow(parser.span(), err))?,
+            None => parser
+                .context()
+                .user_id()
+                .map_err(|err| wrap_anyhow(parser.span(), err))?,
         }
     ))
 }
@@ -460,13 +529,19 @@ pub fn mention(parser: &mut Parser<'_>, id: Option<u64>) -> TResult<String> {
 pub fn usertag(parser: &mut Parser<'_>, id: Option<u64>) -> TResult<String> {
     ensure_request_limit!(parser);
 
-    parser.context().user_tag(id).map_err(|err| wrap_anyhow(parser.span(), err))
+    parser
+        .context()
+        .user_tag(id)
+        .map_err(|err| wrap_anyhow(parser.span(), err))
 }
 
 pub fn javascript(parser: &mut Parser<'_>, code: String) -> TResult<String> {
     ensure_request_limit!(parser);
 
-    let result = parser.context().execute_javascript(&code, parser.args().iter().map(|x| x.to_string()).collect::<Vec<_>>()).map_err(|err| wrap_anyhow(parser.span(), err))?;
+    let result = parser
+        .context()
+        .execute_javascript(&code, parser.args().iter().map(|x| x.to_string()).collect::<Vec<_>>())
+        .map_err(|err| wrap_anyhow(parser.span(), err))?;
 
     match result {
         FakeEvalImageResponse::Image(img, ty) => {
@@ -480,27 +555,44 @@ pub fn javascript(parser: &mut Parser<'_>, code: String) -> TResult<String> {
 pub fn attachment_last(parser: &mut Parser<'_>, _: ()) -> TResult<String> {
     ensure_request_limit!(parser);
 
-    parser.context().get_last_attachment().map_err(|err| wrap_anyhow(parser.span(), err))
+    parser
+        .context()
+        .get_last_attachment()
+        .map_err(|err| wrap_anyhow(parser.span(), err))
 }
 
 pub fn avatar(parser: &mut Parser<'_>, id: Option<u64>) -> TResult<String> {
     ensure_request_limit!(parser);
 
-    parser.context().get_avatar(id).map_err(|err| wrap_anyhow(parser.span(), err))
+    parser
+        .context()
+        .get_avatar(id)
+        .map_err(|err| wrap_anyhow(parser.span(), err))
 }
 
 pub fn download(parser: &mut Parser<'_>, url: String) -> TResult<String> {
     ensure_request_limit!(parser);
 
-    parser.context().download(url.trim()).map_err(|err| wrap_anyhow(parser.span(), err))
+    parser
+        .context()
+        .download(url.trim())
+        .map_err(|err| wrap_anyhow(parser.span(), err))
 }
 
 pub fn channelid(parser: &mut Parser<'_>, _: ()) -> TResult<String> {
-    Ok(parser.context().channel_id().map_err(|err| wrap_anyhow(parser.span(), err))?.to_string())
+    Ok(parser
+        .context()
+        .channel_id()
+        .map_err(|err| wrap_anyhow(parser.span(), err))?
+        .to_string())
 }
 
 pub fn userid(parser: &mut Parser<'_>, _: ()) -> TResult<String> {
-    Ok(parser.context().user_id().map_err(|err| wrap_anyhow(parser.span(), err))?.to_string())
+    Ok(parser
+        .context()
+        .user_id()
+        .map_err(|err| wrap_anyhow(parser.span(), err))?
+        .to_string())
 }
 
 pub fn idof(_: &mut Parser<'_>, mention: Mention) -> TResult<String> {
@@ -511,7 +603,10 @@ pub fn tag(parser: &mut Parser<'_>, (name, Rest(args)): (String, Rest<String>)) 
     if parser.depth() >= MAX_DEPTH {
         return err_res(ErrorKind::DepthLimit { span: parser.span() });
     }
-    let content = parser.context().get_tag_contents(&name).map_err(|err| wrap_anyhow(parser.span(), err))?;
+    let content = parser
+        .context()
+        .get_tag_contents(&name)
+        .map_err(|err| wrap_anyhow(parser.span(), err))?;
 
     let args = args.iter().map(|s| s.as_str()).collect::<Vec<_>>();
 

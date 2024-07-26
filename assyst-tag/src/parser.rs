@@ -47,8 +47,16 @@ pub struct SharedState<'a> {
 }
 
 impl<'a> SharedState<'a> {
-    pub fn new(variables: &'a RefCell<HashMap<String, String>>, counter: &'a Counter, attachment: &'a RefCell<Option<(Vec<u8>, Type)>>) -> Self {
-        Self { variables, counter, attachment }
+    pub fn new(
+        variables: &'a RefCell<HashMap<String, String>>,
+        counter: &'a Counter,
+        attachment: &'a RefCell<Option<(Vec<u8>, Type)>>,
+    ) -> Self {
+        Self {
+            variables,
+            counter,
+            attachment,
+        }
     }
 
     /// Calls `f` with a mutable reference to the user defined variables
@@ -166,7 +174,13 @@ impl<'a> Parser<'a> {
     }
 
     /// Creates a new parser
-    pub fn new(input: &'a [u8], args: &'a [&'a str], state: SharedState<'a>, mode: ParseMode, cx: &'a dyn Context) -> Self {
+    pub fn new(
+        input: &'a [u8],
+        args: &'a [&'a str],
+        state: SharedState<'a>,
+        mode: ParseMode,
+        cx: &'a dyn Context,
+    ) -> Self {
         Self {
             input,
             args,
@@ -360,7 +374,9 @@ impl<'a> Parser<'a> {
                             (Err(err), ParseMode::IgnoreOnError) if let ErrorKind::UnknownSubtag { .. } = *err.kind => {
                                 // we allow recovering only from unknown subtags specifically
 
-                                std::str::from_utf8(&self.input[self.span()]).unwrap_or_else(|err| self.unreachable_invalid_utf8(err)).to_owned()
+                                std::str::from_utf8(&self.input[self.span()])
+                                    .unwrap_or_else(|err| self.unreachable_invalid_utf8(err))
+                                    .to_owned()
                             },
                             (Err(err), _) => return Err(err),
                         }
@@ -502,7 +518,10 @@ impl<'a> Parser<'a> {
             "idof" => subtags::exec(self, &args, subtags::idof),
             "userid" => subtags::exec(self, &args, subtags::userid),
             "tag" => subtags::exec(self, &args, subtags::tag),
-            _ => err_res(ErrorKind::UnknownSubtag { name: name.to_owned(), span: name_span }),
+            _ => err_res(ErrorKind::UnknownSubtag {
+                name: name.to_owned(),
+                span: name_span,
+            }),
         }
     }
 

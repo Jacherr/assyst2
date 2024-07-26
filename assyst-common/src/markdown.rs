@@ -61,26 +61,49 @@ where
     T: Display,
 {
     fn escape_italics(&self) -> String {
-        Regex::new(r"_|\*").unwrap().replace_all(&cut(self, 1998), |x: &Captures| format!("\\{}", x.get(0).unwrap().as_str())).into_owned()
+        Regex::new(r"_|\*")
+            .unwrap()
+            .replace_all(&cut(self, 1998), |x: &Captures| {
+                format!("\\{}", x.get(0).unwrap().as_str())
+            })
+            .into_owned()
     }
     fn escape_bold(&self) -> String {
-        Regex::new(r"\*\*").unwrap().replace_all(&cut(self, 1998), r"\*\*").into_owned()
+        Regex::new(r"\*\*")
+            .unwrap()
+            .replace_all(&cut(self, 1998), r"\*\*")
+            .into_owned()
     }
     fn escape_codestring(&self) -> String {
-        Regex::new(r"`").unwrap().replace_all(&cut(self, 1998), r"'").into_owned()
+        Regex::new(r"`")
+            .unwrap()
+            .replace_all(&cut(self, 1998), r"'")
+            .into_owned()
     }
     fn escape_codeblock(&self, language: impl Display) -> String {
-        Regex::new(r"```").unwrap().replace_all(&cut(self, 1988 - language.to_string().len()), "`\u{200b}`\u{200b}`").into_owned()
+        Regex::new(r"```")
+            .unwrap()
+            .replace_all(&cut(self, 1988 - language.to_string().len()), "`\u{200b}`\u{200b}`")
+            .into_owned()
     }
 
     fn escape_spoiler(&self) -> String {
-        Regex::new(r"__").unwrap().replace_all(&cut(self, 1996), r"\|\|").into_owned()
+        Regex::new(r"__")
+            .unwrap()
+            .replace_all(&cut(self, 1996), r"\|\|")
+            .into_owned()
     }
     fn escape_strikethrough(&self) -> String {
-        Regex::new(r"~~").unwrap().replace_all(&cut(self, 1996), r"\~\~").into_owned()
+        Regex::new(r"~~")
+            .unwrap()
+            .replace_all(&cut(self, 1996), r"\~\~")
+            .into_owned()
     }
     fn escape_underline(&self) -> String {
-        Regex::new(r"\|\|").unwrap().replace_all(&cut(self, 1996), r"\_\_").into_owned()
+        Regex::new(r"\|\|")
+            .unwrap()
+            .replace_all(&cut(self, 1996), r"\_\_")
+            .into_owned()
     }
 
     fn italics(&self) -> String {

@@ -11,7 +11,13 @@ pub struct FilerStats {
 }
 
 pub async fn get_filer_stats(assyst: ThreadSafeAssyst) -> anyhow::Result<FilerStats> {
-    Ok(assyst.reqwest_client.get(&format!("{}/stats", CONFIG.urls.filer)).send().await?.json::<FilerStats>().await?)
+    Ok(assyst
+        .reqwest_client
+        .get(&format!("{}/stats", CONFIG.urls.filer))
+        .send()
+        .await?
+        .json::<FilerStats>()
+        .await?)
 }
 
 pub async fn upload_to_filer(assyst: ThreadSafeAssyst, data: Vec<u8>, content_type: &str) -> anyhow::Result<String> {

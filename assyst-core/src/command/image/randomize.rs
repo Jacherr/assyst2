@@ -62,7 +62,11 @@ pub async fn randomize(ctxt: CommandCtxt<'_>, source: Image, count: Option<u64>)
         effects.push(next);
     }
 
-    let tier = ctxt.assyst().flux_handler.get_request_tier(ctxt.data.author.id.get()).await?;
+    let tier = ctxt
+        .assyst()
+        .flux_handler
+        .get_request_tier(ctxt.data.author.id.get())
+        .await?;
     let limits = &LIMITS[tier];
 
     let mut request = FluxRequest::new_with_input_and_limits(source.0, limits);
@@ -72,9 +76,21 @@ pub async fn randomize(ctxt: CommandCtxt<'_>, source: Image, count: Option<u64>)
 
     request.output();
 
-    let result = ctxt.assyst().flux_handler.run_flux(request, LIMITS[tier].time).await.context(format!("Applied effects: {}", effects.join(", ")))?;
+    let result = ctxt
+        .assyst()
+        .flux_handler
+        .run_flux(request, LIMITS[tier].time)
+        .await
+        .context(format!("Applied effects: {}", effects.join(", ")))?;
 
-    ctxt.reply((result, &format!("Applied effects: {}", effects.iter().map(|e| format!("`{e}`")).collect::<Vec<_>>().join(", "))[..])).await?;
+    ctxt.reply((
+        result,
+        &format!(
+            "Applied effects: {}",
+            effects.iter().map(|e| format!("`{e}`")).collect::<Vec<_>>().join(", ")
+        )[..],
+    ))
+    .await?;
 
     Ok(())
 }

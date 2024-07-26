@@ -26,7 +26,11 @@ async fn process_single_reminder(assyst: ThreadSafeAssyst, reminder: &Reminder) 
             reminder.message,
             // may not be set in a guild or have a message id
             if reminder.guild_id != 0 && reminder.message_id != 0 {
-                message_link(reminder.guild_id as u64, reminder.channel_id as u64, reminder.message_id as u64)
+                message_link(
+                    reminder.guild_id as u64,
+                    reminder.channel_id as u64,
+                    reminder.message_id as u64,
+                )
             } else if reminder.guild_id == 0 && reminder.message_id != 0 {
                 dm_message_link(reminder.channel_id as u64, reminder.message_id as u64)
             } else {

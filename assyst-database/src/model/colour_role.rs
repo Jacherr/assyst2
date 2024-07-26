@@ -19,14 +19,24 @@ impl ColourRole {
     pub async fn insert(&self, handler: &DatabaseHandler) -> Result<(), sqlx::Error> {
         let query = r#"INSERT INTO colors VALUES ($1, $2, $3)"#;
 
-        sqlx::query(query).bind(self.role_id).bind(self.name.clone()).bind(self.guild_id).execute(&handler.pool).await.map(|_| ())
+        sqlx::query(query)
+            .bind(self.role_id)
+            .bind(self.name.clone())
+            .bind(self.guild_id)
+            .execute(&handler.pool)
+            .await
+            .map(|_| ())
     }
 
     /// Remove a colour role. Returns true on successful removal, false if the role did not exist.
     pub async fn remove(&self, handler: &DatabaseHandler) -> Result<bool, sqlx::Error> {
         let query = r#"DELETE FROM colors WHERE guild_id = $1 AND name = $2 RETURNING *"#;
 
-        let result = sqlx::query_as::<_, ColourRole>(query).bind(self.guild_id).bind(self.name.clone()).fetch_one(&handler.pool).await;
+        let result = sqlx::query_as::<_, ColourRole>(query)
+            .bind(self.guild_id)
+            .bind(self.name.clone())
+            .fetch_one(&handler.pool)
+            .await;
 
         match result {
             Ok(_) => Ok(true),

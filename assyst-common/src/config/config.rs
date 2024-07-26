@@ -46,7 +46,10 @@ pub struct Database {
 }
 impl Database {
     pub fn to_url(&self) -> String {
-        format!("postgres://{}:{}@{}:{}/{}", self.username, self.password, self.host, self.port, self.database)
+        format!(
+            "postgres://{}:{}@{}:{}/{}",
+            self.username, self.password, self.host, self.port, self.database
+        )
     }
 
     pub fn to_url_safe(&self) -> String {
@@ -57,7 +60,13 @@ impl Database {
         let mut port = self.port.to_string();
         port.replace_range(..3, "...");
 
-        format!("postgres://{}@{}:{}/{}", self.username, &host.join("."), port, self.database)
+        format!(
+            "postgres://{}@{}:{}/{}",
+            self.username,
+            &host.join("."),
+            port,
+            self.database
+        )
     }
 }
 

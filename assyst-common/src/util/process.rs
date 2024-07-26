@@ -40,7 +40,10 @@ pub fn get_processes_mem_usage() -> Vec<(&'static str, usize)> {
 /// Attempts to get CPU usage for a PID
 pub fn cpu_usage_percentage_of(pid: usize) -> Option<f64> {
     let output = exec_sync(&format!("top -b -n 2 -d 1.5 -p {pid} | tail -1 | awk '{{print $9}}'"));
-    output.ok().and_then(|x| x.stdout.trim().parse::<f64>().ok()).map(|x| x / num_cpus::get() as f64)
+    output
+        .ok()
+        .and_then(|x| x.stdout.trim().parse::<f64>().ok())
+        .map(|x| x / num_cpus::get() as f64)
 }
 
 /// Gets the CPU usage of the host machine
@@ -74,7 +77,9 @@ pub fn get_processes_cpu_usage() -> Vec<(&'static str, f64)> {
 
 /// Gets the uptime of a process based on its PID
 pub fn get_uptime_of(pid: usize) -> Option<String> {
-    exec_sync(&format!("ps -p {pid} -o etime=")).ok().map(|x| x.stdout.trim().to_owned())
+    exec_sync(&format!("ps -p {pid} -o etime="))
+        .ok()
+        .map(|x| x.stdout.trim().to_owned())
 }
 
 /// Gets the uptimes of all 'relevant' processes
@@ -84,7 +89,11 @@ pub fn get_processes_uptimes() -> Vec<(&'static str, String)> {
     for process in PROCESSES {
         let pid = pid_of(process).unwrap_or(0);
         let uptime = get_uptime_of(pid).unwrap_or("unknown".to_owned());
-        let uptime = if uptime.is_empty() { "offline".fg_red().to_owned() } else { uptime };
+        let uptime = if uptime.is_empty() {
+            "offline".fg_red().to_owned()
+        } else {
+            uptime
+        };
         uptimes.push((process, uptime));
     }
 
@@ -94,7 +103,11 @@ pub fn get_processes_uptimes() -> Vec<(&'static str, String)> {
     // format uptimes to be xd xh xm xs
     for (_, ref mut uptime) in uptimes.iter_mut() {
         if *uptime != "offline".fg_red() {
-            let split = uptime.replace('-', ":").split(':').map(|x| x.parse::<usize>().unwrap_or(0)).collect::<Vec<_>>();
+            let split = uptime
+                .replace('-', ":")
+                .split(':')
+                .map(|x| x.parse::<usize>().unwrap_or(0))
+                .collect::<Vec<_>>();
             *uptime = if split.len() == 2 {
                 format!("{}m {}s", split[0], split[1])
             } else if split.len() == 3 {

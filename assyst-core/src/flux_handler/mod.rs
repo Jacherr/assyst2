@@ -38,7 +38,10 @@ pub struct FluxHandler {
 }
 impl FluxHandler {
     pub fn new(database_handler: Arc<DatabaseHandler>, premium_users: Arc<Mutex<Vec<Patron>>>) -> Self {
-        Self { database_handler, premium_users }
+        Self {
+            database_handler,
+            premium_users,
+        }
     }
 
     pub async fn run_flux(&self, request: FluxRequest, time_limit: Duration) -> FluxResult {
@@ -78,7 +81,10 @@ impl FluxHandler {
                     args.push(op_full);
                 },
                 FluxStep::Output => {
-                    let unix = SystemTime::now().duration_since(UNIX_EPOCH).expect("time went backwards").as_millis();
+                    let unix = SystemTime::now()
+                        .duration_since(UNIX_EPOCH)
+                        .expect("time went backwards")
+                        .as_millis();
 
                     let path = format!("/tmp/{unix}");
                     args.push(path.clone());
@@ -138,11 +144,17 @@ impl FluxHandler {
         .context("Failed to execute flux")?;
 
         if !output.status.success() {
-            bail!("Something went wrong ({}): {}", output.status.to_string(), string_from_likely_utf8(output.stderr).trim());
+            bail!(
+                "Something went wrong ({}): {}",
+                output.status.to_string(),
+                string_from_likely_utf8(output.stderr).trim()
+            );
         }
 
         let output = if !output_file_path.is_empty() {
-            fs::read(&output_file_path).await.context("Failed to read output file")?
+            fs::read(&output_file_path)
+                .await
+                .context("Failed to read output file")?
         } else {
             output.stdout
         };
@@ -153,7 +165,11 @@ impl FluxHandler {
     pub async fn compile_flux() -> anyhow::Result<()> {
         const CARGO_EXIT_FAIL: i32 = 101;
 
-        let res = exec_sync(&format!("cd {} && mold -run cargo build -q --release", CONFIG.dev.flux_workspace_root_path_override)).context("Failed to compile flux")?;
+        let res = exec_sync(&format!(
+            "cd {} && mold -run cargo build -q --release",
+            CONFIG.dev.flux_workspace_root_path_override
+        ))
+        .context("Failed to compile flux")?;
 
         if res.exit_code.code() == Some(CARGO_EXIT_FAIL) {
             bail!("{}", res.stderr);
@@ -175,7 +191,9 @@ impl FluxHandler {
         let user_tier2 = FreeTier2Requests::get_user_free_tier_2_requests(&self.database_handler, user_id).await?;
 
         if user_tier2.count > 0 {
-            user_tier2.change_free_tier_2_requests(&self.database_handler, -1).await?;
+            user_tier2
+                .change_free_tier_2_requests(&self.database_handler, -1)
+                .await?;
             Ok(2)
         } else {
             Ok(0)

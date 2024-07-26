@@ -42,7 +42,11 @@ pub async fn default(ctxt: CommandCtxt<'_>, style: Word, text: Rest) -> anyhow::
 pub async fn list(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
     let options = STYLES.iter().map(|x| x.0.to_owned()).collect::<Vec<_>>();
 
-    ctxt.reply(format!("**All Cooltext supported fonts:**\n{}", options.join(", ").codeblock(""))).await?;
+    ctxt.reply(format!(
+        "**All Cooltext supported fonts:**\n{}",
+        options.join(", ").codeblock("")
+    ))
+    .await?;
 
     Ok(())
 }

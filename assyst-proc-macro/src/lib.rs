@@ -7,7 +7,10 @@ use proc_macro2::Span;
 use quote::{quote, ToTokens};
 use syn::punctuated::Punctuated;
 use syn::token::Bracket;
-use syn::{parse_macro_input, parse_quote, Expr, ExprArray, ExprLit, FnArg, Ident, Item, Lit, LitBool, LitStr, Meta, Pat, PatType, Token, Type};
+use syn::{
+    parse_macro_input, parse_quote, Expr, ExprArray, ExprLit, FnArg, Ident, Item, Lit, LitBool, LitStr, Meta, Pat,
+    PatType, Token, Type,
+};
 
 struct CommandAttributes(syn::punctuated::Punctuated<syn::Meta, Token![,]>);
 
@@ -46,7 +49,9 @@ impl syn::parse::Parse for CommandAttributes {
 pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
     let CommandAttributes(attrs) = syn::parse_macro_input!(attrs as CommandAttributes);
 
-    let Item::Fn(item) = parse_macro_input!(func as syn::Item) else { panic!("#[command] applied to non-function") };
+    let Item::Fn(item) = parse_macro_input!(func as syn::Item) else {
+        panic!("#[command] applied to non-function")
+    };
 
     let fn_name = &item.sig.ident;
     let struct_name = Ident::new(&format!("{}_command", item.sig.ident), Span::call_site());
@@ -55,7 +60,10 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
 
     for attr in attrs {
         if let Meta::NameValue(meta) = attr {
-            let ident = meta.path.get_ident().expect("#[command] attribute key should be an identifier");
+            let ident = meta
+                .path
+                .get_ident()
+                .expect("#[command] attribute key should be an identifier");
 
             fields.insert(ident.to_string(), meta.value);
         }
@@ -100,12 +108,15 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
     let access = fields.remove("access").expect("missing access");
     let category = fields.remove("category").expect("missing category");
     let examples = fields.remove("examples").unwrap_or_else(empty_array_expr);
-    let usage: Expr = fields.remove("usage").map(|v| parse_quote!(String::from(#v))).unwrap_or_else(|| {
-        parse_quote! {{
-            let _v: Vec<String> = vec![#(#parse_usage),*];
-            _v.join(" ")
-        }}
-    });
+    let usage: Expr = fields
+        .remove("usage")
+        .map(|v| parse_quote!(String::from(#v)))
+        .unwrap_or_else(|| {
+            parse_quote! {{
+                let _v: Vec<String> = vec![#(#parse_usage),*];
+                _v.join(" ")
+            }}
+        });
     let send_processing = fields.remove("send_processing").unwrap_or_else(false_expr);
     let age_restricted = fields.remove("age_restricted").unwrap_or_else(false_expr);
     let flag_descriptions = fields.remove("flag_descriptions").unwrap_or_else(empty_array_expr);

@@ -31,7 +31,11 @@ struct AppError(anyhow::Error);
 // Tell axum how to convert `AppError` into a response.
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
-        (StatusCode::INTERNAL_SERVER_ERROR, format!("Something went wrong: {}", self.0)).into_response()
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Something went wrong: {}", self.0),
+        )
+            .into_response()
     }
 }
 
@@ -72,13 +76,26 @@ async fn prometheus_metrics(State(route_state): State<RouteState>) -> String {
     encoder.encode_to_string(&family).expect("Encoding failed")
 }
 
-async fn top_gg_webhook(State(route_state): State<RouteState>, Json(body): Json<TopGgWebhookBody>) -> Result<(), AppError> {
-    let user_id = body.user.clone().parse::<u64>().inspect_err(|e| err!("Failed to parse user id {}: {}", body.user, e.to_string()))?;
+async fn top_gg_webhook(
+    State(route_state): State<RouteState>,
+    Json(body): Json<TopGgWebhookBody>,
+) -> Result<(), AppError> {
+    let user_id = body
+        .user
+        .clone()
+        .parse::<u64>()
+        .inspect_err(|e| err!("Failed to parse user id {}: {}", body.user, e.to_string()))?;
 
     FreeTier2Requests::new(user_id)
         .change_free_tier_2_requests(&route_state.database, FREE_TIER_2_REQUESTS_ON_VOTE as i64)
         .await
-        .inspect_err(|e| err!("Failed to add free tier 1 requests for user {}: {}", user_id, e.to_string()))?;
+        .inspect_err(|e| {
+            err!(
+                "Failed to add free tier 1 requests for user {}: {}",
+                user_id,
+                e.to_string()
+            )
+        })?;
 
     let user = route_state
         .http_client
@@ -87,22 +104,52 @@ async fn top_gg_webhook(State(route_state): State<RouteState>, Json(body): Json<
         .map(|u| u.model())
         .inspect_err(|e| err!("Failed to get user object from user ID {}: {}", user_id, e.to_string()))?
         .await
-        .inspect_err(|e| err!("Failed to deserialize user object for user ID {}: {}", user_id, e.to_string()))?;
+        .inspect_err(|e| {
+            err!(
+                "Failed to deserialize user object for user ID {}: {}",
+                user_id,
+                e.to_string()
+            )
+        })?;
 
-    UserVotes::increment_user_votes(&route_state.database, user_id, &user.name, &user.discriminator.to_string())
-        .await
-        .inspect_err(|e| err!("Failed to increment user ID {} votes on vote: {}", user_id, e.to_string()))?;
+    UserVotes::increment_user_votes(
+        &route_state.database,
+        user_id,
+        &user.name,
+        &user.discriminator.to_string(),
+    )
+    .await
+    .inspect_err(|e| {
+        err!(
+            "Failed to increment user ID {} votes on vote: {}",
+            user_id,
+            e.to_string()
+        )
+    })?;
 
     let voter = UserVotes::get_user_votes(&route_state.database, user_id)
         .await
-        .inspect_err(|e| err!("Failed to get voter after incrementing user votes for ID {}: {}", user_id, e.to_string()))?;
+        .inspect_err(|e| {
+            err!(
+                "Failed to get voter after incrementing user votes for ID {}: {}",
+                user_id,
+                e.to_string()
+            )
+        })?;
 
     if let Some(v) = voter {
-        let message = format!("{0} voted for Assyst on top.gg and got {1} free tier 1 requests!\n{0} has voted {2} total times.", user.name, FREE_TIER_2_REQUESTS_ON_VOTE, v.count);
+        let message = format!(
+            "{0} voted for Assyst on top.gg and got {1} free tier 1 requests!\n{0} has voted {2} total times.",
+            user.name, FREE_TIER_2_REQUESTS_ON_VOTE, v.count
+        );
 
         let LoggingWebhook { id, token } = CONFIG.logging_webhooks.vote.clone();
 
-        let _ = route_state.http_client.execute_webhook(Id::<WebhookMarker>::new(id), &token).content(&message).await;
+        let _ = route_state
+            .http_client
+            .execute_webhook(Id::<WebhookMarker>::new(id), &token)
+            .content(&message)
+            .await;
     };
 
     Ok(())
@@ -115,10 +162,16 @@ pub async fn run(database: Arc<DatabaseHandler>, http_client: Arc<HttpClient>, m
         .route("/topgg", get(|| async { Redirect::permanent(&TOP_GG_VOTE_URL) }))
         .route("/topgg", post(top_gg_webhook))
         .route("/metrics", get(prometheus_metrics))
-        .with_state(RouteState { database, http_client, metrics_handler });
+        .with_state(RouteState {
+            database,
+            http_client,
+            metrics_handler,
+        });
 
     spawn(async move {
-        let listener = TcpListener::bind(&format!("0.0.0.0:{}", CONFIG.authentication.top_gg_webhook_port)).await.unwrap();
+        let listener = TcpListener::bind(&format!("0.0.0.0:{}", CONFIG.authentication.top_gg_webhook_port))
+            .await
+            .unwrap();
         axum::serve(listener, router).await.unwrap();
     });
 }

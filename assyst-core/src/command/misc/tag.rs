@@ -22,15 +22,23 @@ use crate::rest::eval::fake_eval;
 
 #[command(description = "creates a tag", cooldown = Duration::from_secs(2), access = Availability::Public, category = Category::Misc, usage = "<name> <contents>")]
 pub async fn create(ctxt: CommandCtxt<'_>, name: Word, contents: Rest) -> anyhow::Result<()> {
-    ctxt.reply(format!("create tag, name={}, contents={}", name.0, contents.0)).await?;
+    ctxt.reply(format!("create tag, name={}, contents={}", name.0, contents.0))
+        .await?;
     Ok(())
 }
 
 #[command(description = "runs a tag", cooldown = Duration::from_secs(2), access = Availability::Public, category = Category::Misc, usage = "<args>")]
 pub async fn default(ctxt: CommandCtxt<'_>, tag_name: Word, arguments: Vec<Word>) -> anyhow::Result<()> {
-    let Some(guild_id) = ctxt.data.guild_id else { bail!("Tags can only be used in guilds.") };
+    let Some(guild_id) = ctxt.data.guild_id else {
+        bail!("Tags can only be used in guilds.")
+    };
 
-    let tag = ctxt.assyst().database_handler.get_tag(guild_id.get() as i64, &tag_name.0).await?.context("Tag not found in this server")?;
+    let tag = ctxt
+        .assyst()
+        .database_handler
+        .get_tag(guild_id.get() as i64, &tag_name.0)
+        .await?
+        .context("Tag not found in this server")?;
 
     let assyst = ctxt.assyst().clone();
     let message = ctxt.data.message.unwrap().clone();
@@ -38,19 +46,35 @@ pub async fn default(ctxt: CommandCtxt<'_>, tag_name: Word, arguments: Vec<Word>
     let (res, tag) = tokio::task::spawn_blocking(move || {
         let tag = tag;
         let arguments: Vec<&str> = arguments.iter().map(|Word(word)| &**word).collect();
-        let tcx = TagContext { tokio: Handle::current(), message, assyst };
+        let tcx = TagContext {
+            tokio: Handle::current(),
+            message,
+            assyst,
+        };
 
-        (assyst_tag::parse(&tag.data, &arguments, ParseMode::StopOnError, tcx), tag)
+        (
+            assyst_tag::parse(&tag.data, &arguments, ParseMode::StopOnError, tcx),
+            tag,
+        )
     })
     .await
     .expect("Tag task panicked");
 
     match res {
-        Ok(ParseResult { output, attachment: None }) => ctxt.reply(output).await?,
-        Ok(ParseResult { output, attachment: Some((data, _)) }) => {
+        Ok(ParseResult {
+            output,
+            attachment: None,
+        }) => ctxt.reply(output).await?,
+        Ok(ParseResult {
+            output,
+            attachment: Some((data, _)),
+        }) => {
             ctxt.reply((Image(data), output.as_str())).await?;
         },
-        Err(err) => ctxt.reply(assyst_tag::errors::format_error(&tag.data, err).codeblock("ansi")).await?,
+        Err(err) => {
+            ctxt.reply(assyst_tag::errors::format_error(&tag.data, err).codeblock("ansi"))
+                .await?
+        },
     }
 
     Ok(())
@@ -64,17 +88,27 @@ struct TagContext {
 
 impl TagContext {
     fn guild_id(&self) -> u64 {
-        self.message.guild_id.expect("tags can only be run in guilds; this invariant is ensured in the tag command").get()
+        self.message
+            .guild_id
+            .expect("tags can only be run in guilds; this invariant is ensured in the tag command")
+            .get()
     }
 }
 
 impl assyst_tag::Context for TagContext {
-    fn execute_javascript(&self, code: &str, args: Vec<String>) -> anyhow::Result<assyst_common::eval::FakeEvalImageResponse> {
-        self.tokio.block_on(fake_eval(&self.assyst, code.into(), true, Some(&self.message), args))
+    fn execute_javascript(
+        &self,
+        code: &str,
+        args: Vec<String>,
+    ) -> anyhow::Result<assyst_common::eval::FakeEvalImageResponse> {
+        self.tokio
+            .block_on(fake_eval(&self.assyst, code.into(), true, Some(&self.message), args))
     }
 
     fn get_last_attachment(&self) -> anyhow::Result<String> {
-        let ImageUrl(attachment) = self.tokio.block_on(ImageUrl::from_channel_history(&self.assyst, self.message.channel_id))?;
+        let ImageUrl(attachment) = self
+            .tokio
+            .block_on(ImageUrl::from_channel_history(&self.assyst, self.message.channel_id))?;
         Ok(attachment)
     }
 
@@ -92,7 +126,15 @@ impl assyst_tag::Context for TagContext {
     }
 
     fn download(&self, url: &str) -> anyhow::Result<String> {
-        self.tokio.block_on(download_content(&self.assyst, url, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES, true)).map(string_from_likely_utf8).map_err(Into::into)
+        self.tokio
+            .block_on(download_content(
+                &self.assyst,
+                url,
+                ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES,
+                true,
+            ))
+            .map(string_from_likely_utf8)
+            .map_err(Into::into)
     }
 
     fn channel_id(&self) -> anyhow::Result<u64> {
@@ -121,7 +163,9 @@ impl assyst_tag::Context for TagContext {
     }
 
     fn get_tag_contents(&self, tag: &str) -> anyhow::Result<String> {
-        let tag = self.tokio.block_on(async { self.assyst.database_handler.get_tag(self.guild_id() as i64, tag).await });
+        let tag = self
+            .tokio
+            .block_on(async { self.assyst.database_handler.get_tag(self.guild_id() as i64, tag).await });
 
         match tag {
             Ok(Some(Tag { data, .. })) => Ok(data),

@@ -46,7 +46,12 @@ pub async fn handle(assyst: ThreadSafeAssyst, MessageCreate(message): MessageCre
                         ExecutionError::Parse(TagParseError::ArgsExhausted(_)) => {
                             let _ = ctxt
                                 .cx
-                                .reply(format!(":warning: `{err}\nUsage: {}{} {}`", ctxt.cx.data.calling_prefix, result.command.metadata().name, result.command.metadata().usage))
+                                .reply(format!(
+                                    ":warning: `{err}\nUsage: {}{} {}`",
+                                    ctxt.cx.data.calling_prefix,
+                                    result.command.metadata().name,
+                                    result.command.metadata().usage
+                                ))
                                 .await;
                         },
                         _ => {
@@ -55,7 +60,9 @@ pub async fn handle(assyst: ThreadSafeAssyst, MessageCreate(message): MessageCre
                     },
                 }
             } else {
-                let _ = after_command_execution_success(ctxt.cx, result.command).await.map_err(|e| err!("Error handling post-command: {e:#}"));
+                let _ = after_command_execution_success(ctxt.cx, result.command)
+                    .await
+                    .map_err(|e| err!("Error handling post-command: {e:#}"));
             }
         },
         Ok(None) => { /* command not found */ },

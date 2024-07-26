@@ -56,7 +56,12 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: MessageUpdate) {
                                 ExecutionError::Parse(TagParseError::ArgsExhausted(_)) => {
                                     let _ = ctxt
                                         .cx
-                                        .reply(format!(":warning: `{err}\nUsage: {}{} {}`", ctxt.cx.data.calling_prefix, result.command.metadata().name, result.command.metadata().usage))
+                                        .reply(format!(
+                                            ":warning: `{err}\nUsage: {}{} {}`",
+                                            ctxt.cx.data.calling_prefix,
+                                            result.command.metadata().name,
+                                            result.command.metadata().usage
+                                        ))
                                         .await;
                                 },
                                 _ => {
@@ -65,7 +70,9 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: MessageUpdate) {
                             },
                         }
                     } else {
-                        let _ = after_command_execution_success(ctxt.cx, result.command).await.map_err(|e| err!("Error handling post-command: {e:#}"));
+                        let _ = after_command_execution_success(ctxt.cx, result.command)
+                            .await
+                            .map_err(|e| err!("Error handling post-command: {e:#}"));
                     }
                 },
                 Ok(None) | Err(ParseError::PreParseFail(PreParseError::MessageNotPrefixed(_))) => {
@@ -73,7 +80,11 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: MessageUpdate) {
                         && let ReplyState::InUse(reply) = reply.state
                     {
                         // A previous command invocation was edited to non-command, delete response
-                        _ = assyst.http_client.delete_message(message.channel_id, Id::new(reply.message_id)).await.inspect_err(|err| err!("{err}"));
+                        _ = assyst
+                            .http_client
+                            .delete_message(message.channel_id, Id::new(reply.message_id))
+                            .await
+                            .inspect_err(|err| err!("{err}"));
                     }
                 },
                 Err(error) => {
@@ -99,7 +110,9 @@ fn convert_message_update_to_message(event: MessageUpdate) -> Option<Message> {
     let mention_everyone = event.mention_everyone.unwrap_or_default();
     let mention_roles = event.mention_roles.unwrap_or_default();
     let pinned = event.pinned.unwrap_or_default();
-    let timestamp = event.timestamp.unwrap_or_else(|| Timestamp::parse("1970-01-01T01:01:01+00:00").unwrap());
+    let timestamp = event
+        .timestamp
+        .unwrap_or_else(|| Timestamp::parse("1970-01-01T01:01:01+00:00").unwrap());
     Some(Message {
         application_id: None,
         interaction: None,

@@ -17,11 +17,17 @@ use crate::define_commandgroup;
     examples = [""],
 )]
 pub async fn default(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
-    let Some(guild_id) = ctxt.data.guild_id else { bail!("prefix getting and setting can only be used in guilds") };
+    let Some(guild_id) = ctxt.data.guild_id else {
+        bail!("prefix getting and setting can only be used in guilds")
+    };
 
-    let prefix = Prefix::get(&ctxt.assyst().database_handler, guild_id.get()).await.context("Failed to get guild prefix")?.context("This guild has no set prefix?")?;
+    let prefix = Prefix::get(&ctxt.assyst().database_handler, guild_id.get())
+        .await
+        .context("Failed to get guild prefix")?
+        .context("This guild has no set prefix?")?;
 
-    ctxt.reply(format!("This server's prefix is: {}", prefix.prefix.codestring())).await?;
+    ctxt.reply(format!("This server's prefix is: {}", prefix.prefix.codestring()))
+        .await?;
 
     Ok(())
 }
@@ -34,16 +40,21 @@ pub async fn default(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
     examples = ["-", "%"],
 )]
 pub async fn set(ctxt: CommandCtxt<'_>, new: Word) -> anyhow::Result<()> {
-    let Some(guild_id) = ctxt.data.guild_id else { bail!("Prefix getting and setting can only be used in guilds.") };
+    let Some(guild_id) = ctxt.data.guild_id else {
+        bail!("Prefix getting and setting can only be used in guilds.")
+    };
 
     if new.0.len() > 14 {
         bail!("Prefixes cannot be longer than 14 characters.")
     }
 
     let new = Prefix { prefix: new.0 };
-    new.set(&ctxt.assyst().database_handler, guild_id.get()).await.context("Failed to set new prefix")?;
+    new.set(&ctxt.assyst().database_handler, guild_id.get())
+        .await
+        .context("Failed to set new prefix")?;
 
-    ctxt.reply(format!("This server's prefix is now: {}", new.prefix.codestring())).await?;
+    ctxt.reply(format!("This server's prefix is now: {}", new.prefix.codestring()))
+        .await?;
 
     Ok(())
 }

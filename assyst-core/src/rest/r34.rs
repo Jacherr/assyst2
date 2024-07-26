@@ -16,7 +16,13 @@ pub async fn get_random_r34(assyst: ThreadSafeAssyst, tags: &str) -> anyhow::Res
     let all = assyst
         .reqwest_client
         .get(format!("{}{}", R34_URL, &tags.replace(' ', "+")[..]))
-        .query(&[("page", "dapi"), ("s", "post"), ("q", "index"), ("json", "1"), ("limit", "1000")])
+        .query(&[
+            ("page", "dapi"),
+            ("s", "post"),
+            ("q", "index"),
+            ("json", "1"),
+            ("limit", "1000"),
+        ])
         .send()
         .await?
         .error_for_status()?

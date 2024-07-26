@@ -56,9 +56,13 @@ pub fn handle_log(message: String) {
             if id == 0 {
                 tracing::error!("Failed to trigger error webhook: Error webhook ID is 0");
             } else {
-                let webhook = client.execute_webhook(Id::<WebhookMarker>::new(id), &token).content(&message);
+                let webhook = client
+                    .execute_webhook(Id::<WebhookMarker>::new(id), &token)
+                    .content(&message);
 
-                let _ = webhook.await.inspect_err(|e| tracing::error!("Failed to trigger error webhook: {}", e.to_string()));
+                let _ = webhook
+                    .await
+                    .inspect_err(|e| tracing::error!("Failed to trigger error webhook: {}", e.to_string()));
             }
         });
     }

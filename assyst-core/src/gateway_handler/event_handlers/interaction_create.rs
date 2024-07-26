@@ -3,7 +3,9 @@ use std::time::{Duration, Instant};
 
 use assyst_common::err;
 use tracing::{debug, warn};
-use twilight_model::application::interaction::application_command::{CommandData as DiscordCommandData, CommandDataOption, CommandOptionValue};
+use twilight_model::application::interaction::application_command::{
+    CommandData as DiscordCommandData, CommandDataOption, CommandOptionValue,
+};
 use twilight_model::application::interaction::InteractionData;
 use twilight_model::gateway::payload::incoming::InteractionCreate;
 
@@ -11,7 +13,9 @@ use super::after_command_execution_success;
 use crate::assyst::ThreadSafeAssyst;
 use crate::command::registry::find_command_by_name;
 use crate::command::source::Source;
-use crate::command::{CommandCtxt, CommandData, CommandGroupingInteractionInfo, ExecutionTimings, InteractionCommandParseCtxt};
+use crate::command::{
+    CommandCtxt, CommandData, CommandGroupingInteractionInfo, ExecutionTimings, InteractionCommandParseCtxt,
+};
 use crate::gateway_handler::message_parser::error::{ErrorSeverity, GetErrorSeverity};
 
 fn parse_subcommand_data(data: &DiscordCommandData) -> Option<(String, CommandOptionValue)> {
@@ -36,8 +40,14 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
             let command_interaction_options = match command.interaction_info() {
                 CommandGroupingInteractionInfo::Command(x) => x.command_options,
                 CommandGroupingInteractionInfo::Group(g) => {
-                    let subcommand_name = subcommand_data.clone().expect("somehow called base command on a subcommand tree?").0;
-                    g.iter().find(|x| x.0 == subcommand_name).map(|x| x.1.command_options.clone()).expect("invalid subcommand")
+                    let subcommand_name = subcommand_data
+                        .clone()
+                        .expect("somehow called base command on a subcommand tree?")
+                        .0;
+                    g.iter()
+                        .find(|x| x.0 == subcommand_name)
+                        .map(|x| x.1.command_options.clone())
+                        .expect("invalid subcommand")
                 },
             };
 
@@ -59,7 +69,11 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
                 } else {
                     // default required: false
                     if option.required.unwrap_or(false) {
-                        err!("expected required option {} for command {}, but it was missing", option.name, command.metadata().name);
+                        err!(
+                            "expected required option {} for command {}, but it was missing",
+                            option.name,
+                            command.metadata().name
+                        );
                         return;
                     }
                 }
@@ -108,10 +122,15 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
                     },
                 }
             } else {
-                let _ = after_command_execution_success(ctxt.cx, command).await.map_err(|e| err!("Error handling post-command: {e:#}"));
+                let _ = after_command_execution_success(ctxt.cx, command)
+                    .await
+                    .map_err(|e| err!("Error handling post-command: {e:#}"));
             }
         } else {
-            warn!("Received interaction for non-existent command: {}, ignoring", command_data.name);
+            warn!(
+                "Received interaction for non-existent command: {}, ignoring",
+                command_data.name
+            );
         }
     }
 }

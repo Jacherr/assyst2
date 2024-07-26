@@ -26,18 +26,27 @@ pub struct MessageBuilder {
 
 impl From<&str> for MessageBuilder {
     fn from(value: &str) -> Self {
-        Self { content: Some(value.into()), attachment: None }
+        Self {
+            content: Some(value.into()),
+            attachment: None,
+        }
     }
 }
 impl From<String> for MessageBuilder {
     fn from(value: String) -> Self {
-        Self { content: Some(value), attachment: None }
+        Self {
+            content: Some(value),
+            attachment: None,
+        }
     }
 }
 
 impl From<Attachment> for MessageBuilder {
     fn from(value: Attachment) -> Self {
-        Self { content: None, attachment: Some(value) }
+        Self {
+            content: None,
+            attachment: Some(value),
+        }
     }
 }
 
@@ -52,7 +61,10 @@ impl From<(Attachment, String)> for MessageBuilder {
 
 impl From<Image> for MessageBuilder {
     fn from(value: Image) -> Self {
-        Self { content: None, attachment: Some(value.into()) }
+        Self {
+            content: None,
+            attachment: Some(value.into()),
+        }
     }
 }
 impl From<(Image, &str)> for MessageBuilder {

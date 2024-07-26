@@ -40,7 +40,13 @@ impl FlagDecode for DownloadFlags {
         let raw_decode = flags_from_str(input, valid_flags)?;
         let result = Self {
             audio: raw_decode.contains_key("audio"),
-            quality: raw_decode.get("quality").unwrap_or(&None).clone().unwrap_or("720".to_owned()).parse().context("Provided quality is invalid")?,
+            quality: raw_decode
+                .get("quality")
+                .unwrap_or(&None)
+                .clone()
+                .unwrap_or("720".to_owned())
+                .parse()
+                .context("Provided quality is invalid")?,
             verbose: raw_decode.contains_key("verbose"),
         };
 
@@ -135,12 +141,27 @@ pub async fn download(ctxt: CommandCtxt<'_>, url: Word, options: DownloadFlags) 
 
                         let _ = z_lock
                             .start_file(
-                                format!("{}_{}.{}", sanitise_filename(&title), SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis(), r#type.as_str()),
+                                format!(
+                                    "{}_{}.{}",
+                                    sanitise_filename(&title),
+                                    SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis(),
+                                    r#type.as_str()
+                                ),
                                 SimpleFileOptions::default(),
                             )
-                            .map_err(|e| failed.lock().unwrap().push(format!("{url}: failed to start file ({e:?})")));
+                            .map_err(|e| {
+                                failed
+                                    .lock()
+                                    .unwrap()
+                                    .push(format!("{url}: failed to start file ({e:?})"))
+                            });
 
-                        let _ = z_lock.write_all(&m).map_err(|e| failed.lock().unwrap().push(format!("{url}: failed to write file ({e:?})")));
+                        let _ = z_lock.write_all(&m).map_err(|e| {
+                            failed
+                                .lock()
+                                .unwrap()
+                                .push(format!("{url}: failed to write file ({e:?})"))
+                        });
                     },
                     Ok(Err(e)) => {
                         failed.lock().unwrap().push(format!("{url}: {e:?}"));
@@ -158,16 +179,23 @@ pub async fn download(ctxt: CommandCtxt<'_>, url: Word, options: DownloadFlags) 
         while let Some(v) = video_tasks.join_next().await {
             count += 1;
             if count % 5 == 0 {
-                ctxt.reply(format!("{main_msg}\nDownloaded {count}/{len} videos.")).await?;
+                ctxt.reply(format!("{main_msg}\nDownloaded {count}/{len} videos."))
+                    .await?;
             }
             joined.push(v?);
         }
 
-        let finished = Arc::into_inner(zip).context("`Arc` has more than one strong reference")?.into_inner();
+        let finished = Arc::into_inner(zip)
+            .context("`Arc` has more than one strong reference")?
+            .into_inner();
         let finished = finished.finish().context("Failed to create ZIP")?;
         let out = finished.clone().into_inner();
 
-        ctxt.reply(format!("Uploading ZIP. The ZIP is {}, so uploading may take some time.", human_bytes::human_bytes(out.len() as f64))).await?;
+        ctxt.reply(format!(
+            "Uploading ZIP. The ZIP is {}, so uploading may take some time.",
+            human_bytes::human_bytes(out.len() as f64)
+        ))
+        .await?;
 
         ctxt.reply((
             Attachment {
@@ -196,7 +224,14 @@ pub async fn download(ctxt: CommandCtxt<'_>, url: Word, options: DownloadFlags) 
     } else {
         let result = download_web_media(ctxt.assyst().clone(), &url.0, opts).await?;
 
-        ctxt.reply((result, &format!("Took {}", format_duration(&ctxt.data.execution_timings.processing_time_start.elapsed()))[..])).await?;
+        ctxt.reply((
+            result,
+            &format!(
+                "Took {}",
+                format_duration(&ctxt.data.execution_timings.processing_time_start.elapsed())
+            )[..],
+        ))
+        .await?;
     }
 
     Ok(())

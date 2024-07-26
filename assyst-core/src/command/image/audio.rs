@@ -32,7 +32,10 @@ pub async fn drip(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
     send_processing = true
 )]
 pub async fn femurbreaker(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt.flux_handler().femurbreaker(source.0, ctxt.data.author.id.get()).await?;
+    let result = ctxt
+        .flux_handler()
+        .femurbreaker(source.0, ctxt.data.author.id.get())
+        .await?;
 
     ctxt.reply(result).await?;
 
@@ -83,7 +86,10 @@ pub async fn sweden(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> 
     send_processing = true
 )]
 pub async fn terraria(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt.flux_handler().terraria(source.0, ctxt.data.author.id.get()).await?;
+    let result = ctxt
+        .flux_handler()
+        .terraria(source.0, ctxt.data.author.id.get())
+        .await?;
 
     ctxt.reply(result).await?;
 

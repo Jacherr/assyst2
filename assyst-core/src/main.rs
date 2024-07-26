@@ -1,4 +1,12 @@
-#![feature(let_chains, str_split_whitespace_remainder, round_char_boundary, trait_alias, async_closure, if_let_guard, iterator_try_collect)]
+#![feature(
+    let_chains,
+    str_split_whitespace_remainder,
+    round_char_boundary,
+    trait_alias,
+    async_closure,
+    if_let_guard,
+    iterator_try_collect
+)]
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -84,7 +92,9 @@ async fn main() {
     }
 
     if CONFIG.dev.disable_patreon_synchronisation {
-        info!("Patreon synchronisation disabled in config.dev.disable_patreson_synchronisation, will only load admins as patrons");
+        info!(
+            "Patreon synchronisation disabled in config.dev.disable_patreson_synchronisation, will only load admins as patrons"
+        );
     }
 
     assyst.register_task(Task::new(
@@ -108,17 +118,31 @@ async fn main() {
     }
 
     if !CONFIG.dev.disable_reminder_check {
-        assyst.register_task(Task::new(assyst.clone(), Duration::from_millis(crate::task::tasks::reminders::FETCH_INTERVAL as u64), function_task_callback!(handle_reminders)));
+        assyst.register_task(Task::new(
+            assyst.clone(),
+            Duration::from_millis(crate::task::tasks::reminders::FETCH_INTERVAL as u64),
+            function_task_callback!(handle_reminders),
+        ));
         info!("Registered reminder check task");
     } else {
         info!("Reminder processing disabled in config.dev.disable_reminder_check: not registering task");
     }
 
-    assyst.register_task(Task::new_delayed(assyst.clone(), Duration::from_secs(60 * 10), Duration::from_secs(60 * 10), function_task_callback!(refresh_web_download_urls)));
+    assyst.register_task(Task::new_delayed(
+        assyst.clone(),
+        Duration::from_secs(60 * 10),
+        Duration::from_secs(60 * 10),
+        function_task_callback!(refresh_web_download_urls),
+    ));
     info!("Registered web download url refreshing task");
 
     info!("Starting assyst-webserver");
-    assyst_webserver::run(assyst.database_handler.clone(), assyst.http_client.clone(), assyst.metrics_handler.clone()).await;
+    assyst_webserver::run(
+        assyst.database_handler.clone(),
+        assyst.http_client.clone(),
+        assyst.metrics_handler.clone(),
+    )
+    .await;
 
     info!("Registering interaction commands");
     register_interaction_commands(assyst.clone()).await.unwrap();
@@ -129,7 +153,10 @@ async fn main() {
         if let Err(e) = FluxHandler::compile_flux().await {
             err!("Failed to compile flux: {e}");
         } else {
-            info!("Flux is compiled (version: {})", a.flux_handler.get_version().await.unwrap().trim());
+            info!(
+                "Flux is compiled (version: {})",
+                a.flux_handler.get_version().await.unwrap().trim()
+            );
         }
     });
 

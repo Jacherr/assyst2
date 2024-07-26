@@ -121,7 +121,9 @@ pub async fn exec(ctxt: CommandCtxt<'_>, script: RestNoFlags) -> anyhow::Result<
     examples = ["1"]
 )]
 pub async fn eval(ctxt: CommandCtxt<'_>, script: RestNoFlags) -> anyhow::Result<()> {
-    let result = fake_eval(ctxt.assyst(), script.0, true, ctxt.data.message, Vec::new()).await.context("Evaluation failed")?;
+    let result = fake_eval(ctxt.assyst(), script.0, true, ctxt.data.message, Vec::new())
+        .await
+        .context("Evaluation failed")?;
 
     match result {
         FakeEvalImageResponse::Image(im, _) => {
@@ -149,8 +151,14 @@ pub async fn info(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
         ("Created by".fg_yellow(), "Jacher (https://github.com/jacherr)"),
         ("With invaluable help from".fg_yellow(), "y21, Mina"),
         ("Using key services from".fg_yellow(), "https://cobalt.tools"),
-        ("Written with".fg_yellow(), "C, Rust, https://twilight.rs and https://tokio.rs"),
-        ("Built on top of".fg_yellow(), "The Flux image service (https://github.com/jacherr/flux"),
+        (
+            "Written with".fg_yellow(),
+            "C, Rust, https://twilight.rs and https://tokio.rs",
+        ),
+        (
+            "Built on top of".fg_yellow(),
+            "The Flux image service (https://github.com/jacherr/flux",
+        ),
         ("Flux is powered by".fg_yellow(), "FFmpeg, gegl, Makesweet, and libvips"),
     ];
 
@@ -169,12 +177,21 @@ pub async fn info(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
     examples = [""]
 )]
 pub async fn patronstatus(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
-    let free_tier_2_requests = FreeTier2Requests::get_user_free_tier_2_requests(&ctxt.assyst().database_handler, ctxt.data.author.id.get())
-        .await
-        .context("Failed to get free tier 2 request count")?
-        .count;
+    let free_tier_2_requests =
+        FreeTier2Requests::get_user_free_tier_2_requests(&ctxt.assyst().database_handler, ctxt.data.author.id.get())
+            .await
+            .context("Failed to get free tier 2 request count")?
+            .count;
 
-    let patron_status = ctxt.assyst().premium_users.lock().unwrap().iter().find(|p| p.user_id == ctxt.data.author.id.get()).map(|p| p.tier.clone()).unwrap_or(PatronTier::Tier0);
+    let patron_status = ctxt
+        .assyst()
+        .premium_users
+        .lock()
+        .unwrap()
+        .iter()
+        .find(|p| p.user_id == ctxt.data.author.id.get())
+        .map(|p| p.tier.clone())
+        .unwrap_or(PatronTier::Tier0);
 
     ctxt.reply(format!(
         "{}\n{}",
@@ -184,7 +201,8 @@ pub async fn patronstatus(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
             format!("You're a tier {} patron.", patron_status as u64)
         },
         if free_tier_2_requests == 0 {
-            "You don't have any free tier 2 requests. You can get some by [voting](<https://vote.jacher.io/topgg>).".to_owned()
+            "You don't have any free tier 2 requests. You can get some by [voting](<https://vote.jacher.io/topgg>)."
+                .to_owned()
         } else {
             format!("You have {free_tier_2_requests} free tier 2 requests.")
         }
@@ -205,11 +223,24 @@ pub async fn patronstatus(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
 pub async fn invite(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
     let message = format!(
         "{}\n{} | {} | {} | {}",
-        "Invite the bot".codestring().bold().url("<https://jacher.io/assyst>", Some("Invite link for Assyst.")),
-        "Support Server".codestring().url("<https://discord.gg/brmtnpxbtg>", Some("Invite link for the Assyst Support Discord Server.")),
-        "Vote".codestring().url("<https://vote.jacher.io/topgg>", Some("top.gg vote link for Assyst.")),
-        "Patreon".codestring().url("<https://www.patreon.com/jacher>", Some("Patreon URL for Assyst.")),
-        "Source Code".codestring().url("<https://github.com/jacherr/assyst2.", Some("Source code URL for Assyst."))
+        "Invite the bot"
+            .codestring()
+            .bold()
+            .url("<https://jacher.io/assyst>", Some("Invite link for Assyst.")),
+        "Support Server".codestring().url(
+            "<https://discord.gg/brmtnpxbtg>",
+            Some("Invite link for the Assyst Support Discord Server.")
+        ),
+        "Vote"
+            .codestring()
+            .url("<https://vote.jacher.io/topgg>", Some("top.gg vote link for Assyst.")),
+        "Patreon"
+            .codestring()
+            .url("<https://www.patreon.com/jacher>", Some("Patreon URL for Assyst.")),
+        "Source Code".codestring().url(
+            "<https://github.com/jacherr/assyst2.",
+            Some("Source code URL for Assyst.")
+        )
     );
 
     ctxt.reply(message).await?;
@@ -227,33 +258,56 @@ pub async fn invite(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
     examples = [""]
 )]
 pub async fn topcommands(ctxt: CommandCtxt<'_>, command: Option<Word>) -> anyhow::Result<()> {
-    let mut diff_lock = ctxt.assyst().metrics_handler.individual_commands_rate_trackers.lock().await;
+    let mut diff_lock = ctxt
+        .assyst()
+        .metrics_handler
+        .individual_commands_rate_trackers
+        .lock()
+        .await;
 
     if let Some(c) = command {
         let command = c.0;
         let command = get_or_init_commands().get(&command[..]).context("Command not found")?;
         let command_name = command.metadata().name;
-        let data = (CommandUsage { command_name: command_name.to_owned(), uses: 0 })
-            .get_command_usage_stats_for(&ctxt.assyst().database_handler)
-            .await
-            .context("Failed to get command usage stats")?;
+        let data = (CommandUsage {
+            command_name: command_name.to_owned(),
+            uses: 0,
+        })
+        .get_command_usage_stats_for(&ctxt.assyst().database_handler)
+        .await
+        .context("Failed to get command usage stats")?;
 
         let rate = diff_lock.get_mut(command_name).map(|r| r.get_rate()).unwrap_or(0);
 
-        ctxt.reply(format!("Comman `{command_name}` has been used **{}** times. ({rate}/hr)", data.uses)).await?;
+        ctxt.reply(format!(
+            "Comman `{command_name}` has been used **{}** times. ({rate}/hr)",
+            data.uses
+        ))
+        .await?;
     } else {
-        let top_commands = CommandUsage::get_command_usage_stats(&ctxt.assyst().database_handler).await.context("Failed to get command usage statistics")?;
+        let top_commands = CommandUsage::get_command_usage_stats(&ctxt.assyst().database_handler)
+            .await
+            .context("Failed to get command usage statistics")?;
 
         let top_commands_formatted_raw: Vec<(&str, String)> = top_commands
             .iter()
             .take(20)
             .map(|t| {
-                let rate = diff_lock.get_mut(&t.command_name[..]).map(|r| r.get_rate()).unwrap_or(0);
-                (&t.command_name[..], format!("{} {}", t.uses, format!("({rate}/hr)").fg_green()))
+                let rate = diff_lock
+                    .get_mut(&t.command_name[..])
+                    .map(|r| r.get_rate())
+                    .unwrap_or(0);
+                (
+                    &t.command_name[..],
+                    format!("{} {}", t.uses, format!("({rate}/hr)").fg_green()),
+                )
             })
             .collect::<Vec<_>>();
 
-        let top_commands_formatted = top_commands_formatted_raw.iter().map(|(a, b)| (a.fg_yellow(), &b[..])).collect::<Vec<_>>();
+        let top_commands_formatted = top_commands_formatted_raw
+            .iter()
+            .map(|(a, b)| (a.fg_yellow(), &b[..]))
+            .collect::<Vec<_>>();
 
         let table = generate_list_fixed_delim(&"Command".fg_cyan(), &"Uses".fg_cyan(), &top_commands_formatted, 7, 4);
 
@@ -274,22 +328,35 @@ pub async fn topcommands(ctxt: CommandCtxt<'_>, command: Option<Word>) -> anyhow
     examples = ["caption"]
 )]
 pub async fn command(ctxt: CommandCtxt<'_>, command: Word) -> anyhow::Result<()> {
-    let Some(guild_id) = ctxt.data.guild_id else { bail!("Enabling or disabling commands is only supported in servers.") };
+    let Some(guild_id) = ctxt.data.guild_id else {
+        bail!("Enabling or disabling commands is only supported in servers.")
+    };
     let command_obj = GuildDisabledCommand {
         guild_id: guild_id.get() as _,
         command_name: command.0,
     };
 
-    let is_disabled = command_obj.is_disabled(&ctxt.assyst().database_handler).await.context("Failed to get command enabled status")?;
+    let is_disabled = command_obj
+        .is_disabled(&ctxt.assyst().database_handler)
+        .await
+        .context("Failed to get command enabled status")?;
 
     if is_disabled {
-        command_obj.enable(&ctxt.assyst().database_handler).await.context("Failed to enable command")?;
+        command_obj
+            .enable(&ctxt.assyst().database_handler)
+            .await
+            .context("Failed to enable command")?;
 
-        ctxt.reply(format!("Enabled command `{}`", command_obj.command_name.codestring())).await?;
+        ctxt.reply(format!("Enabled command `{}`", command_obj.command_name.codestring()))
+            .await?;
     } else {
-        command_obj.disable(&ctxt.assyst().database_handler).await.context("Failed to disable command")?;
+        command_obj
+            .disable(&ctxt.assyst().database_handler)
+            .await
+            .context("Failed to disable command")?;
 
-        ctxt.reply(format!("Disabled command `{}`", command_obj.command_name.codestring())).await?;
+        ctxt.reply(format!("Disabled command `{}`", command_obj.command_name.codestring()))
+            .await?;
     }
 
     Ok(())

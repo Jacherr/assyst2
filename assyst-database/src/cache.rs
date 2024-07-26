@@ -12,7 +12,10 @@ trait TCacheV = Send + Sync + Clone + 'static;
 trait TCacheK = Hash + Send + Sync + Eq + Clone + 'static;
 
 fn default_cache<K: TCacheK, V: TCacheV>() -> Cache<K, V> {
-    Cache::builder().max_capacity(1000).time_to_idle(Duration::from_secs(60 * 5)).build()
+    Cache::builder()
+        .max_capacity(1000)
+        .time_to_idle(Duration::from_secs(60 * 5))
+        .build()
 }
 
 /// In-memory cache collection for frequently accessed areas of the database.
@@ -62,7 +65,10 @@ impl DatabaseCache {
             let cmd = command.to_owned();
             lock.insert(cmd);
         } else {
-            self.disabled_commands.insert(guild_id, Arc::new(Mutex::new(HashSet::from_iter(vec![command.to_owned()]))));
+            self.disabled_commands.insert(
+                guild_id,
+                Arc::new(Mutex::new(HashSet::from_iter(vec![command.to_owned()]))),
+            );
         }
     }
 
@@ -75,7 +81,8 @@ impl DatabaseCache {
     }
 
     pub fn reset_disabled_commands_for(&self, guild_id: u64) {
-        self.disabled_commands.insert(guild_id, Arc::new(Mutex::new(HashSet::new())));
+        self.disabled_commands
+            .insert(guild_id, Arc::new(Mutex::new(HashSet::new())));
     }
 
     pub fn size_of(&self) -> u64 {
@@ -96,7 +103,15 @@ impl DatabaseCache {
             // add key size
             size += size_of::<u64>() as u64;
             // add value size - approximate
-            size += command.1.lock().unwrap().iter().cloned().collect::<Vec<String>>().join("").len() as u64;
+            size += command
+                .1
+                .lock()
+                .unwrap()
+                .iter()
+                .cloned()
+                .collect::<Vec<String>>()
+                .join("")
+                .len() as u64;
         }
 
         size += self.global_blacklist.entry_count() * size_of::<(u64, bool)>() as u64;
