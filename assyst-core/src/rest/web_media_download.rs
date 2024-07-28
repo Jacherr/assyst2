@@ -61,6 +61,8 @@ pub struct YouTubePlaylistEntry {
 #[derive(Deserialize)]
 pub struct WebDownloadResult {
     pub url: String,
+    #[serde(rename = "status")]
+    pub _status: String,
 }
 
 #[derive(Deserialize)]
@@ -110,8 +112,8 @@ async fn test_route(assyst: ThreadSafeAssyst, url: &str) -> bool {
 }
 
 /// Always returns the main API instance (api.cobalt.tools) at the minimum. \
-/// Other URLs must be a score of 100 (i.e., all sites supported) and must have a \
-/// domain over https.
+/// Other URLs must be a score of at least 90 (i.e., most sites supported), must support YouTube,
+/// and must have a domain over https.
 pub async fn get_web_download_api_urls(assyst: ThreadSafeAssyst) -> anyhow::Result<Vec<String>> {
     let res = assyst
         .reqwest_client
@@ -266,9 +268,13 @@ pub async fn download_web_media(assyst: ThreadSafeAssyst, url: &str, opts: WebDo
             if let Ok(s) = String::from_utf8(media.clone())
                 && s.starts_with("<!DOCTYPE")
             {
-                err = "Failed to download media: an unknown error occurred".to_owned();
+                err = "Failed to download media: cloudlflare threw an error".to_owned();
+                continue;
+            } else if media.is_empty() {
+                err = "Failed to download media: resultant file was empty".to_owned();
                 continue;
             }
+
             result = Some(media);
             break;
         }
