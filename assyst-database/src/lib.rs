@@ -1,5 +1,7 @@
 #![feature(trait_alias)]
 
+use std::borrow::Cow;
+
 use cache::DatabaseCache;
 use sqlx::postgres::{PgPool, PgPoolOptions};
 use tracing::info;
@@ -10,17 +12,13 @@ pub mod model;
 static MAX_CONNECTIONS: u32 = 1;
 
 #[derive(sqlx::FromRow, Debug)]
-pub struct DatabaseSize {
-    pub size: String,
+pub struct Count {
+    pub count: i64,
 }
 
 #[derive(sqlx::FromRow, Debug)]
-pub struct Tag {
-    pub name: String,
-    pub data: String,
-    pub author: i64,
-    pub guild_id: i64,
-    pub created_at: i64,
+pub struct DatabaseSize {
+    pub size: String,
 }
 
 /// Database hendler providing a connection to the database and helper methods for inserting,
@@ -51,20 +49,9 @@ impl DatabaseHandler {
 
         Ok(sqlx::query_as::<_, DatabaseSize>(query).fetch_one(&self.pool).await?)
     }
+}
 
-    pub async fn get_tag(&self, guild_id: i64, name: &str) -> Result<Option<Tag>, sqlx::Error> {
-        let query = r#"SELECT * FROM tags WHERE name = $1 AND guild_id = $2"#;
-
-        let result = sqlx::query_as(query)
-            .bind(name)
-            .bind(guild_id)
-            .fetch_one(&self.pool)
-            .await;
-
-        match result {
-            Ok(v) => Ok(Some(v)),
-            Err(sqlx::Error::RowNotFound) => Ok(None),
-            Err(e) => Err(e),
-        }
-    }
+pub(crate) fn is_unique_violation(error: &sqlx::Error) -> bool {
+    const UNIQUE_CONSTRAINT_VIOLATION_CODE: Cow<'_, str> = Cow::Borrowed("23505");
+    error.as_database_error().and_then(|e| e.code()) == Some(UNIQUE_CONSTRAINT_VIOLATION_CODE)
 }

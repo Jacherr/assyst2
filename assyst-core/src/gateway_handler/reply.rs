@@ -15,10 +15,19 @@ use crate::rest::NORMAL_DISCORD_UPLOAD_LIMIT_BYTES;
 
 /// Trims a `String` in-place such that it fits in Discord's 2000 character message limit.
 fn trim_content_fits(content: &mut String) {
-    if let Some((truncated_byte_index, _)) = content.char_indices().nth(2000) {
+    const CODEBLOCK: &str = "```";
+    let codeblocked = content.ends_with(CODEBLOCK);
+    if let Some((truncated_byte_index, _)) =
+        content
+            .char_indices()
+            .nth(if codeblocked { 2000 - CODEBLOCK.len() } else { 2000 })
+    {
         // If the content length exceeds 2000 characters, truncate it at the 2000th characters' byte
         // index
         content.truncate(truncated_byte_index);
+        if codeblocked {
+            *content += CODEBLOCK;
+        }
     }
 }
 

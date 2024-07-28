@@ -13,7 +13,7 @@ use assyst_database::model::free_tier_2_requests::FreeTier2Requests;
 use assyst_database::model::guild_disabled_command::GuildDisabledCommand;
 use assyst_proc_macro::command;
 
-use super::arguments::{Image, ImageUrl, Rest, RestNoFlags, Word};
+use super::arguments::{Image, ImageUrl, RestNoFlags, Word};
 use super::registry::get_or_init_commands;
 use super::{Category, CommandCtxt};
 use crate::command::Availability;

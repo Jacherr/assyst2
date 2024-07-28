@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use anyhow::{bail, Context};
+use anyhow::{bail, ensure, Context};
 use assyst_common::markdown::Markdown;
 use assyst_database::model::prefix::Prefix;
 use assyst_proc_macro::command;
@@ -44,9 +44,7 @@ pub async fn set(ctxt: CommandCtxt<'_>, new: Word) -> anyhow::Result<()> {
         bail!("Prefix getting and setting can only be used in guilds.")
     };
 
-    if new.0.len() > 14 {
-        bail!("Prefixes cannot be longer than 14 characters.")
-    }
+    ensure!(new.0.len() < 14, "Prefixes cannot be longer than 14 characters.");
 
     let new = Prefix { prefix: new.0 };
     new.set(&ctxt.assyst().database_handler, guild_id.get())

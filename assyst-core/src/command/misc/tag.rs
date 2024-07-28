@@ -1,10 +1,11 @@
-use std::time::Duration;
+use std::fmt::Write;
+use std::time::{Duration, SystemTime};
 
 use anyhow::{anyhow, bail, ensure, Context};
 use assyst_common::markdown::Markdown;
-use assyst_common::util::discord::{format_tag, get_avatar_url};
+use assyst_common::util::discord::{format_discord_timestamp, format_tag, get_avatar_url};
 use assyst_common::util::string_from_likely_utf8;
-use assyst_database::Tag;
+use assyst_database::model::tag::Tag;
 use assyst_proc_macro::command;
 use assyst_tag::parser::ParseMode;
 use assyst_tag::ParseResult;
@@ -12,33 +13,293 @@ use tokio::runtime::Handle;
 use twilight_model::channel::Message;
 use twilight_model::id::Id;
 
-use super::{CommandCtxt, Rest, Word};
+use super::CommandCtxt;
 use crate::assyst::ThreadSafeAssyst;
-use crate::command::arguments::{Image, ImageUrl};
+use crate::command::arguments::{Image, ImageUrl, RestNoFlags, User, Word};
 use crate::command::{Availability, Category};
 use crate::define_commandgroup;
 use crate::downloader::{download_content, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES};
 use crate::rest::eval::fake_eval;
 
-#[command(description = "creates a tag", cooldown = Duration::from_secs(2), access = Availability::Public, category = Category::Misc, usage = "<name> <contents>")]
-pub async fn create(ctxt: CommandCtxt<'_>, name: Word, contents: Rest) -> anyhow::Result<()> {
-    ctxt.reply(format!("create tag, name={}, contents={}", name.0, contents.0))
+#[command(
+    description = "create a tag",
+    aliases = ["add"],
+    cooldown = Duration::from_secs(2),
+    access = Availability::Public,
+    category = Category::Misc,
+    usage = "[name] [contents]",
+    examples = ["test hello", "script 1+2 is: {js:1+2}"]
+)]
+pub async fn create(ctxt: CommandCtxt<'_>, name: Word, contents: RestNoFlags) -> anyhow::Result<()> {
+    const RESERVED_NAMES: &[&str] = &["create", "add", "edit", "raw", "remove", "delete", "list", "info"];
+
+    let author = ctxt.data.author.id.get();
+    let Some(guild_id) = ctxt.data.guild_id else {
+        bail!("Tags can only be created in guilds.")
+    };
+    ensure!(name.0.len() < 20, "Tag names cannot exceed 20 characters.");
+    ensure!(
+        !RESERVED_NAMES.contains(&&name.0[..]),
+        "Tag name cannot be a reserved word."
+    );
+
+    let tag = Tag {
+        name: name.0,
+        guild_id: guild_id.get() as i64,
+        data: contents.0,
+        author: author as i64,
+        created_at: SystemTime::now().elapsed().unwrap().as_millis() as i64,
+    };
+
+    let success = tag
+        .set(&ctxt.assyst().database_handler)
+        .await
+        .context("Failed to create tag")?;
+
+    ensure!(success, "That tag name is already used in this server.");
+
+    ctxt.reply(format!("Successfully created tag {}", tag.name.codestring()))
         .await?;
+
     Ok(())
 }
 
-#[command(description = "runs a tag", cooldown = Duration::from_secs(2), access = Availability::Public, category = Category::Misc, usage = "<args>")]
+#[command(
+    description = "edit a tag that you own",
+    cooldown = Duration::from_secs(2),
+    access = Availability::Public,
+    category = Category::Misc,
+    usage = "[name] [contents]",
+    examples = ["test hello there", "script 2+2 is: {js:2+2}"]
+)]
+pub async fn edit(ctxt: CommandCtxt<'_>, name: Word, contents: RestNoFlags) -> anyhow::Result<()> {
+    let author = ctxt.data.author.id.get();
+    let Some(guild_id) = ctxt.data.guild_id else {
+        bail!("Tags can only be edited in guilds.")
+    };
+
+    let success = Tag::edit(
+        &ctxt.assyst().database_handler,
+        author as i64,
+        guild_id.get() as i64,
+        &name.0,
+        &contents.0,
+    )
+    .await
+    .context("Failed to edit tag")?;
+
+    ensure!(success, "Failed to edit that tag. Does it exist, and do you own it?");
+
+    ctxt.reply(format!("Successfully edited tag {}", contents.0.codestring()))
+        .await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "delete a tag that you own (server managers can delete any tag in the server)",
+    aliases = ["remove"],
+    cooldown = Duration::from_secs(2),
+    access = Availability::Public,
+    category = Category::Misc,
+    usage = "[name]",
+    examples = ["test", "script"]
+)]
+pub async fn delete(ctxt: CommandCtxt<'_>, name: Word) -> anyhow::Result<()> {
+    let author = ctxt.data.author.id.get();
+    let Some(guild_id) = ctxt.data.guild_id else {
+        bail!("Tags can only be deleted in guilds.")
+    };
+
+    let success = if ctxt
+        .assyst()
+        .rest_cache_handler
+        .user_is_guild_manager(guild_id.get(), author)
+        .await
+        .context("Failed to fetch user permissions")?
+    {
+        Tag::delete_force(&ctxt.assyst().database_handler, &name.0, guild_id.get() as i64)
+            .await
+            .context("Failed to delete tag")?
+    } else {
+        Tag::delete(
+            &ctxt.assyst().database_handler,
+            &name.0,
+            guild_id.get() as i64,
+            author as i64,
+        )
+        .await
+        .context("Failed to delete tag")?
+    };
+
+    ensure!(success, "Failed to delete that tag. Does it exist, and do you own it?");
+
+    ctxt.reply(format!("Successfully edited tag {}", name.0.codestring()))
+        .await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "list tags in the server (or owned by a certain user in the server)",
+    cooldown = Duration::from_secs(2),
+    access = Availability::Public,
+    category = Category::Misc,
+    usage = "<page> <user id|mention>",
+    examples = ["1 @jacher", "1", ""]
+)]
+pub async fn list(ctxt: CommandCtxt<'_>, page: u64, user: Option<User>) -> anyhow::Result<()> {
+    const DEFAULT_LIST_COUNT: i64 = 15;
+
+    let Some(guild_id) = ctxt.data.guild_id else {
+        bail!("Tags can only be listed in guilds.")
+    };
+
+    // user-specific search if arg is a mention
+    let user_id: Option<i64> = user.map(|x| x.0.id.get() as i64);
+
+    ensure!(page >= 1, "Page must be greater or equal to 1");
+
+    let offset = (page as i64 - 1) * DEFAULT_LIST_COUNT;
+    let count = match user_id {
+        Some(u) => Tag::get_count_for_user(&ctxt.assyst().database_handler, guild_id.get() as i64, u)
+            .await
+            .context("Failed to get tag count for user in guild")?,
+        None => Tag::get_count_in_guild(&ctxt.assyst().database_handler, guild_id.get() as i64)
+            .await
+            .context("Failed to get tag count in guild")?,
+    };
+
+    ensure!(count > 0, "No tags found for the requested filter");
+    let pages = (count as f64 / DEFAULT_LIST_COUNT as f64).ceil() as i64;
+    ensure!(pages >= page as i64, "Cannot go beyond final page");
+
+    let tags = match user_id {
+        Some(u) => {
+            Tag::get_paged_for_user(
+                &ctxt.assyst().database_handler,
+                guild_id.get() as i64,
+                u,
+                offset,
+                DEFAULT_LIST_COUNT,
+            )
+            .await?
+        },
+        None => {
+            Tag::get_paged(
+                &ctxt.assyst().database_handler,
+                guild_id.get() as i64,
+                offset,
+                DEFAULT_LIST_COUNT,
+            )
+            .await?
+        },
+    };
+
+    let mut message = format!(
+        "🗒️ **Tags in this server{0}**\nView a tag by running `{1}t <name>`, or go to the next page by running `{1}t list {2}`\n\n",
+        {
+            match user_id {
+                Some(u) => format!(" for user <@{u}>"),
+                None => "".to_owned(),
+            }
+        },
+        ctxt.data.calling_prefix,
+        page + 1
+    );
+
+    for (index, tag) in tags.iter().enumerate() {
+        let offset = (index as i64) + offset + 1;
+        writeln!(
+            message,
+            "{}. {} {}",
+            offset,
+            tag.name,
+            match user_id {
+                Some(_) => "".to_owned(),
+                None => format!("(<@{}>)", tag.author),
+            }
+        )?;
+    }
+
+    write!(
+        message,
+        "\nShowing {} tags (page {page}/{pages}) ({count} total tags)",
+        tags.len()
+    )?;
+
+    ctxt.reply(message).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "get information about a tag in the server",
+    cooldown = Duration::from_secs(2),
+    access = Availability::Public,
+    category = Category::Misc,
+    usage = "[name]",
+    examples = ["test", "script"]
+)]
+pub async fn info(ctxt: CommandCtxt<'_>, name: Word) -> anyhow::Result<()> {
+    let Some(guild_id) = ctxt.data.guild_id else {
+        bail!("Tag information can only be fetched in guilds.")
+    };
+
+    let tag = Tag::get(&ctxt.assyst().database_handler, guild_id.get() as i64, &name.0)
+        .await?
+        .context("Tag not found in this server.")?;
+
+    let fmt = format_discord_timestamp(tag.created_at as u64);
+    let message = format!(
+        "🗒️ **Tag information: **{}\n\nAuthor: <@{}>\nCreated: {}",
+        tag.name, tag.author, fmt
+    );
+
+    ctxt.reply(message).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "get the raw content of a tag without parsing it",
+    cooldown = Duration::from_secs(2),
+    access = Availability::Public,
+    category = Category::Misc,
+    usage = "[name]",
+    examples = ["test", "script"]
+)]
+pub async fn raw(ctxt: CommandCtxt<'_>, name: Word) -> anyhow::Result<()> {
+    let Some(guild_id) = ctxt.data.guild_id else {
+        bail!("Tag raw content can only be fetched in guilds.")
+    };
+
+    let tag = Tag::get(&ctxt.assyst().database_handler, guild_id.get() as i64, &name.0)
+        .await?
+        .context("Tag not found in this server.")?;
+
+    ctxt.reply(tag.data.codeblock("")).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "run a tag in the current server",
+    cooldown = Duration::from_secs(2),
+    access = Availability::Public,
+    category = Category::Misc,
+    usage = "[tag name] <arguments...>",
+    examples = ["test", "whatever"]
+)]
 pub async fn default(ctxt: CommandCtxt<'_>, tag_name: Word, arguments: Vec<Word>) -> anyhow::Result<()> {
     let Some(guild_id) = ctxt.data.guild_id else {
         bail!("Tags can only be used in guilds.")
     };
 
-    let tag = ctxt
-        .assyst()
-        .database_handler
-        .get_tag(guild_id.get() as i64, &tag_name.0)
-        .await?
-        .context("Tag not found in this server")?;
+    let tag = Tag::get(&ctxt.assyst().database_handler, guild_id.get() as i64, &tag_name.0)
+        .await
+        .context("Failed to fetch tag")?
+        .context("Tag not found in this server.")?;
 
     let assyst = ctxt.assyst().clone();
     let message = ctxt.data.message.unwrap().clone();
@@ -165,12 +426,12 @@ impl assyst_tag::Context for TagContext {
     fn get_tag_contents(&self, tag: &str) -> anyhow::Result<String> {
         let tag = self
             .tokio
-            .block_on(async { self.assyst.database_handler.get_tag(self.guild_id() as i64, tag).await });
+            .block_on(async { Tag::get(&self.assyst.database_handler, self.guild_id() as i64, tag).await });
 
         match tag {
             Ok(Some(Tag { data, .. })) => Ok(data),
             Ok(None) => Err(anyhow!("Tag not found")),
-            Err(e) => Err(e.into()),
+            Err(e) => Err(e),
         }
     }
 }
@@ -182,10 +443,15 @@ define_commandgroup! {
     aliases: ["t"],
     cooldown: Duration::from_secs(2),
     description: "assyst's tag system (documentation: https://jacher.io/tags)",
-    usage: "<create>",
+    usage: "[subcommand|tag name] <arguments...>",
     commands: [
-        "create" => create
+        "create" => create,
+        "edit" => edit,
+        "delete" => delete,
+        "list" => list,
+        "info" => info,
+        "raw" => raw
     ],
-    default_interaction_subcommand: "view",
+    default_interaction_subcommand: "run",
     default: default
 }

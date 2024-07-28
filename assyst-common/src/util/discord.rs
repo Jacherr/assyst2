@@ -1,3 +1,4 @@
+use regex::Regex;
 use twilight_http::Client;
 use twilight_model::id::marker::GuildMarker;
 use twilight_model::id::Id;
@@ -79,4 +80,14 @@ pub fn format_discord_timestamp(input: u64) -> String {
     } else {
         format_time(input)
     }
+}
+
+pub fn mention_to_id(s: &str) -> Option<u64> {
+    let mention: Regex = Regex::new(r"(?:<@!?)?(\d{16,20})>?").unwrap();
+
+    mention
+        .captures(s)
+        .and_then(|capture| capture.get(1))
+        .map(|id| id.as_str())
+        .and_then(|id| id.parse::<u64>().ok())
 }

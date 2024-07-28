@@ -5,4 +5,5 @@ pub mod global_blacklist;
 pub mod guild_disabled_command;
 pub mod prefix;
 pub mod reminder;
+pub mod tag;
 pub mod user_votes;

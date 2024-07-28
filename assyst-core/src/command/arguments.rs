@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use assyst_common::markdown::parse_codeblock;
-use assyst_common::util::discord::{get_avatar_url, id_from_mention};
+use assyst_common::util::discord::{get_avatar_url, id_from_mention, mention_to_id};
 use assyst_common::util::{parse_to_millis, regex};
 use serde::Deserialize;
 use twilight_model::application::command::CommandOption;
@@ -9,9 +9,10 @@ use twilight_model::application::interaction::application_command::CommandOption
 use twilight_model::channel::message::sticker::{MessageSticker, StickerFormatType};
 use twilight_model::channel::message::Embed;
 use twilight_model::channel::Attachment;
-use twilight_model::id::marker::ChannelMarker;
+use twilight_model::id::marker::{ChannelMarker, UserMarker};
 use twilight_model::id::Id;
-use twilight_util::builder::command::{AttachmentBuilder, IntegerBuilder, NumberBuilder, StringBuilder};
+use twilight_model::user::User as TwlUser;
+use twilight_util::builder::command::{AttachmentBuilder, IntegerBuilder, NumberBuilder, StringBuilder, UserBuilder};
 
 use super::errors::TagParseError;
 use super::{CommandCtxt, InteractionCommandParseCtxt, Label, RawMessageParseCtxt};
@@ -249,6 +250,57 @@ impl ParseArgument for Codeblock {
 
     fn as_command_option(name: &str) -> CommandOption {
         StringBuilder::new(name, "code argument").required(true).build()
+    }
+}
+
+/// A user argument (mention or ID)
+#[derive(Debug)]
+pub struct User(pub TwlUser);
+impl ParseArgument for User {
+    async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>, label: Label) -> Result<Self, TagParseError> {
+        let next = ctxt.next_word(label)?;
+        let id = mention_to_id(next);
+
+        let user = ctxt
+            .cx
+            .assyst()
+            .http_client
+            .user(Id::<UserMarker>::new(id.unwrap_or(next.parse::<u64>().unwrap_or(1))))
+            .await
+            .map_err(|e| TagParseError::TwilightHttp(Box::new(e)))?
+            .model()
+            .await
+            .map_err(|e| TagParseError::TwilightDeserialize(Box::new(e)))?;
+
+        Ok(User(user))
+    }
+
+    async fn parse_command_option(ctxt: &mut InteractionCommandParseCtxt<'_>) -> Result<Self, TagParseError> {
+        let word = ctxt.next_option()?;
+
+        if let CommandOptionValue::User(id) = word.value {
+            let user = ctxt
+                .cx
+                .assyst()
+                .http_client
+                .user(id)
+                .await
+                .map_err(|e| TagParseError::TwilightHttp(Box::new(e)))?
+                .model()
+                .await
+                .map_err(|e| TagParseError::TwilightDeserialize(Box::new(e)))?;
+
+            Ok(User(user))
+        } else {
+            Err(TagParseError::MismatchedCommandOptionType((
+                "User".to_owned(),
+                word.value.clone(),
+            )))
+        }
+    }
+
+    fn as_command_option(name: &str) -> CommandOption {
+        UserBuilder::new(name, "user argument").required(true).build()
     }
 }
 
