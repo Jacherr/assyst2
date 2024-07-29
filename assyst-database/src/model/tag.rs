@@ -148,20 +148,12 @@ impl Tag {
         result.map(|c| c.count)
     }
 
-    pub async fn search_in_guild(
-        handler: &DatabaseHandler,
-        guild_id: i64,
-        search: &str,
-        offset: i64,
-        limit: i64,
-    ) -> anyhow::Result<Vec<Self>> {
-        let query = r#"SELECT * FROM tags WHERE guild_id = $1 AND position($2 in name)>0 ORDER BY created_at DESC OFFSET $3 LIMIT $4"#;
+    pub async fn search_in_guild(handler: &DatabaseHandler, guild_id: i64, search: &str) -> anyhow::Result<Vec<Self>> {
+        let query = r#"SELECT * FROM tags WHERE guild_id = $1 AND position($2 in name)>0 ORDER BY created_at DESC"#;
 
         let result = sqlx::query_as(query)
             .bind(guild_id)
             .bind(search)
-            .bind(offset)
-            .bind(limit)
             .fetch_all(&handler.pool)
             .await?;
 
@@ -173,17 +165,13 @@ impl Tag {
         guild_id: i64,
         author: i64,
         search: &str,
-        offset: i64,
-        limit: i64,
     ) -> anyhow::Result<Vec<Self>> {
-        let query = r#"SELECT * FROM tags WHERE guild_id = $1 AND author = $2 AND position($3 in name)>0 ORDER BY created_at DESC OFFSET $4 LIMIT $5"#;
+        let query = r#"SELECT * FROM tags WHERE guild_id = $1 AND author = $2 AND position($3 in name)>0 ORDER BY created_at DESC"#;
 
         let result = sqlx::query_as(query)
             .bind(guild_id)
             .bind(author)
             .bind(search)
-            .bind(offset)
-            .bind(limit)
             .fetch_all(&handler.pool)
             .await?;
 

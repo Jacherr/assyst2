@@ -21,6 +21,8 @@ use crate::define_commandgroup;
 use crate::downloader::{download_content, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES};
 use crate::rest::eval::fake_eval;
 
+const DEFAULT_LIST_COUNT: i64 = 15;
+
 #[command(
     description = "create a tag",
     aliases = ["add"],
@@ -162,8 +164,6 @@ pub async fn delete(ctxt: CommandCtxt<'_>, name: Word) -> anyhow::Result<()> {
     examples = ["1 @jacher", "1"]
 )]
 pub async fn list(ctxt: CommandCtxt<'_>, page: u64, user: Option<User>) -> anyhow::Result<()> {
-    const DEFAULT_LIST_COUNT: i64 = 15;
-
     let Some(guild_id) = ctxt.data.guild_id else {
         bail!("Tags can only be listed in guilds.")
     };
@@ -315,8 +315,6 @@ pub async fn raw(ctxt: CommandCtxt<'_>, name: Word) -> anyhow::Result<()> {
     examples = ["1 test @jacher", "1 test"]
 )]
 pub async fn search(ctxt: CommandCtxt<'_>, page: u64, query: Word, user: Option<User>) -> anyhow::Result<()> {
-    const DEFAULT_LIST_COUNT: i64 = 15;
-
     let Some(guild_id) = ctxt.data.guild_id else {
         bail!("Tags can only be listed in guilds.")
     };
@@ -334,8 +332,6 @@ pub async fn search(ctxt: CommandCtxt<'_>, page: u64, query: Word, user: Option<
                 guild_id.get() as i64,
                 u,
                 &query.0.to_ascii_lowercase(),
-                offset,
-                DEFAULT_LIST_COUNT,
             )
             .await?
         },
@@ -344,8 +340,6 @@ pub async fn search(ctxt: CommandCtxt<'_>, page: u64, query: Word, user: Option<
                 &ctxt.assyst().database_handler,
                 guild_id.get() as i64,
                 &query.0.to_ascii_lowercase(),
-                offset,
-                DEFAULT_LIST_COUNT,
             )
             .await?
         },
@@ -355,6 +349,8 @@ pub async fn search(ctxt: CommandCtxt<'_>, page: u64, query: Word, user: Option<
     ensure!(count > 0, "No tags found for the requested filter");
     let pages = (count as f64 / DEFAULT_LIST_COUNT as f64).ceil() as i64;
     ensure!(pages >= page as i64, "Cannot go beyond final page");
+
+    let tags = &tags[offset as usize..(offset + DEFAULT_LIST_COUNT) as usize];
 
     let mut message = format!(
         "🗒️ **Tags in this server matching query {0}{1}**\nView a tag by running `{2}t <name>`, or go to the next page by running `{2}t list {3} {0}`\n\n",
