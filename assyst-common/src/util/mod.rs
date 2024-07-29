@@ -1,12 +1,15 @@
 use std::borrow::Cow;
 use std::hash::{DefaultHasher, Hash, Hasher};
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+use ::regex::Captures;
 use rand::Rng;
+use regex::{CUSTOM_EMOJI, USER_MENTION};
 use time::format_description;
 use tracing::info;
 use tracing_subscriber::fmt::time::UtcTime;
 use tracing_subscriber::EnvFilter;
+use twilight_model::channel::message::Mention;
 
 pub mod discord;
 pub mod filetype;
@@ -158,4 +161,27 @@ pub fn sanitise_filename(name: &str) -> String {
         .replace("\\", "_")
         .replace("?", "_")
         .replace("*", "_")
+}
+
+#[inline(always)]
+pub fn unix_timestamp() -> u64 {
+    SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as u64
+}
+
+/// Normalizes custom emojis by replacing them with their names
+pub fn normalize_emojis(input: &str) -> Cow<'_, str> {
+    CUSTOM_EMOJI.replace_all(input, |c: &Captures| c.get(1).unwrap().as_str().to_string())
+}
+
+/// Normalizes mentions by replacing them with their names
+pub fn normalize_mentions<'a>(input: &'a str, mentions: &[Mention]) -> Cow<'a, str> {
+    USER_MENTION.replace_all(input, |c: &Captures| {
+        let id = c.get(1).unwrap().as_str();
+        let name = mentions
+            .iter()
+            .find(|m| m.id.to_string().eq(id))
+            .map(|m| m.name.clone())
+            .unwrap_or_else(String::new);
+        name
+    })
 }

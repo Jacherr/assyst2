@@ -21,6 +21,7 @@ use crate::rest::charinfo::{extract_page_title, get_char_info};
 use crate::rest::eval::fake_eval;
 use crate::rest::patreon::PatronTier;
 
+pub mod btchannel;
 pub mod help;
 pub mod prefix;
 pub mod remind;

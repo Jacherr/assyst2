@@ -35,6 +35,7 @@ use crate::task::tasks::top_gg_stats::post_top_gg_stats;
 use crate::task::Task;
 
 mod assyst;
+mod bad_translator;
 mod command;
 mod command_ratelimits;
 mod downloader;
@@ -146,6 +147,9 @@ async fn main() {
 
     info!("Registering interaction commands");
     register_interaction_commands(assyst.clone()).await.unwrap();
+
+    info!("Initialising BadTranslator channels");
+    assyst.init_badtranslator_channels().await;
 
     let a = assyst.clone();
     spawn(async move {

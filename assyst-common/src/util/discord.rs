@@ -1,6 +1,7 @@
+use anyhow::ensure;
 use regex::Regex;
 use twilight_http::Client;
-use twilight_model::id::marker::GuildMarker;
+use twilight_model::id::marker::{ChannelMarker, GuildMarker};
 use twilight_model::id::Id;
 use twilight_model::user::User;
 
@@ -82,7 +83,7 @@ pub fn format_discord_timestamp(input: u64) -> String {
     }
 }
 
-pub fn mention_to_id(s: &str) -> Option<u64> {
+pub fn user_mention_to_id(s: &str) -> Option<u64> {
     let mention: Regex = Regex::new(r"(?:<@!?)?(\d{16,20})>?").unwrap();
 
     mention
@@ -90,4 +91,34 @@ pub fn mention_to_id(s: &str) -> Option<u64> {
         .and_then(|capture| capture.get(1))
         .map(|id| id.as_str())
         .and_then(|id| id.parse::<u64>().ok())
+}
+
+pub fn channel_mention_to_id(s: &str) -> Option<u64> {
+    let mention: Regex = Regex::new(r"(?:<#)?(\d{16,20})>?").unwrap();
+
+    mention
+        .captures(s)
+        .and_then(|capture| capture.get(1))
+        .map(|id| id.as_str())
+        .and_then(|id| id.parse::<u64>().ok())
+}
+
+pub async fn is_same_guild(client: &Client, channel_id: u64, guild_id: u64) -> Result<bool, twilight_http::Error> {
+    let ch = client
+        .channel(Id::<ChannelMarker>::new(channel_id))
+        .await?
+        .model()
+        .await
+        .unwrap();
+
+    let real_guild_id = ch.guild_id.map_or(0, |z| z.get());
+
+    Ok(real_guild_id == guild_id)
+}
+
+pub async fn ensure_same_guild(client: &Client, channel_id: u64, guild_id: u64) -> anyhow::Result<()> {
+    let is = is_same_guild(client, channel_id, guild_id).await?;
+
+    ensure!(is, "The provided channel is not part of this server.");
+    Ok(())
 }

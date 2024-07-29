@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::OnceLock;
 
-use tracing::info;
+use tracing::debug;
 use twilight_model::application::command::Command as InteractionCommand;
 
 use super::{fun, image, misc, services, TCommand};
@@ -78,6 +78,7 @@ declare_commands!(
     image::wormhole_command,
     image::zoom_command,
     image::zoomblur_command,
+    misc::btchannel::btchannel_command,
     misc::chars_command,
     misc::command_command,
     misc::enlarge_command,
@@ -111,7 +112,7 @@ pub fn get_or_init_commands() -> &'static HashMap<&'static str, TCommand> {
         for &command in RAW_COMMANDS {
             let &CommandMetadata { name, aliases, .. } = command.metadata();
             map.insert(name, command);
-            info!("Registering command {} (aliases={:?})", name, aliases);
+            debug!("Registering command {} (aliases={:?})", name, aliases);
             for alias in aliases {
                 map.insert(alias, command);
             }

@@ -1,3 +1,5 @@
+pub mod badtranslator_channel;
+pub mod badtranslator_messages;
 pub mod colour_role;
 pub mod command_usage;
 pub mod free_tier_2_requests;

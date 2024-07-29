@@ -6,7 +6,7 @@ use assyst_common::util::tracing_init;
 use futures_util::StreamExt;
 use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
 use tokio::{signal, spawn};
-use tracing::{debug, info, warn};
+use tracing::{debug, info, trace, warn};
 use twilight_gateway::{create_recommended, ConfigBuilder as GatewayConfigBuilder, Intents, Message, Shard};
 use twilight_http::Client as HttpClient;
 use twilight_model::gateway::payload::outgoing::update_presence::UpdatePresencePayload;
@@ -107,6 +107,7 @@ async fn runner(mut shard: Shard, tx: UnboundedSender<String>) {
     loop {
         match shard.next().await {
             Some(Ok(Message::Text(message))) => {
+                trace!("got message: {message}");
                 tx.send(message).unwrap();
             },
             Some(Err(e)) => {

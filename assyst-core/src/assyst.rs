@@ -1,14 +1,18 @@
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
 use assyst_common::config::CONFIG;
+use assyst_common::err;
 use assyst_common::metrics_handler::MetricsHandler;
 use assyst_common::pipe::CACHE_PIPE_PATH;
+use assyst_database::model::badtranslator_channel::BadTranslatorChannel;
 use assyst_database::DatabaseHandler;
 use twilight_http::client::InteractionClient;
 use twilight_http::Client as HttpClient;
 use twilight_model::id::marker::ApplicationMarker;
 use twilight_model::id::Id;
 
+use crate::bad_translator::{BadTranslator, BadTranslatorEntry};
 use crate::command_ratelimits::CommandRatelimits;
 use crate::flux_handler::FluxHandler;
 use crate::persistent_cache_handler::PersistentCacheHandler;
@@ -23,6 +27,8 @@ pub type ThreadSafeAssyst = Arc<Assyst>;
 ///
 /// Stores stateful information and connections.
 pub struct Assyst {
+    /// Handler for BadTranslator channels.
+    pub bad_translator: BadTranslator,
     /// Handler for the persistent assyst-cache.
     pub persistent_cache_handler: PersistentCacheHandler,
     /// Handler for the Assyst database. RwLocked to allow concurrent reads.
@@ -62,6 +68,7 @@ impl Assyst {
         let current_application = http_client.current_user_application().await?.model().await?;
 
         Ok(Assyst {
+            bad_translator: BadTranslator::new(),
             persistent_cache_handler: PersistentCacheHandler::new(CACHE_PIPE_PATH),
             database_handler: database_handler.clone(),
             http_client: http_client.clone(),
@@ -89,5 +96,22 @@ impl Assyst {
 
     pub fn interaction_client(&self) -> InteractionClient {
         self.http_client.interaction(self.application_id)
+    }
+
+    pub async fn init_badtranslator_channels(&self) {
+        match BadTranslatorChannel::get_all(&self.database_handler).await {
+            Ok(ch) => {
+                let mut channels = HashMap::new();
+                for c in ch {
+                    channels.insert(c.id as u64, BadTranslatorEntry::with_language(c.target_language));
+                }
+
+                self.bad_translator.set_channels(channels).await;
+            },
+            Err(e) => {
+                err!("Failed to fetch BadTranslator channels, so they will be disabled: {e:?}");
+                self.bad_translator.disable().await;
+            },
+        }
     }
 }
