@@ -24,9 +24,6 @@ pub struct Urls {
 #[derive(Deserialize)]
 pub struct Authentication {
     pub discord_token: String,
-    // written to later
-    #[serde(default)]
-    pub patreon_refresh: String,
     pub patreon_client_secret: String,
     pub patreon_client_id: String,
     pub top_gg_token: String,

@@ -13,10 +13,7 @@ use crate::config::config::AssystConfig;
 lazy_static! {
     pub static ref CONFIG: AssystConfig = {
         let toml = std::fs::read_to_string(CONFIG_LOCATION).unwrap();
-        let mut config = from_str::<AssystConfig>(&toml).unwrap();
-        let patreon_refresh = std::fs::read_to_string(PATREON_REFRESH_LOCATION).unwrap_or_default();
-        let patreon_refresh_t = patreon_refresh.trim();
-        config.authentication.patreon_refresh = patreon_refresh_t.to_owned();
+        let config = from_str::<AssystConfig>(&toml).unwrap();
         info!("Loaded config file {}", CONFIG_LOCATION);
         config
     };

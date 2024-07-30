@@ -11,6 +11,7 @@ use assyst_tag::parser::ParseMode;
 use assyst_tag::ParseResult;
 use tokio::runtime::Handle;
 use twilight_model::channel::Message;
+use twilight_model::id::marker::ChannelMarker;
 use twilight_model::id::Id;
 
 use super::CommandCtxt;
@@ -413,7 +414,9 @@ pub async fn default(ctxt: CommandCtxt<'_>, tag_name: Word, arguments: Vec<Word>
     .context("Tag not found in this server.")?;
 
     let assyst = ctxt.assyst().clone();
-    let message = ctxt.data.message.unwrap().clone();
+    let message = ctxt.data.message.cloned();
+    let channel_id = ctxt.data.channel_id.get();
+    let author = ctxt.data.author.clone();
 
     let (res, tag) = tokio::task::spawn_blocking(move || {
         let tag = tag;
@@ -422,6 +425,9 @@ pub async fn default(ctxt: CommandCtxt<'_>, tag_name: Word, arguments: Vec<Word>
             tokio: Handle::current(),
             message,
             assyst,
+            guild_id: guild_id.get(),
+            channel_id,
+            author,
         };
 
         (
@@ -454,16 +460,16 @@ pub async fn default(ctxt: CommandCtxt<'_>, tag_name: Word, arguments: Vec<Word>
 
 struct TagContext {
     tokio: Handle,
-    message: Message,
+    message: Option<Message>,
     assyst: ThreadSafeAssyst,
+    guild_id: u64,
+    channel_id: u64,
+    author: twilight_model::user::User,
 }
 
 impl TagContext {
     fn guild_id(&self) -> u64 {
-        self.message
-            .guild_id
-            .expect("tags can only be run in guilds; this invariant is ensured in the tag command")
-            .get()
+        self.guild_id
     }
 }
 
@@ -474,18 +480,19 @@ impl assyst_tag::Context for TagContext {
         args: Vec<String>,
     ) -> anyhow::Result<assyst_common::eval::FakeEvalImageResponse> {
         self.tokio
-            .block_on(fake_eval(&self.assyst, code.into(), true, Some(&self.message), args))
+            .block_on(fake_eval(&self.assyst, code.into(), true, self.message.as_ref(), args))
     }
 
     fn get_last_attachment(&self) -> anyhow::Result<String> {
-        let ImageUrl(attachment) = self
-            .tokio
-            .block_on(ImageUrl::from_channel_history(&self.assyst, self.message.channel_id))?;
+        let ImageUrl(attachment) = self.tokio.block_on(ImageUrl::from_channel_history(
+            &self.assyst,
+            Id::<ChannelMarker>::new(self.channel_id),
+        ))?;
         Ok(attachment)
     }
 
     fn get_avatar(&self, user_id: Option<u64>) -> anyhow::Result<String> {
-        let user_id = user_id.unwrap_or(self.message.author.id.get());
+        let user_id = user_id.unwrap_or(self.author.id.get());
 
         self.tokio.block_on(async {
             let user = self.assyst.http_client.user(Id::new(user_id)).await?;
@@ -510,7 +517,7 @@ impl assyst_tag::Context for TagContext {
     }
 
     fn channel_id(&self) -> anyhow::Result<u64> {
-        Ok(self.message.channel_id.get())
+        Ok(self.channel_id)
     }
 
     fn guild_id(&self) -> anyhow::Result<u64> {
@@ -518,7 +525,7 @@ impl assyst_tag::Context for TagContext {
     }
 
     fn user_id(&self) -> anyhow::Result<u64> {
-        Ok(self.message.author.id.get())
+        Ok(self.author.id.get())
     }
 
     fn user_tag(&self, id: Option<u64>) -> anyhow::Result<String> {
@@ -530,7 +537,7 @@ impl assyst_tag::Context for TagContext {
                 Ok(format_tag(&user.model().await?))
             })
         } else {
-            Ok(format_tag(&self.message.author))
+            Ok(format_tag(&self.author))
         }
     }
 

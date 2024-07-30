@@ -147,14 +147,16 @@ pub struct PatronRefreshResponse {
 }
 
 async fn get_patreon_access_token(assyst: ThreadSafeAssyst) -> anyhow::Result<String> {
+    let mut refresh = assyst.patreon_refresh.lock().await;
+
     let response = assyst
         .reqwest_client
         .post(REFRESH_ROUTE)
         .query(&vec![
-            &("refresh_token", &CONFIG.authentication.patreon_refresh),
+            &("refresh_token", &*refresh.to_owned()),
             &("client_secret", &CONFIG.authentication.patreon_client_secret),
             &("client_id", &CONFIG.authentication.patreon_client_id),
-            &("grant_type", &"refresh_token".to_owned()),
+            &("grant_type", "refresh_token"),
         ])
         .send()
         .await?
@@ -162,6 +164,7 @@ async fn get_patreon_access_token(assyst: ThreadSafeAssyst) -> anyhow::Result<St
         .await?;
 
     std::fs::write(PATREON_REFRESH_LOCATION, response.refresh_token.clone())?;
+    *refresh = response.refresh_token.clone();
 
     Ok(response.access_token)
 }
