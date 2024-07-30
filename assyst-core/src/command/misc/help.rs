@@ -18,8 +18,9 @@ use crate::command::{Availability, Category, Command, CommandCtxt};
     usage = "<category|command>",
     examples = ["", "misc", "ping", "tag create"]
 )]
-pub async fn help(ctxt: CommandCtxt<'_>, labels: Vec<Word>) -> anyhow::Result<()> {
+pub async fn help(ctxt: CommandCtxt<'_>, labels: Option<Vec<Word>>) -> anyhow::Result<()> {
     let cmds = get_or_init_commands();
+    let labels = labels.unwrap_or_default();
 
     // group commands by their category
     let mut groups: HashMap<Category, Vec<_>> = HashMap::new();

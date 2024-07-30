@@ -121,7 +121,15 @@ async fn create_message(ctxt: &CommandCtxt<'_>, builder: MessageBuilder) -> anyh
         .create_message(ctxt.data.channel_id)
         .allowed_mentions(Some(&allowed_mentions));
 
-    if let Some(source_message) = ctxt.data.message {
+    if let Some(source_message) = ctxt.data.message
+        // FIXME: maybe cache channels we cant reply in
+        && ctxt
+            .assyst()
+            .http_client
+            .message(source_message.channel_id, source_message.id)
+            .await
+            .is_ok()
+    {
         message = message.reply(source_message.id);
     }
 

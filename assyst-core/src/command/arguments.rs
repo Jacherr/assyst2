@@ -363,7 +363,9 @@ pub struct Rest(pub String);
 
 impl ParseArgument for Rest {
     async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>, label: Label) -> Result<Self, TagParseError> {
-        if let Some(m) = ctxt.cx.data.message {
+        if let Ok(r) = ctxt.rest(label.clone()) {
+            Ok(Self(r))
+        } else if let Some(m) = ctxt.cx.data.message {
             if let Some(ref r) = m.referenced_message {
                 Ok(Self(r.content.clone()))
             } else {
