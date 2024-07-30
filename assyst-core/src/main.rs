@@ -107,9 +107,10 @@ async fn main() {
     info!("Registered patreon synchronisation task");
 
     if !CONFIG.dev.disable_bot_list_posting {
-        assyst.register_task(Task::new(
+        assyst.register_task(Task::new_delayed(
             assyst.clone(),
             // 10 mins
+            Duration::from_secs(60 * 10),
             Duration::from_secs(60 * 10),
             function_task_callback!(post_top_gg_stats),
         ));
