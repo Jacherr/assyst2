@@ -15,7 +15,7 @@ pub async fn post_top_gg_stats(assyst: ThreadSafeAssyst) -> anyhow::Result<()> {
         .reqwest_client
         .post(&*ROUTE)
         .header("authorization", &CONFIG.authentication.top_gg_token)
-        .json(&json!({ "server_count": guild_count, "shard_count": shard_count }))
+        .json(&json!({ "server_count": guild_count, "shard_count": shard_count, "shards": [] }))
         .send()
         .await?
         .error_for_status()?;
