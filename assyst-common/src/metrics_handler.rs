@@ -14,6 +14,7 @@ pub struct MetricsHandler {
     pub cache_sizes: IntGaugeVec,
     pub memory_usage: IntGaugeVec,
     pub guilds: IntGauge,
+    pub guilds_rate_tracker: Mutex<RateTracker>,
     pub events: IntCounter,
     pub events_rate_tracker: Mutex<RateTracker>,
     pub commands: IntCounter,
@@ -27,6 +28,7 @@ impl MetricsHandler {
             cache_sizes: register_int_gauge_vec!("cache_sizes", "Cache sizes", &["cache"])?,
             memory_usage: register_int_gauge_vec!("memory_usage", "Memory usage in MB", &["process"])?,
             guilds: register_int_gauge!("guilds", "Total guilds")?,
+            guilds_rate_tracker: Mutex::new(RateTracker::new(Duration::from_secs(60 * 60))),
             events: register_int_counter!("events", "Total number of events")?,
             events_rate_tracker: Mutex::new(RateTracker::new(Duration::from_secs(1))),
             commands: register_int_counter!("commands", "Total number of commands executed")?,
@@ -62,10 +64,12 @@ impl MetricsHandler {
     }
 
     pub fn inc_guilds(&self) {
+        self.guilds_rate_tracker.lock().unwrap().add_sample();
         self.guilds.inc();
     }
 
     pub fn dec_guilds(&self) {
+        self.guilds_rate_tracker.lock().unwrap().remove_sample();
         self.guilds.dec();
     }
 

@@ -30,6 +30,14 @@ impl RateTracker {
         self.remove_expired_samples();
     }
 
+    /// Remove the oldest sample from the tracker.
+    pub fn remove_sample(&mut self) {
+        if !self.samples.is_empty() {
+            self.samples.remove(0);
+        }
+        self.remove_expired_samples();
+    }
+
     /// Fetches the amount of current non-expired samples.
     pub fn get_rate(&mut self) -> usize {
         self.remove_expired_samples();

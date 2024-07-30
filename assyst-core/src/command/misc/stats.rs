@@ -102,12 +102,17 @@ pub async fn stats(ctxt: CommandCtxt<'_>, option: Option<Word>) -> anyhow::Resul
         let commit = exec_sync("git rev-parse HEAD")
             .map(|x| x.stdout[..8].to_owned())
             .unwrap_or("Unknown".to_string());
+        let guilds_total = ctxt.assyst().metrics_handler.guilds.get().to_string();
+        let guilds_rate = ctxt
+            .assyst()
+            .metrics_handler
+            .guilds_rate_tracker
+            .lock()
+            .unwrap()
+            .get_rate();
 
         let stats_table = key_value(&[
-            (
-                "Guilds".fg_cyan(),
-                ctxt.assyst().metrics_handler.guilds.get().to_string(),
-            ),
+            ("Guilds".fg_cyan(), format!("{guilds_total} ({guilds_rate}/hr)")),
             ("Shards".fg_cyan(), ctxt.assyst().shard_count.to_string()),
             (
                 "Events".fg_cyan(),
@@ -156,11 +161,8 @@ pub async fn stats(ctxt: CommandCtxt<'_>, option: Option<Word>) -> anyhow::Resul
     } else {
         // default to general and process stats
         let stats_table = get_general_stats(&ctxt).await;
-        let usages_table = get_process_stats();
 
-        let msg = format!("{stats_table} {usages_table}");
-
-        ctxt.reply(msg).await?;
+        ctxt.reply(stats_table).await?;
     }
 
     Ok(())

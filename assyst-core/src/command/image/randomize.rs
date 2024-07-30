@@ -40,7 +40,7 @@ const VALID_EFFECTS: &[&str] = &[
 
 #[command(
     description = "apply random effects to an image",
-    aliases = ["random", "randomise"],
+    aliases = ["random", "randomise", "badcmd"],
     cooldown = Duration::from_secs(2),
     access = Availability::Public,
     category = Category::Image,
