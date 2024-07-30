@@ -19,5 +19,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, message: MessageDelete) {
             .delete_message(message.channel_id, Id::new(reply.message_id))
             .await
             .inspect_err(|e| err!("{e}"));
+
+        assyst.replies.remove_raw_message(message.id.get());
     }
 }

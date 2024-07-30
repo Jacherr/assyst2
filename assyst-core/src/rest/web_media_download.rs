@@ -55,7 +55,7 @@ pub struct YouTubePlaylist {
 pub struct YouTubePlaylistEntry {
     pub url: String,
     pub title: String,
-    pub duration: Option<usize>,
+    pub duration: Option<f32>,
 }
 
 #[derive(Deserialize)]
@@ -299,7 +299,7 @@ pub async fn get_youtube_playlist_entries(url: &str) -> anyhow::Result<Vec<(Stri
 
     // longest videos first
     let mut entries = playlist.entries;
-    entries.sort_by(|x, y| y.duration.unwrap_or(0).cmp(&x.duration.unwrap_or(0)));
+    entries.sort_by(|x, y| y.duration.unwrap_or(0.0).total_cmp(&x.duration.unwrap_or(0.0)));
 
     Ok(entries
         .iter()
