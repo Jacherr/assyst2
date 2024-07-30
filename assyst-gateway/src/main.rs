@@ -66,7 +66,7 @@ async fn main() -> anyhow::Result<()> {
     info!("Recommended shard count: {}", shards.len());
 
     // pipe thread tx/rx
-    let (tx, mut rx) = channel::<String>(10);
+    let (tx, mut rx) = channel::<String>(25);
 
     let mut core_pipe_server = PipeServer::listen(GATEWAY_PIPE_PATH).unwrap();
     info!("Core listener started on {}", GATEWAY_PIPE_PATH);
