@@ -4,7 +4,7 @@ use assyst_common::pipe::pipe_server::PipeServer;
 use assyst_common::pipe::GATEWAY_PIPE_PATH;
 use assyst_common::util::tracing_init;
 use futures_util::StreamExt;
-use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
+use tokio::sync::mpsc::{channel, Sender};
 use tokio::{signal, spawn};
 use tracing::{debug, info, trace, warn};
 use twilight_gateway::{create_recommended, ConfigBuilder as GatewayConfigBuilder, Intents, Message, Shard};
@@ -66,7 +66,7 @@ async fn main() -> anyhow::Result<()> {
     info!("Recommended shard count: {}", shards.len());
 
     // pipe thread tx/rx
-    let (tx, mut rx) = unbounded_channel::<String>();
+    let (tx, mut rx) = channel::<String>(10);
 
     let mut core_pipe_server = PipeServer::listen(GATEWAY_PIPE_PATH).unwrap();
     info!("Core listener started on {}", GATEWAY_PIPE_PATH);
@@ -77,9 +77,8 @@ async fn main() -> anyhow::Result<()> {
         loop {
             if let Ok(mut stream) = core_pipe_server.accept_connection().await {
                 info!("Connection received from assyst-core");
-                loop {
-                    let data = ok_or_break!(rx.recv().await.ok_or(()));
-                    ok_or_break!(stream.write_string(data).await);
+                while let Some(v) = rx.recv().await {
+                    ok_or_break!(stream.write_string(v).await);
                 }
                 warn!("Connection to assyst-core lost, awaiting reconnection");
             }
@@ -103,12 +102,12 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn runner(mut shard: Shard, tx: UnboundedSender<String>) {
+async fn runner(mut shard: Shard, tx: Sender<String>) {
     loop {
         match shard.next().await {
             Some(Ok(Message::Text(message))) => {
                 trace!("got message: {message}");
-                tx.send(message).unwrap();
+                let _ = tx.try_send(message);
             },
             Some(Err(e)) => {
                 warn!(?e, "error receiving event");
