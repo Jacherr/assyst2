@@ -13,7 +13,7 @@ use crate::flag_parse_argument;
 
 #[command(
     description = "add a speechbubble to an image",
-    aliases = ["speech"],
+    aliases = ["speech", "bubble"],
     cooldown = Duration::from_secs(2),
     access = Availability::Public,
     category = Category::Image,
