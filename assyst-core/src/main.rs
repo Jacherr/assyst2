@@ -148,8 +148,12 @@ async fn main() {
     info!("Registering interaction commands");
     register_interaction_commands(assyst.clone()).await.unwrap();
 
-    info!("Initialising BadTranslator channels");
-    assyst.init_badtranslator_channels().await;
+    if !CONFIG.dev.disable_bad_translator_channels {
+        info!("Initialising BadTranslator channels");
+        assyst.init_badtranslator_channels().await;
+    } else {
+        info!("BadTranslator channels disabled in config.dev.disable_bad_translator_channels, skipping init");
+    }
 
     let a = assyst.clone();
     spawn(async move {

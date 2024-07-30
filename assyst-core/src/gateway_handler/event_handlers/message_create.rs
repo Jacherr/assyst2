@@ -18,6 +18,16 @@ use crate::ThreadSafeAssyst;
 /// This function passes the message to the command parser, which then attempts to convert the
 /// message to a command for further processing.
 pub async fn handle(assyst: ThreadSafeAssyst, MessageCreate(message): MessageCreate) {
+    if assyst.bad_translator.is_channel(message.channel_id.get()).await && !assyst.bad_translator.is_disabled().await {
+        match assyst.bad_translator.handle_message(&assyst, Box::new(message)).await {
+            Err(e) => {
+                err!("BadTranslator channel execution failed: {e:?}");
+            },
+            _ => {},
+        };
+        return;
+    }
+
     let processing_time_start = Instant::now();
 
     match parse_message_into_command(assyst.clone(), &message, processing_time_start, false).await {

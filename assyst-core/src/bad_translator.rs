@@ -10,7 +10,7 @@ use assyst_database::model::badtranslator_channel::BadTranslatorChannel;
 use assyst_database::model::badtranslator_messages::BadTranslatorMessages;
 use tokio::sync::RwLock;
 use twilight_http::error::ErrorType;
-use twilight_model::channel::message::AllowedMentions;
+use twilight_model::channel::message::{AllowedMentions, MessageType};
 use twilight_model::channel::{Message, Webhook};
 use twilight_model::id::marker::{ChannelMarker, UserMarker};
 use twilight_model::id::Id;
@@ -192,7 +192,10 @@ impl BadTranslator {
             return Ok(());
         }
 
-        if message.content.is_empty() || message.author.bot {
+        if message.content.is_empty()
+            || message.author.bot
+            || ![MessageType::Reply, MessageType::Regular].contains(&message.kind)
+        {
             let _ = assyst.http_client.delete_message(message.channel_id, message.id).await;
 
             return Ok(());
