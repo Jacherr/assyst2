@@ -11,19 +11,12 @@ use crate::flux_handler::flux_request::FluxRequest;
 use crate::flux_handler::limits::LIMITS;
 
 const VALID_EFFECTS: &[&str] = &[
-    "billboard",
     "bloom",
     "blur",
-    "book",
-    "circuitboard",
     "deepfry",
     "fisheye",
-    "flag",
-    "flag2",
     "flip",
     "flop",
-    "fortune-cookie",
-    "ghost",
     "globe",
     "grayscale",
     "invert",
@@ -33,9 +26,6 @@ const VALID_EFFECTS: &[&str] = &[
     "paint",
     "pixelate",
     "rainbow",
-    "rubiks",
-    "toaster",
-    "valentine",
 ];
 
 #[command(
