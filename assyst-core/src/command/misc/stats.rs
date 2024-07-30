@@ -20,7 +20,7 @@ use crate::rest::filer::{get_filer_stats as filer_stats, FilerStats};
     access = Availability::Public,
     category = Category::Misc,
     usage = "<section>",
-    examples = ["", "sessions", "storage", "all"],
+    examples = ["", "sessions", "storage", "processes", "all"],
     send_processing = true
 )]
 pub async fn stats(ctxt: CommandCtxt<'_>, option: Option<Word>) -> anyhow::Result<()> {
@@ -143,6 +143,12 @@ pub async fn stats(ctxt: CommandCtxt<'_>, option: Option<Word>) -> anyhow::Resul
         && (x.to_lowercase() == "caches" || x.to_lowercase() == "storage")
     {
         let table = get_storage_stats(&ctxt).await?;
+
+        ctxt.reply(table).await?;
+    } else if let Some(Word(ref x)) = option
+        && x.to_lowercase() == "processes"
+    {
+        let table = get_process_stats();
 
         ctxt.reply(table).await?;
     } else if let Some(Word(ref x)) = option
