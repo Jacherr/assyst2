@@ -40,8 +40,8 @@ pub async fn burntext(ctxt: CommandCtxt<'_>, text: Rest) -> anyhow::Result<()> {
     examples = ["", "assyst"],
     age_restricted = true
 )]
-pub async fn r34(ctxt: CommandCtxt<'_>, tags: Rest) -> anyhow::Result<()> {
-    let result = get_random_r34(ctxt.assyst().clone(), &tags.0).await?;
+pub async fn r34(ctxt: CommandCtxt<'_>, tags: Option<Rest>) -> anyhow::Result<()> {
+    let result = get_random_r34(ctxt.assyst().clone(), &tags.unwrap_or(Rest(String::new())).0).await?;
     let reply = format!("{} (Score: **{}**)", result.file_url, result.score);
 
     ctxt.reply(reply).await?;

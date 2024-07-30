@@ -1,4 +1,3 @@
-use assyst_common::err;
 use twilight_model::gateway::payload::incoming::MessageDelete;
 use twilight_model::id::Id;
 
@@ -14,11 +13,11 @@ pub async fn handle(assyst: ThreadSafeAssyst, message: MessageDelete) {
     if let Some(reply) = assyst.replies.get_raw_message(message.id.get())
         && let ReplyState::InUse(reply) = reply.state
     {
+        // ignore error
         _ = assyst
             .http_client
             .delete_message(message.channel_id, Id::new(reply.message_id))
-            .await
-            .inspect_err(|e| err!("{e}"));
+            .await;
 
         assyst.replies.remove_raw_message(message.id.get());
     }
