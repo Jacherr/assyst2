@@ -167,7 +167,11 @@ impl FluxHandler {
 
         let res = exec_sync(&format!(
             "cd {} && mold -run cargo build -q --release",
-            CONFIG.dev.flux_workspace_root_path_override
+            if CONFIG.dev.flux_workspace_root_path_override.is_empty() {
+                FLUX_DIR
+            } else {
+                &CONFIG.dev.flux_workspace_root_path_override
+            }
         ))
         .context("Failed to compile flux")?;
 
