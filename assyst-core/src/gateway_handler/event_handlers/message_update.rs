@@ -83,8 +83,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: MessageUpdate) {
                         _ = assyst
                             .http_client
                             .delete_message(message.channel_id, Id::new(reply.message_id))
-                            .await
-                            .inspect_err(|err| err!("{err}"));
+                            .await;
                     }
                 },
                 Err(error) => {
