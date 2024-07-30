@@ -149,6 +149,10 @@ async fn main() {
     info!("Registering interaction commands");
     register_interaction_commands(assyst.clone()).await.unwrap();
 
+    assyst
+        .metrics_handler
+        .add_guilds(assyst.persistent_cache_handler.get_guild_count().await.unwrap_or(0));
+
     if !CONFIG.dev.disable_bad_translator_channels {
         info!("Initialising BadTranslator channels");
         assyst.init_badtranslator_channels().await;

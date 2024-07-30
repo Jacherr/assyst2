@@ -16,6 +16,7 @@ pub enum CacheJob {
     HandleGuildDelete(GuildDeleteData),
     /// Storing data from a READY event.
     HandleReady(ReadyData),
+    GetGuildCount,
 }
 impl Display for CacheJob {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -23,6 +24,7 @@ impl Display for CacheJob {
             Self::HandleReady(x) => write!(f, "HandleReady ({} guilds)", x.guilds.len()),
             Self::HandleGuildCreate(x) => write!(f, "HandleGuildCreate (ID: {})", x.id),
             Self::HandleGuildDelete(x) => write!(f, "HandleGuildDelete (ID: {})", x.id),
+            Self::GetGuildCount => f.write_str("GetGuildCount"),
         }
     }
 }
@@ -85,4 +87,6 @@ pub enum CacheResponse {
     /// be duplicated, which is why this number may differ from the length of the guilds array in
     /// this event.
     NewGuildsFromReady(u64),
+    /// Total number of cached guilds.
+    TotalGuilds(u64),
 }

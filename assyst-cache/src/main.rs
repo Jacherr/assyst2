@@ -35,6 +35,7 @@ async fn main() {
                 CacheJob::HandleGuildDelete(event) => {
                     CacheResponse::ShouldHandleGuildDelete(guild_cache.handle_guild_delete_event(event))
                 },
+                CacheJob::GetGuildCount => CacheResponse::TotalGuilds(guild_cache.size()),
             };
 
             ok_or_break!(stream.write_object(result).await);

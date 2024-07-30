@@ -43,4 +43,8 @@ impl GuildCache {
     pub fn handle_guild_delete_event(&mut self, event: GuildDeleteData) -> bool {
         !event.unavailable && self.ids.remove(&event.id).is_some()
     }
+
+    pub fn size(&self) -> u64 {
+        self.ids.len() as u64
+    }
 }

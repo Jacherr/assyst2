@@ -83,4 +83,10 @@ impl PersistentCacheHandler {
             .await
             .map(|x| unwrap_enum_variant!(x, CacheResponse::ShouldHandleGuildDelete))
     }
+
+    pub async fn get_guild_count(&self) -> anyhow::Result<u64> {
+        let request = CacheJob::GetGuildCount;
+        let response = self.run_cache_job(request).await?;
+        Ok(unwrap_enum_variant!(response, CacheResponse::TotalGuilds))
+    }
 }
