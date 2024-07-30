@@ -51,7 +51,7 @@ Special thanks to [y21](https://github.com/y21) and [Mina](https://github.com/tr
 Thank you to the team developing [cobalt.tools](https://github.com/imputnet/cobalt) for creating such a versatile and easy-to-use downloading tool. \
 Thank you to the countless developers of the libraries and programs powering both Assyst and Flux, in particular:
 - [Tokio](https://github.com/tokio/tokio) - the asynchronous runtime that Assyst uses,
-- [Twilight](https://github.com/twilight-rs/twilight) - the Discord API library that Assyst communicated to Discord with,
+- [Twilight](https://github.com/twilight-rs/twilight) - the Discord API library that Assyst communicates to Discord with,
 - [Image](https://github.com/image-rs/image) - the primary library providing image decoding, encoding, and editing functionality to Flux,
 - [FFmpeg](https://ffmpeg.org) - simply the best multimedia processing tool ever made,
 - [gegl](https://gegl.org) - providing a bunch of handy image manipulation tools.
