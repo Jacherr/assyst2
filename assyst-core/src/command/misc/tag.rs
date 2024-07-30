@@ -397,12 +397,14 @@ pub async fn search(ctxt: CommandCtxt<'_>, page: u64, query: Word, user: Option<
     access = Availability::Public,
     category = Category::Misc,
     usage = "[tag name] <arguments...>",
-    examples = ["test", "whatever"]
+    examples = ["test", "whatever"],
+    send_processing = true
 )]
-pub async fn default(ctxt: CommandCtxt<'_>, tag_name: Word, arguments: Vec<Word>) -> anyhow::Result<()> {
+pub async fn default(ctxt: CommandCtxt<'_>, tag_name: Word, arguments: Option<Vec<Word>>) -> anyhow::Result<()> {
     let Some(guild_id) = ctxt.data.guild_id else {
         bail!("Tags can only be used in guilds.")
     };
+    let arguments = arguments.unwrap_or_default();
 
     let tag = Tag::get(
         &ctxt.assyst().database_handler,
