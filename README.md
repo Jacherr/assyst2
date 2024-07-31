@@ -43,7 +43,13 @@ All contributions - both issues and pull requests - are greatly appreciated. Con
 
 ## Self-hosting
 
-Self-hosting is not yet supported for this version of Assyst, since it is not yet considered production-ready. Self-hosting may be supported with release 1.0.0.
+Self-hosting is not yet supported for this version of Assyst, since it is not yet considered production-ready. Self-hosting may be supported with release 1.0.0. \
+However, for completeness, the entire tech stack of Assyst is as follows:
+ - Rust, as well as Cargo for building.
+ - PostgreSQL. Database format TBA.
+ - Flux, which has [its own set of requirements](https://github.com/jacherr/flux?tab=readme-ov-file#prerequisites)
+ - [youtube-dlp](https://github.com/yt-dlp/yt-dlp)
+ - Optionally, Grafana and Prometheus for graphs and logging. A template for this may be made available eventually. If you would like it, open an issue.
 
 ## Acknowledgements
 
