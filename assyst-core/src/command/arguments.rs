@@ -16,7 +16,7 @@ use twilight_util::builder::command::{
     AttachmentBuilder, ChannelBuilder, IntegerBuilder, NumberBuilder, StringBuilder, UserBuilder,
 };
 
-use super::errors::TagParseError;
+use super::errors::{ArgsExhausted, TagParseError};
 use super::{CommandCtxt, InteractionCommandParseCtxt, Label, RawMessageParseCtxt};
 use crate::assyst::Assyst;
 use crate::commit_if_ok;
@@ -413,14 +413,15 @@ pub struct RestNoFlags(pub String);
 
 impl ParseArgument for RestNoFlags {
     async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>, label: Label) -> Result<Self, TagParseError> {
-        if let Some(m) = ctxt.cx.data.message {
-            if let Some(ref r) = m.referenced_message {
-                Ok(Self(r.content.clone()))
-            } else {
-                Ok(Self(ctxt.rest_all(label)))
-            }
+        let all = ctxt.rest_all(label.clone());
+        if !all.is_empty() {
+            Ok(Self(all))
+        } else if let Some(m) = ctxt.cx.data.message
+            && let Some(ref r) = m.referenced_message
+        {
+            Ok(Self(r.content.clone()))
         } else {
-            Ok(Self(ctxt.rest_all(label)))
+            Err(TagParseError::ArgsExhausted(ArgsExhausted(label)))
         }
     }
 
