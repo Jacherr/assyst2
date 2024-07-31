@@ -3,7 +3,7 @@ use std::time::Duration;
 
 use anyhow::{bail, Context};
 use assyst_common::markdown::Markdown;
-use assyst_common::util::table;
+use assyst_common::util::{normalize_emojis, normalize_mentions, table};
 use assyst_proc_macro::command;
 use twilight_model::application::interaction::application_command::CommandOptionValue;
 use twilight_util::builder::command::StringBuilder;
@@ -82,19 +82,25 @@ pub async fn bad_translate(ctxt: CommandCtxt<'_>, text: Rest, flags: BadTranslat
         return Ok(());
     };
 
+    let text = normalize_emojis(&text.0);
+    let text = normalize_mentions(
+        &text,
+        &ctxt.data.message.map(|x| &x.mentions).cloned().unwrap_or_default(),
+    );
+
     let TranslateResult {
         result: Translation { text, .. },
         translations,
     } = if let Some(count) = flags.count {
         if count < 10 {
-            bad_translate_with_count(&ctxt.assyst().reqwest_client, &text.0, count as u32)
+            bad_translate_with_count(&ctxt.assyst().reqwest_client, &text, count as u32)
                 .await
                 .context("Failed to run bad translation")?
         } else {
             bail!("Translation count cannot exceed 10")
         }
     } else {
-        bad_translate_default(&ctxt.assyst().reqwest_client, &text.0)
+        bad_translate_default(&ctxt.assyst().reqwest_client, &text)
             .await
             .context("Failed to run bad translation")?
     };
