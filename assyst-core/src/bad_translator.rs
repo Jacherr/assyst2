@@ -16,7 +16,7 @@ use twilight_model::id::marker::{ChannelMarker, UserMarker};
 use twilight_model::id::Id;
 
 use crate::assyst::Assyst;
-use crate::rest::bad_translation::{bad_translate, TranslateError};
+use crate::rest::bad_translation::{bad_translate_target, TranslateError};
 
 const BT_RATELIMIT_LEN: u64 = 5000;
 const BT_RATELIMIT_MESSAGE: &str = "you are sending messages too fast.";
@@ -228,12 +228,12 @@ impl BadTranslator {
         let content = normalize_emojis(&message.content);
         let content = normalize_mentions(&content, &message.mentions);
 
-        let (webhook, _) = match self.get_or_fetch_entry(assyst, &message.channel_id).await {
+        let (webhook, language) = match self.get_or_fetch_entry(assyst, &message.channel_id).await {
             Some(webhook) => webhook,
             None => return self.delete_bt_channel(assyst, &message.channel_id).await,
         };
 
-        let translation = match bad_translate(&assyst.reqwest_client, &content).await {
+        let translation = match bad_translate_target(&assyst.reqwest_client, &content, &language).await {
             Ok(res) => Cow::Owned(res.result.text),
             Err(TranslateError::Raw(msg)) => Cow::Borrowed(msg),
             _ => return Ok(()),

@@ -103,6 +103,14 @@ pub async fn bad_translate(client: &Client, text: &str) -> Result<TranslateResul
     translate(client, text, None, None, None).await
 }
 
+pub async fn bad_translate_target(
+    client: &Client,
+    text: &str,
+    target: &str,
+) -> Result<TranslateResult, TranslateError> {
+    translate(client, text, Some(target), None, None).await
+}
+
 pub async fn bad_translate_with_count(
     client: &Client,
     text: &str,

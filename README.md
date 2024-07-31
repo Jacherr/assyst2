@@ -51,6 +51,7 @@ However, for completeness, the entire tech stack of Assyst is as follows:
  - [youtube-dlp](https://github.com/yt-dlp/yt-dlp)
  - fake-eval service (currently closed source).
  - CDN (filer) service (currently closed course).
+ - nginx, for top.gg and prometheus webserver.
  - Optionally, Grafana and Prometheus for graphs and logging. A template for this may be made available eventually. If you would like it, open an issue.
 
 ## Acknowledgements
