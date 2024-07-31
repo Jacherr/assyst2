@@ -229,7 +229,7 @@ pub async fn gif(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
 
 #[command(
     description = "create a magikal gif out of an image",
-    aliases = ["gifmagic", "gifmagick", "gmagik"],
+    aliases = ["gifmagic", "gifmagick", "gmagik", "gifcas", "gcas"],
     cooldown = Duration::from_secs(6),
     access = Availability::Public,
     category = Category::Image,
@@ -383,7 +383,7 @@ pub async fn jpeg(ctxt: CommandCtxt<'_>, source: Image, quality: Option<u64>) ->
 
 #[command(
     description = "give your input some magik",
-    aliases = ["magic", "magick"],
+    aliases = ["magic", "magick", "cas"],
     cooldown = Duration::from_secs(4),
     access = Availability::Public,
     category = Category::Image,
