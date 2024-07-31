@@ -124,7 +124,7 @@ pub fn get_or_init_commands() -> &'static HashMap<&'static str, TCommand> {
 
 /// Finds a command by its name.
 pub fn find_command_by_name(name: &str) -> Option<TCommand> {
-    get_or_init_commands().get(name).copied()
+    get_or_init_commands().get(name.to_lowercase()).copied()
 }
 
 pub async fn register_interaction_commands(assyst: ThreadSafeAssyst) -> anyhow::Result<Vec<InteractionCommand>> {
