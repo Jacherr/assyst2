@@ -158,7 +158,7 @@ pub async fn info(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
         ),
         (
             "Built on top of".fg_yellow(),
-            "The Flux image service (https://github.com/jacherr/flux",
+            "The Flux image service (https://github.com/jacherr/flux)",
         ),
         ("Flux is powered by".fg_yellow(), "FFmpeg, gegl, Makesweet, and libvips"),
     ];

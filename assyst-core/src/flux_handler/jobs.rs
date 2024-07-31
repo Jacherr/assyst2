@@ -378,8 +378,16 @@ impl FluxHandler {
         let mut request = FluxRequest::new_with_input_and_limits(media, limits);
 
         let mut options = HashMap::new();
-        top.map(|t| options.insert("top".to_owned(), t));
-        bottom.map(|b| options.insert("bottom".to_owned(), b));
+        if let Some(t) = top
+            && !t.is_empty()
+        {
+            options.insert("top".to_owned(), t);
+        }
+        if let Some(b) = bottom
+            && !b.is_empty()
+        {
+            options.insert("bottom".to_owned(), b);
+        }
 
         request.operation("meme".to_owned(), options);
         request.output();
@@ -400,8 +408,16 @@ impl FluxHandler {
         let mut request = FluxRequest::new_with_input_and_limits(media, limits);
 
         let mut options = HashMap::new();
-        top.map(|t| options.insert("top".to_owned(), t));
-        bottom.map(|b| options.insert("bottom".to_owned(), b));
+        if let Some(t) = top
+            && !t.is_empty()
+        {
+            options.insert("top".to_owned(), t);
+        }
+        if let Some(b) = bottom
+            && !b.is_empty()
+        {
+            options.insert("bottom".to_owned(), b);
+        }
 
         request.operation("motivate".to_owned(), options);
         request.output();

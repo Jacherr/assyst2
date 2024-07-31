@@ -1,4 +1,5 @@
 use std::process::Stdio;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
@@ -29,6 +30,14 @@ struct FileDeletionDefer(String);
 impl Drop for FileDeletionDefer {
     fn drop(&mut self) {
         let _ = std::fs::remove_file(self.0.clone());
+    }
+}
+
+static COMPILING: AtomicBool = AtomicBool::new(false);
+struct CompilingCompleteDefer {}
+impl Drop for CompilingCompleteDefer {
+    fn drop(&mut self) {
+        COMPILING.fetch_and(false, Ordering::Relaxed);
     }
 }
 
@@ -121,6 +130,10 @@ impl FluxHandler {
             CONFIG.dev.flux_workspace_root_path_override.clone()
         };
 
+        if COMPILING.load(Ordering::Relaxed) {
+            bail!("The image service is still preparing. Try again in a few seconds.");
+        }
+
         let mut command = Command::new(FLUX_PATH);
         command.args(args);
         command.current_dir(flux_workspace_root);
@@ -164,9 +177,11 @@ impl FluxHandler {
 
     pub async fn compile_flux() -> anyhow::Result<()> {
         const CARGO_EXIT_FAIL: i32 = 101;
+        COMPILING.fetch_or(true, Ordering::Relaxed);
+        let _defer = CompilingCompleteDefer {};
 
         let res = exec_sync(&format!(
-            "cd {} && mold -run cargo build -q --release",
+            "cd {} && rm {FLUX_PATH} && mold -run cargo build -q --release",
             if CONFIG.dev.flux_workspace_root_path_override.is_empty() {
                 FLUX_DIR
             } else {

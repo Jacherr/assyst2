@@ -334,16 +334,20 @@ impl<'a> ParseCtxt<'a, RawMessageArgsIter<'a>> {
 
     /// The rest of the message, excluding flags.
     pub fn rest(&mut self, label: Label) -> Result<String, TagParseError> {
-        // todo: handle newlines etc with
         let raw = self
             .args
             .remainder()
-            .ok_or(TagParseError::ArgsExhausted(ArgsExhausted(label)))?;
+            .ok_or(TagParseError::ArgsExhausted(ArgsExhausted(label.clone())))?;
+
         let (args, flags) = if let Some(idx) = raw.find("--") {
             (&raw[..idx], &raw[idx..])
         } else {
             (raw, "")
         };
+
+        if args.is_empty() {
+            return Err(TagParseError::ArgsExhausted(ArgsExhausted(label)));
+        }
 
         self.args = flags.split_ascii_whitespace();
 
