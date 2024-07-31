@@ -98,7 +98,7 @@ pub async fn edit(ctxt: CommandCtxt<'_>, name: Word, contents: RestNoFlags) -> a
 
     ctxt.reply(format!(
         "Successfully edited tag {}",
-        contents.0.to_ascii_lowercase().codestring()
+        name.0.to_ascii_lowercase().codestring()
     ))
     .await?;
 

@@ -13,7 +13,7 @@ use assyst_database::model::free_tier_2_requests::FreeTier2Requests;
 use assyst_database::model::guild_disabled_command::GuildDisabledCommand;
 use assyst_proc_macro::command;
 
-use super::arguments::{Image, ImageUrl, RestNoFlags, Word};
+use super::arguments::{Codeblock, Image, ImageUrl, RestNoFlags, Word};
 use super::registry::get_or_init_commands;
 use super::{Category, CommandCtxt};
 use crate::command::Availability;
@@ -121,7 +121,7 @@ pub async fn exec(ctxt: CommandCtxt<'_>, script: RestNoFlags) -> anyhow::Result<
     usage = "[script]",
     examples = ["1"]
 )]
-pub async fn eval(ctxt: CommandCtxt<'_>, script: RestNoFlags) -> anyhow::Result<()> {
+pub async fn eval(ctxt: CommandCtxt<'_>, script: Codeblock) -> anyhow::Result<()> {
     let result = fake_eval(ctxt.assyst(), script.0, true, ctxt.data.message, Vec::new())
         .await
         .context("Evaluation failed")?;
