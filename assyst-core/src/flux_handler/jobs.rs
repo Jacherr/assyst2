@@ -447,6 +447,15 @@ impl FluxHandler {
         self.run_flux(request, limits.time).await
     }
 
+    pub async fn paint(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
+        let tier = self.get_request_tier(user_id).await?;
+        let limits = &LIMITS[tier];
+
+        let request = FluxRequest::new_basic(media, limits, "paint");
+
+        self.run_flux(request, limits.time).await
+    }
+
     pub async fn ping_pong(&self, media: Vec<u8>, user_id: u64) -> FluxResult {
         let tier = self.get_request_tier(user_id).await?;
         let limits = &LIMITS[tier];

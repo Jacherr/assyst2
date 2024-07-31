@@ -510,6 +510,23 @@ pub async fn overlay(ctxt: CommandCtxt<'_>, source: Image, source2: Image) -> an
 }
 
 #[command(
+    description = "paint an image",
+    cooldown = Duration::from_secs(4),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image]",
+    examples = ["https://link.to.my/image.png"],
+    send_processing = true
+)]
+pub async fn paint(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
+    let result = ctxt.flux_handler().paint(source.0, ctxt.data.author.id.get()).await?;
+
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
     description = "play a gif forward then backward",
     aliases = ["gifloop", "gloop"],
     cooldown = Duration::from_secs(4),

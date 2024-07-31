@@ -61,6 +61,7 @@ declare_commands!(
     image::motivate_command,
     image::neon_command,
     image::overlay_command,
+    image::paint_command,
     image::pingpong_command,
     image::pixelate_command,
     image::rainbow_command,
