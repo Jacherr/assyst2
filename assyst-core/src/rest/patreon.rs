@@ -13,7 +13,7 @@ pub const TIER_3_AMOUNT: usize = 1000;
 pub const TIER_2_AMOUNT: usize = 500;
 pub const TIER_1_AMOUNT: usize = 300;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Copy)]
 pub enum PatronTier {
     Tier4 = 4,
     Tier3 = 3,

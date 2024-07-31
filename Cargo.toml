@@ -2,14 +2,15 @@ cargo-features = ["codegen-backend"]
 
 [workspace]
 members = [
-    "assyst-core",
     "assyst-cache",
-    "assyst-gateway",
     "assyst-common",
+    "assyst-core",
+    "assyst-database",
+    "assyst-flux-iface",
+    "assyst-gateway",
+    "assyst-proc-macro",
     "assyst-tag",
     "assyst-webserver",
-    "assyst-database",
-    "assyst-proc-macro",
 ]
 exclude = ["flux"]
 resolver = "2"

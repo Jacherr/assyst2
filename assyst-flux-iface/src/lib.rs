@@ -1,3 +1,6 @@
+#![feature(let_chains)]
+
+use std::collections::HashMap;
 use std::process::Stdio;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -15,8 +18,6 @@ use libc::pid_t;
 use tokio::fs;
 use tokio::process::Command;
 use tokio::time::timeout;
-
-use crate::rest::patreon::Patron;
 
 pub mod flux_request;
 pub mod jobs;
@@ -43,14 +44,18 @@ impl Drop for CompilingCompleteDefer {
 
 pub struct FluxHandler {
     database_handler: Arc<DatabaseHandler>,
-    premium_users: Arc<Mutex<Vec<Patron>>>,
+    premium_users: Arc<Mutex<HashMap<u64, u64>>>,
 }
 impl FluxHandler {
-    pub fn new(database_handler: Arc<DatabaseHandler>, premium_users: Arc<Mutex<Vec<Patron>>>) -> Self {
+    pub fn new(database_handler: Arc<DatabaseHandler>, premium_users: Arc<Mutex<HashMap<u64, u64>>>) -> Self {
         Self {
             database_handler,
             premium_users,
         }
+    }
+
+    pub fn set_premium_users(&self, users: HashMap<u64, u64>) {
+        *self.premium_users.lock().unwrap() = users;
     }
 
     pub async fn run_flux(&self, request: FluxRequest, time_limit: Duration) -> FluxResult {
@@ -202,9 +207,9 @@ impl FluxHandler {
     pub async fn get_request_tier(&self, user_id: u64) -> Result<usize, anyhow::Error> {
         if let Some(p) = {
             let premium_users = self.premium_users.lock().unwrap();
-            premium_users.iter().find(|i| i.user_id == user_id).cloned()
+            premium_users.get(&user_id).copied()
         } {
-            return Ok((p.tier as usize).saturating_sub(1));
+            return Ok((p as usize).saturating_sub(1));
         }
 
         let user_tier2 = FreeTier2Requests::get_user_free_tier_2_requests(&self.database_handler, user_id).await?;
@@ -220,7 +225,7 @@ impl FluxHandler {
     }
 
     pub async fn get_version(&self) -> anyhow::Result<String> {
-        let mut req = FluxRequest::new();
+        let mut req = FluxRequest::default();
         req.version();
         Ok(string_from_likely_utf8(self.run_flux(req, Duration::MAX).await?))
     }

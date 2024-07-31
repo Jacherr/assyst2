@@ -7,6 +7,7 @@ use assyst_common::metrics_handler::MetricsHandler;
 use assyst_common::pipe::CACHE_PIPE_PATH;
 use assyst_database::model::badtranslator_channel::BadTranslatorChannel;
 use assyst_database::DatabaseHandler;
+use assyst_flux_iface::FluxHandler;
 use twilight_http::client::InteractionClient;
 use twilight_http::Client as HttpClient;
 use twilight_model::id::marker::ApplicationMarker;
@@ -14,7 +15,6 @@ use twilight_model::id::Id;
 
 use crate::bad_translator::{BadTranslator, BadTranslatorEntry};
 use crate::command_ratelimits::CommandRatelimits;
-use crate::flux_handler::FluxHandler;
 use crate::persistent_cache_handler::PersistentCacheHandler;
 use crate::replies::Replies;
 use crate::rest::patreon::Patron;
@@ -83,7 +83,7 @@ impl Assyst {
             tasks: Mutex::new(vec![]),
             shard_count,
             replies: Replies::new(),
-            flux_handler: FluxHandler::new(database_handler.clone(), premium_users.clone()),
+            flux_handler: FluxHandler::new(database_handler.clone(), Arc::new(Mutex::new(HashMap::new()))),
             rest_cache_handler: RestCacheHandler::new(http_client.clone()),
             command_ratelimits: CommandRatelimits::new(),
             patreon_refresh: tokio::sync::Mutex::new(patreon_refresh_t.to_owned()),
@@ -96,7 +96,13 @@ impl Assyst {
     }
 
     pub fn update_premium_user_list(&self, patrons: Vec<Patron>) {
+        let mut flux_prems = HashMap::new();
+        for patron in &patrons {
+            flux_prems.insert(patron.user_id, patron.tier as u64);
+        }
+
         *self.premium_users.lock().unwrap() = patrons;
+        self.flux_handler.set_premium_users(flux_prems);
     }
 
     pub fn interaction_client(&self) -> InteractionClient {

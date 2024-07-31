@@ -9,6 +9,7 @@ edition = "2021"
 anyhow = "1.0.75"
 assyst-common = { path = "../assyst-common" }
 assyst-database = { path = "../assyst-database" }
+assyst-flux-iface = { path = "../assyst-flux-iface" }
 assyst-proc-macro = { path = "../assyst-proc-macro" }
 assyst-tag = { path = "../assyst-tag" }
 assyst-webserver = { path = "../assyst-webserver" }

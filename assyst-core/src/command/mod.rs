@@ -33,6 +33,7 @@ use std::str::SplitAsciiWhitespace;
 use std::time::{Duration, Instant};
 
 use assyst_common::config::CONFIG;
+use assyst_flux_iface::FluxHandler;
 use async_trait::async_trait;
 use errors::TagParseError;
 use twilight_model::application::command::CommandOption;
@@ -49,7 +50,6 @@ use self::messagebuilder::MessageBuilder;
 use self::source::Source;
 use super::gateway_handler::reply as gateway_reply;
 use crate::assyst::ThreadSafeAssyst;
-use crate::flux_handler::FluxHandler;
 
 pub mod arguments;
 pub mod errors;

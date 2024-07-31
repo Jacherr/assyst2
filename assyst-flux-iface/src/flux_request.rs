@@ -22,12 +22,9 @@ pub enum FluxStep {
     Version,
 }
 
+#[derive(Default)]
 pub struct FluxRequest(pub Vec<FluxStep>);
 impl FluxRequest {
-    pub fn new() -> Self {
-        Self(vec![])
-    }
-
     pub fn new_with_input_and_limits(input: Vec<u8>, limits: &LimitData) -> Self {
         let mut new = Self(vec![]);
         new.input(input);

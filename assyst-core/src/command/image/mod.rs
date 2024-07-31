@@ -4,13 +4,13 @@ use anyhow::Context;
 use assyst_common::ansi::Ansi;
 use assyst_common::markdown::Markdown;
 use assyst_common::util::{format_duration, table};
+use assyst_flux_iface::jobs::MediaInfo;
 use assyst_proc_macro::command;
 use human_bytes::human_bytes;
 
 use super::arguments::{Image, RestNoFlags, Word};
 use super::messagebuilder::{Attachment, MessageBuilder};
 use crate::command::{Availability, Category, CommandCtxt};
-use crate::flux_handler::jobs::MediaInfo;
 
 pub mod audio;
 pub mod bloom;

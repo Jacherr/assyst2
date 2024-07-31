@@ -2,13 +2,13 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use anyhow::Context;
+use assyst_flux_iface::flux_request::FluxRequest;
+use assyst_flux_iface::limits::LIMITS;
 use assyst_proc_macro::command;
 use rand::{thread_rng, Rng};
 
 use crate::command::arguments::Image;
 use crate::command::{Availability, Category, CommandCtxt};
-use crate::flux_handler::flux_request::FluxRequest;
-use crate::flux_handler::limits::LIMITS;
 
 const VALID_EFFECTS: &[&str] = &[
     "bloom",

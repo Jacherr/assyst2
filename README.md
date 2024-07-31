@@ -15,6 +15,8 @@
 
 Assyst is a multi-purpose Discord bot with a focus on image processing and manipulation, custom commands via a tag parser, and other unique features. A more detailed overview of the Assyst feature-set can be located on the [Top.gg listing page for Assyst](https://top.gg/bot/571661221854707713).
 
+Assyst is powered by a custom image editing service called `Flux`. Flux is available [here](https://github.com/jacherr/flux). It provides image and video editing features via the command-line, and is a submodule of this repository in order to facilitate single-step deploys. Refer to the Flux README for more information.
+
 Assyst is split into a number of separate crates, as described below.
 
 ## Binaries
@@ -28,6 +30,7 @@ Assyst is split into a number of separate crates, as described below.
 - assyst-database: Interfaces with PostgreSQL, for database purposes.
 - assyst-webserver: Web server designed to handle webhooking, such as vote processing for Discord bot list websites, as well as Prometheus metrics.
 - assyst-proc-macro: General purpose [procedural macros] <sub>(currently just a macro for command setup)</sub>
+- assyst-flux-iface: Basic wrapper over Flux for ease of use.
 
 ### Note: assyst-core will likely be split into more, smaller, crates in the future.
 

@@ -351,7 +351,7 @@ pub async fn search(ctxt: CommandCtxt<'_>, page: u64, query: Word, user: Option<
     let pages = (count as f64 / DEFAULT_LIST_COUNT as f64).ceil() as i64;
     ensure!(pages >= page as i64, "Cannot go beyond final page");
 
-    let tags = &tags[offset as usize..(offset + DEFAULT_LIST_COUNT) as usize];
+    let tags = &tags[offset as usize..(offset + DEFAULT_LIST_COUNT).clamp(1, tags.len() as i64) as usize];
 
     let mut message = format!(
         "🗒️ **Tags in this server matching query {0}{1}**\nView a tag by running `{2}t <name>`, or go to the next page by running `{2}t list {3} {0}`\n\n",

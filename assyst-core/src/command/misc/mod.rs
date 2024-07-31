@@ -191,7 +191,7 @@ pub async fn patronstatus(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
         .unwrap()
         .iter()
         .find(|p| p.user_id == ctxt.data.author.id.get())
-        .map(|p| p.tier.clone())
+        .map(|p| p.tier)
         .unwrap_or(PatronTier::Tier0);
 
     ctxt.reply(format!(

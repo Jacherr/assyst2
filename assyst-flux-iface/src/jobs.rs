@@ -7,7 +7,7 @@ use serde_json::from_str;
 
 use super::limits::LIMITS;
 use super::FluxHandler;
-use crate::flux_handler::flux_request::FluxRequest;
+use crate::flux_request::FluxRequest;
 
 #[derive(Deserialize)]
 pub struct ImageInfo {
@@ -328,7 +328,7 @@ impl FluxHandler {
     }
 
     pub async fn image_info(&self, media: Vec<u8>) -> anyhow::Result<MediaInfo> {
-        let mut request = FluxRequest::new();
+        let mut request = FluxRequest::default();
         request.input(media);
         request.info();
 
