@@ -207,6 +207,8 @@ pub async fn reply_interaction_command(ctxt: &CommandCtxt<'_>, builder: MessageB
         response_data = response_data.content("");
     }
 
+    response_data = response_data.allowed_mentions(AllowedMentions::default());
+
     if let Some(c) = builder.content.clone() {
         response_data = response_data.content(c);
     }
