@@ -181,7 +181,7 @@ impl FluxHandler {
         let _defer = CompilingCompleteDefer {};
 
         let res = exec_sync(&format!(
-            "cd {} && rm {FLUX_PATH} && mold -run cargo build -q --release",
+            "cd {} && rm {FLUX_PATH} && mold -run ~/.cargo/bin/cargo build -q --release",
             if CONFIG.dev.flux_workspace_root_path_override.is_empty() {
                 FLUX_DIR
             } else {
