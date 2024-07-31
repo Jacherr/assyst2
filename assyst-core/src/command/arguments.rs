@@ -234,7 +234,13 @@ impl ParseArgument for Word {
 pub struct Codeblock(pub String);
 impl ParseArgument for Codeblock {
     async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>, label: Label) -> Result<Self, TagParseError> {
-        Ok(Codeblock(parse_codeblock(ctxt.rest_all(label))))
+        let fork = ctxt.fork();
+        let all = fork.rest_all(label.clone());
+        if all.ends_with("```") {
+            Ok(Codeblock(parse_codeblock(ctxt.rest_all(label))))
+        } else {
+            Ok(Codeblock(parse_codeblock(ctxt.rest(label)?)))
+        }
     }
 
     async fn parse_command_option(ctxt: &mut InteractionCommandParseCtxt<'_>) -> Result<Self, TagParseError> {
