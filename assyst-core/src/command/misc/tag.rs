@@ -148,7 +148,7 @@ pub async fn delete(ctxt: CommandCtxt<'_>, name: Word) -> anyhow::Result<()> {
     ensure!(success, "Failed to delete that tag. Does it exist, and do you own it?");
 
     ctxt.reply(format!(
-        "Successfully edited tag {}",
+        "Successfully deleted tag {}",
         name.0.to_ascii_lowercase().codestring()
     ))
     .await?;

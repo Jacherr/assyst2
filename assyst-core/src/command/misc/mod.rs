@@ -281,7 +281,7 @@ pub async fn topcommands(ctxt: CommandCtxt<'_>, command: Option<Word>) -> anyhow
         let rate = diff_lock.get_mut(command_name).map(|r| r.get_rate()).unwrap_or(0);
 
         ctxt.reply(format!(
-            "Comman `{command_name}` has been used **{}** times. ({rate}/hr)",
+            "Command `{command_name}` has been used **{}** times. ({rate}/hr)",
             data.uses
         ))
         .await?;
