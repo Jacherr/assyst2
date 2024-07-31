@@ -49,6 +49,8 @@ However, for completeness, the entire tech stack of Assyst is as follows:
  - PostgreSQL. Database format TBA.
  - Flux, which has [its own set of requirements](https://github.com/jacherr/flux?tab=readme-ov-file#prerequisites)
  - [youtube-dlp](https://github.com/yt-dlp/yt-dlp)
+ - fake-eval service (currently closed source).
+ - CDN (filer) service (currently closed course).
  - Optionally, Grafana and Prometheus for graphs and logging. A template for this may be made available eventually. If you would like it, open an issue.
 
 ## Acknowledgements
