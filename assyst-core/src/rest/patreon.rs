@@ -1,9 +1,11 @@
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
+use anyhow::Context;
 use assyst_common::config::{CONFIG, PATREON_REFRESH_LOCATION};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
+use serde_json::from_str;
 use tokio::sync::Mutex;
 
 pub const REFRESH_ROUTE: &str = "https://www.patreon.com/api/oauth2/token";
@@ -166,8 +168,10 @@ async fn get_patreon_access_token(client: &Client) -> anyhow::Result<String> {
         ])
         .send()
         .await?
-        .json::<PatronRefreshResponse>()
+        .text()
         .await?;
+
+    let response = from_str::<PatronRefreshResponse>(&response).context(format!("Returned: {response}"))?;
 
     std::fs::write(PATREON_REFRESH_LOCATION, response.refresh_token.clone())?;
     *refresh = response.refresh_token.clone();
@@ -187,8 +191,10 @@ pub async fn get_patrons(client: &Client) -> anyhow::Result<Vec<Patron>> {
         .header(reqwest::header::AUTHORIZATION, &format!("Bearer {access_token}"))
         .send()
         .await?
-        .json::<Response>()
+        .text()
         .await?;
+
+    let response = from_str::<Response>(&response).context(format!("Returned: {response}"))?;
 
     let mut entitled_tiers: HashMap<String, PatronTier> = HashMap::new();
     let mut discord_connections: HashMap<String, u64> = HashMap::new();
