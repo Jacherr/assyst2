@@ -96,7 +96,7 @@ async fn main() {
         info!(
             "Patreon synchronisation disabled in config.dev.disable_patreson_synchronisation, will only load admins as patrons"
         );
-
+    } else {
         init_patreon_refresh(std::fs::read_to_string(PATREON_REFRESH_LOCATION).unwrap_or_default()).await;
     }
 
