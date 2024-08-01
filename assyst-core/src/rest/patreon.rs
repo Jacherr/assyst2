@@ -158,7 +158,7 @@ pub async fn init_patreon_refresh(token: String) {
 async fn get_patreon_access_token(client: &Client) -> anyhow::Result<String> {
     let mut refresh = PATREON_REFRESH.lock().await;
 
-    let response = client
+    let init_response = client
         .post(REFRESH_ROUTE)
         .query(&vec![
             &("refresh_token", &*refresh.to_owned()),
@@ -167,11 +167,13 @@ async fn get_patreon_access_token(client: &Client) -> anyhow::Result<String> {
             &("grant_type", "refresh_token"),
         ])
         .send()
-        .await?
-        .text()
         .await?;
 
-    let response = from_str::<PatronRefreshResponse>(&response).context(format!("Returned: {response}"))?;
+    let code = init_response.status();
+    let response = init_response.text().await?;
+
+    let response =
+        from_str::<PatronRefreshResponse>(&response).context(format!("Returned: {response} (status {code})"))?;
 
     std::fs::write(PATREON_REFRESH_LOCATION, response.refresh_token.clone())?;
     *refresh = response.refresh_token.clone();

@@ -16,7 +16,7 @@ pub async fn get_premium_users(assyst: ThreadSafeAssyst) {
         let patrons = match crate::rest::patreon::get_patrons(&assyst.reqwest_client).await {
             Ok(p) => p,
             Err(e) => {
-                err!("Failed to get patron list for synchronisation: {}", e.to_string());
+                err!("Failed to get patron list for synchronisation: {:#}", e.to_string());
                 return;
             },
         };

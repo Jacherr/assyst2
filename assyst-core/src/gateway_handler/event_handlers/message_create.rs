@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::time::Instant;
 
 use assyst_common::err;
-use tracing::debug;
+use tracing::{debug, error};
 use twilight_model::gateway::payload::incoming::MessageCreate;
 
 use super::after_command_execution_success;
@@ -21,7 +21,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, MessageCreate(message): MessageCre
     if assyst.bad_translator.is_channel(message.channel_id.get()).await && !assyst.bad_translator.is_disabled().await {
         match assyst.bad_translator.handle_message(&assyst, Box::new(message)).await {
             Err(e) => {
-                err!("BadTranslator channel execution failed: {e:?}");
+                error!("BadTranslator channel execution failed: {e:?}");
             },
             _ => {},
         };
