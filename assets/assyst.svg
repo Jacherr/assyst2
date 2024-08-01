@@ -1,19 +1,11 @@
-<svg
-    xmlns="http://www.w3.org/2000/svg"
-    xmlns:xlink="http://www.w3.org/1999/xlink"
-    width="1047px" height="1047px"
-    viewBox="0 0 1027 1027">
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewport="0 0 100 100" style="inset: 0;position: absolute;width: 100px;height: 100px;" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
     <defs>
-        <linearGradient id="grad" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1027" y2="0">
+        <linearGradient id="assys" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="100" y2="0">
             <stop offset="0%" stop-color="#f22611" />
             <stop offset="100%" stop-color="#f5af19" />
         </linearGradient>
     </defs>
-    <circle cy="50%" cx="50%" r="48%" fill="none" stroke="url('#grad')" stroke-width="40px" stroke-linecap="butt" stroke-linejoin="round"/>
-    <path fill-rule="evenodd" stroke="url('#grad')" stroke-width="40px" stroke-linecap="butt" stroke-linejoin="round"
-          d="M331.226,356.918 L331.774,356.082 L564.863,508.945 L564.314,509.781 L331.226,356.918 Z"/>
-    <path fill-rule="evenodd" stroke="url('#grad')" stroke-width="40px" stroke-linecap="butt" stroke-linejoin="round"
-          d="M331.774,669.199 L331.226,668.363 L564.314,515.500 L564.863,516.337 L331.774,669.199 Z"/>
-    <path fill-rule="evenodd" stroke="url('#grad')" stroke-width="38px" stroke-linecap="butt" stroke-linejoin="round"
-          d="M486.500,670.500 L486.500,669.500 L695.500,669.500 L695.500,670.500 L486.500,670.500 Z"/>
-    </svg>
+    <circle cy="50" cx="50" r="48" stroke="url(#assys)"/>
+    <path d="M32.3,34.8 l23.1,15.2 l-23.1,15.3" stroke="url(#assys)"/>
+    <line x1="47.5" y1="65" x2="67.5" y2="65" stroke="url(#assys)"/>
+</svg>
