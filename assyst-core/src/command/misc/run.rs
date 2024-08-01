@@ -416,7 +416,7 @@ pub async fn rustc(ctxt: CommandCtxt<'_>, script: Codeblock) -> anyhow::Result<(
 
     // download toolchain so we use correct compiler for clippy_utils and other internal crates
     let raw = download_content(
-        ctxt.assyst(),
+        &ctxt.assyst().reqwest_client,
         "https://raw.githubusercontent.com/rust-lang/rust-clippy/master/rust-toolchain",
         usize::MAX,
         false,

@@ -1,8 +1,7 @@
 use anyhow::Context;
 use assyst_common::config::CONFIG;
+use reqwest::Client;
 use serde::Deserialize;
-
-use crate::assyst::ThreadSafeAssyst;
 
 #[derive(Deserialize)]
 pub struct FilerStats {
@@ -10,9 +9,8 @@ pub struct FilerStats {
     pub size_bytes: u64,
 }
 
-pub async fn get_filer_stats(assyst: ThreadSafeAssyst) -> anyhow::Result<FilerStats> {
-    Ok(assyst
-        .reqwest_client
+pub async fn get_filer_stats(client: &Client) -> anyhow::Result<FilerStats> {
+    Ok(client
         .get(&format!("{}/stats", CONFIG.urls.filer))
         .send()
         .await?
@@ -20,9 +18,8 @@ pub async fn get_filer_stats(assyst: ThreadSafeAssyst) -> anyhow::Result<FilerSt
         .await?)
 }
 
-pub async fn upload_to_filer(assyst: ThreadSafeAssyst, data: Vec<u8>, content_type: &str) -> anyhow::Result<String> {
-    Ok(assyst
-        .reqwest_client
+pub async fn upload_to_filer(client: &Client, data: Vec<u8>, content_type: &str) -> anyhow::Result<String> {
+    Ok(client
         .post(&CONFIG.urls.filer)
         .header(reqwest::header::CONTENT_TYPE, content_type)
         .header(reqwest::header::AUTHORIZATION, &CONFIG.authentication.filer_key)

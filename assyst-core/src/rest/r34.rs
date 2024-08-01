@@ -1,8 +1,7 @@
 use anyhow::{bail, Context};
 use rand::prelude::SliceRandom;
+use reqwest::Client;
 use serde::Deserialize;
-
-use crate::assyst::ThreadSafeAssyst;
 
 static R34_URL: &str = "https://api.rule34.xxx/index.php?tags=";
 
@@ -12,9 +11,8 @@ pub struct R34Result {
     pub score: i32,
 }
 
-pub async fn get_random_r34(assyst: ThreadSafeAssyst, tags: &str) -> anyhow::Result<R34Result> {
-    let all = assyst
-        .reqwest_client
+pub async fn get_random_r34(client: &Client, tags: &str) -> anyhow::Result<R34Result> {
+    let all = client
         .get(format!("{}{}", R34_URL, &tags.replace(' ', "+")[..]))
         .query(&[
             ("page", "dapi"),

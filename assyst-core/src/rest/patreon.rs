@@ -1,9 +1,10 @@
 use std::collections::HashMap;
+use std::sync::LazyLock;
 
 use assyst_common::config::{CONFIG, PATREON_REFRESH_LOCATION};
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
-
-use crate::assyst::ThreadSafeAssyst;
+use tokio::sync::Mutex;
 
 pub const REFRESH_ROUTE: &str = "https://www.patreon.com/api/oauth2/token";
 pub const ROUTE: &str = "https://api.patreon.com/api/oauth2/v2/campaigns/4568373/members?include=user,currently_entitled_tiers&fields%5Buser%5D=social_connections,full_name&fields%5Bmember%5D=is_follower,last_charge_date,last_charge_status,lifetime_support_cents,currently_entitled_amount_cents,patron_status&page%5Bsize%5D=10000";
@@ -146,11 +147,16 @@ pub struct PatronRefreshResponse {
     refresh_token: String,
 }
 
-async fn get_patreon_access_token(assyst: ThreadSafeAssyst) -> anyhow::Result<String> {
-    let mut refresh = assyst.patreon_refresh.lock().await;
+static PATREON_REFRESH: LazyLock<Mutex<String>> = LazyLock::new(|| Mutex::new(String::new()));
 
-    let response = assyst
-        .reqwest_client
+pub async fn init_patreon_refresh(token: String) {
+    *PATREON_REFRESH.lock().await = token;
+}
+
+async fn get_patreon_access_token(client: &Client) -> anyhow::Result<String> {
+    let mut refresh = PATREON_REFRESH.lock().await;
+
+    let response = client
         .post(REFRESH_ROUTE)
         .query(&vec![
             &("refresh_token", &*refresh.to_owned()),
@@ -171,13 +177,12 @@ async fn get_patreon_access_token(assyst: ThreadSafeAssyst) -> anyhow::Result<St
 
 /// I am not proud of this code, but at the same time, I am not proud of Patreon for making such a
 /// terrible API
-pub async fn get_patrons(assyst: ThreadSafeAssyst) -> anyhow::Result<Vec<Patron>> {
+pub async fn get_patrons(client: &Client) -> anyhow::Result<Vec<Patron>> {
     let mut patrons: Vec<Patron> = vec![];
 
-    let access_token = get_patreon_access_token(assyst.clone()).await?;
+    let access_token = get_patreon_access_token(client).await?;
 
-    let response = assyst
-        .reqwest_client
+    let response = client
         .get(ROUTE)
         .header(reqwest::header::AUTHORIZATION, &format!("Bearer {access_token}"))
         .send()

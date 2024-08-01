@@ -481,8 +481,13 @@ impl assyst_tag::Context for TagContext {
         code: &str,
         args: Vec<String>,
     ) -> anyhow::Result<assyst_common::eval::FakeEvalImageResponse> {
-        self.tokio
-            .block_on(fake_eval(&self.assyst, code.into(), true, self.message.as_ref(), args))
+        self.tokio.block_on(fake_eval(
+            &self.assyst.reqwest_client,
+            code.into(),
+            true,
+            self.message.as_ref(),
+            args,
+        ))
     }
 
     fn get_last_attachment(&self) -> anyhow::Result<String> {
@@ -509,7 +514,7 @@ impl assyst_tag::Context for TagContext {
     fn download(&self, url: &str) -> anyhow::Result<String> {
         self.tokio
             .block_on(download_content(
-                &self.assyst,
+                &self.assyst.reqwest_client,
                 url,
                 ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES,
                 true,

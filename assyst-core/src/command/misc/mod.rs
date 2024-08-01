@@ -121,9 +121,15 @@ pub async fn exec(ctxt: CommandCtxt<'_>, script: RestNoFlags) -> anyhow::Result<
     examples = ["1"]
 )]
 pub async fn eval(ctxt: CommandCtxt<'_>, script: Codeblock) -> anyhow::Result<()> {
-    let result = fake_eval(ctxt.assyst(), script.0, true, ctxt.data.message, Vec::new())
-        .await
-        .context("Evaluation failed")?;
+    let result = fake_eval(
+        &ctxt.assyst().reqwest_client,
+        script.0,
+        true,
+        ctxt.data.message,
+        Vec::new(),
+    )
+    .await
+    .context("Evaluation failed")?;
 
     match result {
         FakeEvalImageResponse::Image(im, _) => {
@@ -377,7 +383,7 @@ pub async fn chars(ctxt: CommandCtxt<'_>, chars: RestNoFlags) -> anyhow::Result<
     let mut output = String::new();
 
     for ch in chars {
-        let (html, url) = get_char_info(ctxt.assyst().clone(), ch).await?;
+        let (html, url) = get_char_info(&ctxt.assyst().reqwest_client, ch).await?;
 
         let title = extract_page_title(&html).unwrap_or_else(|| "<unknown>".to_owned());
 

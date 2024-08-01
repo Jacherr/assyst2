@@ -13,7 +13,7 @@ pub async fn get_premium_users(assyst: ThreadSafeAssyst) {
         info!("Synchronising patron list");
 
         // get patron list and update in assyst
-        let patrons = match crate::rest::patreon::get_patrons(assyst.clone()).await {
+        let patrons = match crate::rest::patreon::get_patrons(&assyst.reqwest_client).await {
             Ok(p) => p,
             Err(e) => {
                 err!("Failed to get patron list for synchronisation: {}", e.to_string());

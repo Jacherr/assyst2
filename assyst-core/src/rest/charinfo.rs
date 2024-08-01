@@ -1,11 +1,11 @@
-use crate::assyst::ThreadSafeAssyst;
+use reqwest::Client;
 
 static CHARINFO_URL: &str = "https://www.fileformat.info/info/unicode/char/";
 
-pub async fn get_char_info(assyst: ThreadSafeAssyst, ch: char) -> anyhow::Result<(String, String)> {
+pub async fn get_char_info(client: &Client, ch: char) -> anyhow::Result<(String, String)> {
     let url = format!("{}{:x}", CHARINFO_URL, ch as u32);
 
-    Ok((assyst.reqwest_client.get(&url).send().await?.text().await?, url))
+    Ok((client.get(&url).send().await?.text().await?, url))
 }
 
 /// Attempts to extract the page title for charingo

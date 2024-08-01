@@ -2,19 +2,17 @@ use anyhow::Context;
 use assyst_common::config::CONFIG;
 use assyst_common::eval::{FakeEvalBody, FakeEvalImageResponse, FakeEvalMessageData};
 use assyst_common::util::filetype::get_sig;
+use reqwest::Client;
 use twilight_model::channel::Message;
 
-use crate::assyst::Assyst;
-
 pub async fn fake_eval(
-    assyst: &Assyst,
+    client: &Client,
     code: String,
     accept_image: bool,
     message: Option<&Message>,
     args: Vec<String>,
 ) -> anyhow::Result<FakeEvalImageResponse> {
-    let response = assyst
-        .reqwest_client
+    let response = client
         .post(format!("{}/eval", CONFIG.urls.eval))
         .query(&[("returnBuffer", accept_image)])
         .json(&FakeEvalBody {

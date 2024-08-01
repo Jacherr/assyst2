@@ -21,7 +21,7 @@ pub mod translation;
     send_processing = true
 )]
 pub async fn findsong(ctxt: CommandCtxt<'_>, input: ImageUrl) -> anyhow::Result<()> {
-    let result = identify_song_notsoidentify(ctxt.assyst().clone(), input.0)
+    let result = identify_song_notsoidentify(&ctxt.assyst().reqwest_client, input.0)
         .await
         .context("Failed to identify song")?;
 

@@ -77,7 +77,7 @@ pub async fn stats(ctxt: CommandCtxt<'_>, option: Option<Word>) -> anyhow::Resul
     async fn get_storage_stats(ctxt: &CommandCtxt<'_>) -> anyhow::Result<String> {
         let database_size = ctxt.assyst().database_handler.database_size().await?.size;
         let cache_size = human_bytes(ctxt.assyst().database_handler.cache.size_of() as f64);
-        let filer_stats = filer_stats(ctxt.assyst().clone()).await.unwrap_or(FilerStats {
+        let filer_stats = filer_stats(&ctxt.assyst().reqwest_client).await.unwrap_or(FilerStats {
             count: 0,
             size_bytes: 0,
         });

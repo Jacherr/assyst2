@@ -52,7 +52,7 @@ async fn get_filer_url(
 
         if data.len() > guild_upload_limit as usize {
             filer_url = upload_to_filer(
-                ctxt.assyst().clone(),
+                &ctxt.assyst().reqwest_client,
                 data.clone(),
                 get_sig(&data).unwrap_or(Type::PNG).as_mime(),
             )

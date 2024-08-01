@@ -1,7 +1,6 @@
 use assyst_common::config::CONFIG;
 use reqwest::multipart::{Form, Part};
-
-use crate::assyst::ThreadSafeAssyst;
+use reqwest::Client;
 
 const NOT_SO_IDENTIFY_URL: &str = "https://notsobot.com/api/media/av/tools/identify";
 
@@ -31,11 +30,7 @@ pub mod notsoidentify {
     }
 }
 
-pub async fn identify_song_notsoidentify(
-    assyst: ThreadSafeAssyst,
-    search: String,
-) -> anyhow::Result<Vec<notsoidentify::Song>> {
-    let client = &assyst.reqwest_client;
+pub async fn identify_song_notsoidentify(client: &Client, search: String) -> anyhow::Result<Vec<notsoidentify::Song>> {
     let formdata = Form::new();
     let formdata = formdata.part("url", Part::text(search));
     Ok(client

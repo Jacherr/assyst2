@@ -71,7 +71,8 @@ flag_parse_argument! { DownloadFlags }
     ]
 )]
 pub async fn download(ctxt: CommandCtxt<'_>, url: Word, options: DownloadFlags) -> anyhow::Result<()> {
-    let mut opts = WebDownloadOpts::from_download_flags(options);
+    let mut opts =
+        WebDownloadOpts::from_download_flags(options, ctxt.assyst().rest_cache_handler.get_web_download_urls_copied());
 
     if url.0.to_ascii_lowercase().contains("youtube.com/playlist") {
         let videos = get_youtube_playlist_entries(&url.0).await?;
@@ -127,7 +128,11 @@ pub async fn download(ctxt: CommandCtxt<'_>, url: Word, options: DownloadFlags) 
                     }
                 };
 
-                let media = timeout(Duration::from_secs(120), download_web_media(a, &url, opts)).await;
+                let media = timeout(
+                    Duration::from_secs(120),
+                    download_web_media(&a.reqwest_client, &url, opts),
+                )
+                .await;
                 match media {
                     Ok(Ok(m)) => {
                         let mut z_lock = z.lock().await;
@@ -222,7 +227,7 @@ pub async fn download(ctxt: CommandCtxt<'_>, url: Word, options: DownloadFlags) 
         ))
         .await?;
     } else {
-        let result = download_web_media(ctxt.assyst().clone(), &url.0, opts).await?;
+        let result = download_web_media(&ctxt.assyst().reqwest_client, &url.0, opts).await?;
 
         ctxt.reply((
             result,

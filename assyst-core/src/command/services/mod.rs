@@ -41,7 +41,7 @@ pub async fn burntext(ctxt: CommandCtxt<'_>, text: Rest) -> anyhow::Result<()> {
     age_restricted = true
 )]
 pub async fn r34(ctxt: CommandCtxt<'_>, tags: Option<Rest>) -> anyhow::Result<()> {
-    let result = get_random_r34(ctxt.assyst().clone(), &tags.unwrap_or(Rest(String::new())).0).await?;
+    let result = get_random_r34(&ctxt.assyst().reqwest_client, &tags.unwrap_or(Rest(String::new())).0).await?;
     let reply = format!("{} (Score: **{}**)", result.file_url, result.score);
 
     ctxt.reply(reply).await?;

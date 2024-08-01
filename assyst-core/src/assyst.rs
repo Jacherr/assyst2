@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-use assyst_common::config::{CONFIG, PATREON_REFRESH_LOCATION};
+use assyst_common::config::CONFIG;
 use assyst_common::err;
 use assyst_common::metrics_handler::MetricsHandler;
 use assyst_common::pipe::CACHE_PIPE_PATH;
@@ -57,8 +57,6 @@ pub struct Assyst {
     /// All command ratelimits, in the format <(guild/user id, command name) => time command was
     /// ran>
     pub command_ratelimits: CommandRatelimits,
-    /// patreon refresh token
-    pub patreon_refresh: tokio::sync::Mutex<String>,
 }
 impl Assyst {
     pub async fn new() -> anyhow::Result<Assyst> {
@@ -68,8 +66,6 @@ impl Assyst {
             Arc::new(DatabaseHandler::new(CONFIG.database.to_url(), CONFIG.database.to_url_safe()).await?);
         let premium_users = Arc::new(Mutex::new(vec![]));
         let current_application = http_client.current_user_application().await?.model().await?;
-        let patreon_refresh = std::fs::read_to_string(PATREON_REFRESH_LOCATION).unwrap_or_default();
-        let patreon_refresh_t = patreon_refresh.trim();
 
         Ok(Assyst {
             bad_translator: BadTranslator::new(),
@@ -86,7 +82,6 @@ impl Assyst {
             flux_handler: FluxHandler::new(database_handler.clone(), Arc::new(Mutex::new(HashMap::new()))),
             rest_cache_handler: RestCacheHandler::new(http_client.clone()),
             command_ratelimits: CommandRatelimits::new(),
-            patreon_refresh: tokio::sync::Mutex::new(patreon_refresh_t.to_owned()),
         })
     }
 

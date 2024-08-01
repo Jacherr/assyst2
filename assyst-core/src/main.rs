@@ -12,7 +12,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use assyst_common::config::config::LoggingWebhook;
-use assyst_common::config::CONFIG;
+use assyst_common::config::{CONFIG, PATREON_REFRESH_LOCATION};
 use assyst_common::pipe::{Pipe, GATEWAY_PIPE_PATH};
 use assyst_common::util::tracing_init;
 use assyst_common::{err, ok_or_break};
@@ -20,6 +20,7 @@ use assyst_flux_iface::FluxHandler;
 use command::registry::register_interaction_commands;
 use gateway_handler::handle_raw_event;
 use gateway_handler::incoming_event::IncomingEvent;
+use rest::patreon::init_patreon_refresh;
 use rest::web_media_download::get_web_download_api_urls;
 use task::tasks::refresh_web_download_urls::refresh_web_download_urls;
 use task::tasks::reminders::handle_reminders;
@@ -95,6 +96,8 @@ async fn main() {
         info!(
             "Patreon synchronisation disabled in config.dev.disable_patreson_synchronisation, will only load admins as patrons"
         );
+
+        init_patreon_refresh(std::fs::read_to_string(PATREON_REFRESH_LOCATION).unwrap_or_default()).await;
     }
 
     assyst.register_task(Task::new(
@@ -216,7 +219,7 @@ async fn main() {
     });
 
     info!("Caching web download API URLs");
-    let web_download_urls = get_web_download_api_urls(a.clone()).await.unwrap();
+    let web_download_urls = get_web_download_api_urls(&a.reqwest_client).await.unwrap();
     info!("Got {} URLs to cache", web_download_urls.len());
     debug!(?web_download_urls);
     a.rest_cache_handler.set_web_download_urls(web_download_urls);

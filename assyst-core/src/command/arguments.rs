@@ -809,16 +809,26 @@ impl ParseArgument for Image {
     async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>, label: Label) -> Result<Self, TagParseError> {
         let ImageUrl(url) = ImageUrl::parse_raw_message(ctxt, label).await?;
 
-        let data =
-            downloader::download_content(ctxt.cx.assyst(), &url, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES, true).await?;
+        let data = downloader::download_content(
+            &ctxt.cx.assyst().reqwest_client,
+            &url,
+            ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES,
+            true,
+        )
+        .await?;
         Ok(Image(data))
     }
 
     async fn parse_command_option(ctxt: &mut InteractionCommandParseCtxt<'_>) -> Result<Self, TagParseError> {
         let ImageUrl(url) = ImageUrl::parse_command_option(ctxt).await?;
 
-        let data =
-            downloader::download_content(ctxt.cx.assyst(), &url, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES, true).await?;
+        let data = downloader::download_content(
+            &ctxt.cx.assyst().reqwest_client,
+            &url,
+            ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES,
+            true,
+        )
+        .await?;
         Ok(Image(data))
     }
 

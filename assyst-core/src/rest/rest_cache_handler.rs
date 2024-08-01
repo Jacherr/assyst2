@@ -194,4 +194,12 @@ impl RestCacheHandler {
     pub fn get_web_download_urls(&self) -> Vec<Arc<String>> {
         self.web_download_urls.iter().map(|x| x.0).collect::<Vec<_>>()
     }
+
+    pub fn get_web_download_urls_copied(&self) -> Vec<String> {
+        self.web_download_urls
+            .clone()
+            .into_iter()
+            .map(|x| Arc::into_inner(x.0).unwrap())
+            .collect::<Vec<_>>()
+    }
 }

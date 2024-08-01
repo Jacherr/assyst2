@@ -8,8 +8,6 @@ use futures_util::{Stream, StreamExt};
 use human_bytes::human_bytes;
 use reqwest::{Client, StatusCode, Url};
 
-use crate::assyst::Assyst;
-
 pub const ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES: usize = 250_000_000;
 static PROXY_NUM: AtomicUsize = AtomicUsize::new(0);
 
@@ -97,7 +95,7 @@ where
 
 /// Attempts to download a resource from a URL.
 pub async fn download_content(
-    assyst: &Assyst,
+    client: &Client,
     url: &str,
     limit: usize,
     untrusted: bool,
@@ -118,7 +116,6 @@ pub async fn download_content(
     ];
 
     let config = &CONFIG;
-    let client = &assyst.reqwest_client;
 
     let url_p = Url::parse(url).map_err(DownloadError::Url)?;
     let host = url_p.host_str().ok_or(DownloadError::NoHost)?;
