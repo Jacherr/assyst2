@@ -11,6 +11,7 @@ use crate::command::{Availability, Category, Command, CommandCtxt};
 
 #[command(
     description = "get command help",
+    aliases = ["cmds", "commands", "h"],
     cooldown = Duration::from_secs(1),
     access = Availability::Public,
     category = Category::Misc,

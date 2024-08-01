@@ -79,9 +79,6 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
                 }
             }
 
-            //println!("{sorted_incoming_options:#?}");
-            //println!("{:#?}", command.interaction_info().command_options);
-
             let interaction_subcommand = if let Some(d) = subcommand_data.clone() {
                 match d.1 {
                     CommandOptionValue::SubCommand(_) => Some(d),

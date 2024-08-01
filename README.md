@@ -1,5 +1,5 @@
 <div align="center">
-    <img src="https://cdn.discordapp.com/avatars/571661221854707713/a23ec18f81e3d182291471f64685da5f.png?size=128"/><br>
+    <img src="./assets/assyst.svg" width="128" height="128">
 </div>
 
 # <div align="center"> Assyst </div>
