@@ -72,7 +72,7 @@ flag_parse_argument! { DownloadFlags }
 )]
 pub async fn download(ctxt: CommandCtxt<'_>, url: Word, options: DownloadFlags) -> anyhow::Result<()> {
     let mut opts =
-        WebDownloadOpts::from_download_flags(options, ctxt.assyst().rest_cache_handler.get_web_download_urls_copied());
+        WebDownloadOpts::from_download_flags(options, ctxt.assyst().rest_cache_handler.get_web_download_urls());
 
     if url.0.to_ascii_lowercase().contains("youtube.com/playlist") {
         let videos = get_youtube_playlist_entries(&url.0).await?;

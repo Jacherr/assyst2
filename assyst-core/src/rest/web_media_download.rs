@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use anyhow::{bail, Context};
@@ -26,11 +27,11 @@ pub static TEST_URL_TIMEOUT: Duration = Duration::from_secs(15);
 pub struct WebDownloadOpts {
     pub audio_only: Option<bool>,
     pub quality: Option<String>,
-    pub urls: Vec<String>,
+    pub urls: Vec<Arc<String>>,
     pub verbose: bool,
 }
 impl WebDownloadOpts {
-    pub fn from_download_flags(flags: DownloadFlags, urls: Vec<String>) -> Self {
+    pub fn from_download_flags(flags: DownloadFlags, urls: Vec<Arc<String>>) -> Self {
         Self {
             audio_only: Some(flags.audio),
             quality: if flags.quality != 0 {
@@ -84,7 +85,7 @@ async fn test_route(client: &Client, url: &str) -> bool {
     let opts = WebDownloadOpts {
         audio_only: Some(false),
         quality: Some("144".to_owned()),
-        urls: vec![url.to_owned()],
+        urls: vec![Arc::new(url.to_owned())],
         verbose: false,
     };
 
@@ -182,7 +183,7 @@ pub async fn download_web_media(client: &Client, url: &str, opts: WebDownloadOpt
         debug!("trying url: {route} for web media {url}");
 
         let res = client
-            .post(route)
+            .post((*route).clone())
             .header("accept", "application/json")
             .header("User-Agent", "Assyst Discord Bot (https://github.com/jacherr/assyst2)")
             .json(&json!({
