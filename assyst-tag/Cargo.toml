@@ -9,6 +9,7 @@ edition = "2021"
 rand = "0.8"
 anyhow = { workspace = true }
 assyst-common = { path = "../assyst-common" }
+assyst-string-fmt = { path = "../assyst-string-fmt" }
 bytes = "1.0.1"
 either = "1.9.0"
 memchr = "2.6.4"

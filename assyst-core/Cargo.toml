@@ -11,6 +11,7 @@ assyst-common = { path = "../assyst-common" }
 assyst-database = { path = "../assyst-database" }
 assyst-flux-iface = { path = "../assyst-flux-iface" }
 assyst-proc-macro = { path = "../assyst-proc-macro" }
+assyst-string-fmt = { path = "../assyst-string-fmt" }
 assyst-tag = { path = "../assyst-tag" }
 assyst-webserver = { path = "../assyst-webserver" }
 async-trait = "0.1.77"

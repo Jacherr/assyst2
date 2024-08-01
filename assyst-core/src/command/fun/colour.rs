@@ -2,9 +2,9 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use anyhow::{bail, Context};
-use assyst_common::markdown::Markdown;
 use assyst_database::model::colour_role::ColourRole;
 use assyst_proc_macro::command;
+use assyst_string_fmt::Markdown;
 use twilight_model::application::interaction::application_command::CommandOptionValue;
 use twilight_model::id::marker::{GuildMarker, RoleMarker};
 use twilight_model::id::Id;

@@ -1,6 +1,6 @@
-use assyst_common::ansi::Ansi;
 use assyst_common::config::CONFIG;
 use assyst_common::err;
+use assyst_string_fmt::Ansi;
 use tracing::{error, info};
 use twilight_model::gateway::payload::incoming::Ready;
 use twilight_model::id::marker::ChannelMarker;

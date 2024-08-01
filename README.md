@@ -31,6 +31,7 @@ Assyst is split into a number of separate crates, as described below.
 - assyst-webserver: Web server designed to handle webhooking, such as vote processing for Discord bot list websites, as well as Prometheus metrics.
 - assyst-proc-macro: General purpose [procedural macros] <sub>(currently just a macro for command setup)</sub>
 - assyst-flux-iface: Basic wrapper over Flux for ease of use.
+- assyst-string-fmt: String parsing and formatting utilities.
 
 ### Note: assyst-core will likely be split into more, smaller, crates in the future.
 

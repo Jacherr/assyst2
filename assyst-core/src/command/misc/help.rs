@@ -2,9 +2,8 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use anyhow::bail;
-use assyst_common::ansi::Ansi;
-use assyst_common::markdown::Markdown;
 use assyst_proc_macro::command;
+use assyst_string_fmt::{Ansi, Markdown};
 
 use crate::command::arguments::Word;
 use crate::command::registry::{find_command_by_name, get_or_init_commands};

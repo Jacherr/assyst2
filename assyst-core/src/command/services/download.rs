@@ -4,9 +4,9 @@ use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use anyhow::Context;
-use assyst_common::markdown::Markdown;
 use assyst_common::util::{filetype, format_duration, sanitise_filename};
 use assyst_proc_macro::command;
+use assyst_string_fmt::Markdown;
 use rand::{thread_rng, Rng};
 use tokio::sync::Mutex;
 use tokio::task::JoinSet;

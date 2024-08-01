@@ -1,11 +1,10 @@
 use std::time::Duration;
 
-use assyst_common::ansi::Ansi;
-use assyst_common::markdown::Markdown;
 use assyst_common::util::process::{
     exec_sync, get_processes_cpu_usage, get_processes_mem_usage, get_processes_uptimes,
 };
 use assyst_proc_macro::command;
+use assyst_string_fmt::{Ansi, Markdown};
 use human_bytes::human_bytes;
 use twilight_model::gateway::SessionStartLimit;
 

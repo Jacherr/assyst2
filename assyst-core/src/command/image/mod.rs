@@ -1,11 +1,10 @@
 use std::time::Duration;
 
 use anyhow::Context;
-use assyst_common::ansi::Ansi;
-use assyst_common::markdown::Markdown;
 use assyst_common::util::{format_duration, table};
 use assyst_flux_iface::jobs::MediaInfo;
 use assyst_proc_macro::command;
+use assyst_string_fmt::{Ansi, Markdown};
 use human_bytes::human_bytes;
 
 use super::arguments::{Image, RestNoFlags, Word};

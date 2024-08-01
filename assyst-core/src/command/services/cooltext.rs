@@ -1,7 +1,7 @@
 use std::time::Duration;
 
-use assyst_common::markdown::Markdown;
 use assyst_proc_macro::command;
+use assyst_string_fmt::Markdown;
 use rand::{thread_rng, Rng};
 
 use crate::command::arguments::{Rest, Word};

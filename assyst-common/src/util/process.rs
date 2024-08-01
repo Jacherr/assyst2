@@ -1,8 +1,7 @@
 use std::process::{Command, ExitStatus};
 
+use assyst_string_fmt::Ansi;
 use rayon::prelude::*;
-
-use crate::ansi::Ansi;
 
 static PROCESSES: &[&str] = &["assyst-core", "assyst-cache", "assyst-gateway", "filer"];
 static HOST_PROCESS: &str = "host machine";

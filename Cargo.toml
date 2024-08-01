@@ -8,7 +8,7 @@ members = [
     "assyst-database",
     "assyst-flux-iface",
     "assyst-gateway",
-    "assyst-proc-macro",
+    "assyst-proc-macro", "assyst-string-fmt",
     "assyst-tag",
     "assyst-webserver",
 ]

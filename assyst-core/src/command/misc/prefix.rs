@@ -1,9 +1,9 @@
 use std::time::Duration;
 
 use anyhow::{bail, ensure, Context};
-use assyst_common::markdown::Markdown;
 use assyst_database::model::prefix::Prefix;
 use assyst_proc_macro::command;
+use assyst_string_fmt::Markdown;
 
 use crate::command::arguments::Word;
 use crate::command::{Availability, Category, CommandCtxt};

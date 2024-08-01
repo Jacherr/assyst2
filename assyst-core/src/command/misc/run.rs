@@ -2,9 +2,9 @@ use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
 use anyhow::{bail, Context};
-use assyst_common::markdown::Markdown;
 use assyst_common::util::process::{exec_sync, exec_sync_in_dir, CommandOutput};
 use assyst_proc_macro::command;
+use assyst_string_fmt::Markdown;
 use dash_rt::format_value;
 use dash_vm::eval::EvalError;
 use dash_vm::value::Root;

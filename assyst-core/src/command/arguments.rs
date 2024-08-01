@@ -1,8 +1,8 @@
 use std::fmt::Display;
 
-use assyst_common::markdown::parse_codeblock;
 use assyst_common::util::discord::{channel_mention_to_id, get_avatar_url, id_from_mention, user_mention_to_id};
 use assyst_common::util::{parse_to_millis, regex};
+use assyst_string_fmt::markdown::parse_codeblock;
 use serde::Deserialize;
 use twilight_model::application::command::CommandOption;
 use twilight_model::application::interaction::application_command::CommandOptionValue;

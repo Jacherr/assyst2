@@ -2,11 +2,11 @@ use std::fmt::Write;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use anyhow::{anyhow, bail, ensure, Context};
-use assyst_common::markdown::Markdown;
 use assyst_common::util::discord::{format_discord_timestamp, format_tag, get_avatar_url};
 use assyst_common::util::string_from_likely_utf8;
 use assyst_database::model::tag::Tag;
 use assyst_proc_macro::command;
+use assyst_string_fmt::Markdown;
 use assyst_tag::parser::ParseMode;
 use assyst_tag::ParseResult;
 use tokio::runtime::Handle;

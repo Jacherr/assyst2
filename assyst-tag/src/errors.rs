@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::fmt::Arguments;
 use std::ops::Range;
 
-use assyst_common::ansi::Ansi;
+use assyst_string_fmt::Ansi;
 use memchr::memmem::rfind;
 
 use crate::parser::limits;
