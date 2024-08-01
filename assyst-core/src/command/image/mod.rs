@@ -660,6 +660,7 @@ pub async fn rotate(ctxt: CommandCtxt<'_>, source: Image, degrees: Option<u64>) 
 
 #[command(
     description = "scramble a gif or video",
+    aliases = ["gifscramble", "gscramble"],
     cooldown = Duration::from_secs(6),
     access = Availability::Public,
     category = Category::Image,
@@ -680,7 +681,7 @@ pub async fn scramble(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()
 
 #[command(
     description = "speed up or slow down a gif or video",
-    aliases = ["gspeed"],
+    aliases = ["gspeed", "gifspeed"],
     cooldown = Duration::from_secs(3),
     access = Availability::Public,
     category = Category::Image,
