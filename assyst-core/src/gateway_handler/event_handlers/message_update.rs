@@ -143,5 +143,8 @@ fn convert_message_update_to_message(event: MessageUpdate) -> Option<Message> {
         components: vec![],
         thread: None,
         role_subscription_data: None,
+        call: None,
+        poll: None,
+        message_snapshots: vec![],
     })
 }

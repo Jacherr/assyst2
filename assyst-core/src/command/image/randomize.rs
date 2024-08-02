@@ -3,7 +3,6 @@ use std::time::Duration;
 
 use anyhow::Context;
 use assyst_flux_iface::flux_request::FluxRequest;
-use assyst_flux_iface::limits::LIMITS;
 use assyst_proc_macro::command;
 use rand::{thread_rng, Rng};
 
@@ -52,14 +51,13 @@ pub async fn randomize(ctxt: CommandCtxt<'_>, source: Image, count: Option<u64>)
         effects.push(next);
     }
 
-    let tier = ctxt
+    let limits = ctxt
         .assyst()
         .flux_handler
-        .get_request_tier(ctxt.data.author.id.get())
+        .get_request_limits(ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()))
         .await?;
-    let limits = &LIMITS[tier];
 
-    let mut request = FluxRequest::new_with_input_and_limits(source.0, limits);
+    let mut request = FluxRequest::new_with_input_and_limits(source.0, &limits);
     for e in &effects {
         request.operation(e.to_string(), HashMap::new());
     }
@@ -69,7 +67,7 @@ pub async fn randomize(ctxt: CommandCtxt<'_>, source: Image, count: Option<u64>)
     let result = ctxt
         .assyst()
         .flux_handler
-        .run_flux(request, LIMITS[tier].time)
+        .run_flux(request, limits.time)
         .await
         .context(format!("Applied effects: {}", effects.join(", ")))?;
 

@@ -49,10 +49,17 @@ pub struct GuildCreateData {
 }
 impl From<GuildCreate> for GuildCreateData {
     fn from(value: GuildCreate) -> Self {
-        GuildCreateData {
-            id: value.id.get(),
-            name: value.name.clone(),
-            members: value.member_count,
+        match value {
+            GuildCreate::Available(g) => GuildCreateData {
+                id: g.id.get(),
+                name: g.name.clone(),
+                members: g.member_count,
+            },
+            GuildCreate::Unavailable(g) => GuildCreateData {
+                id: g.id.get(),
+                name: String::new(),
+                members: None,
+            },
         }
     }
 }

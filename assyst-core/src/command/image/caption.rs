@@ -27,7 +27,14 @@ use crate::flag_parse_argument;
 pub async fn caption(ctxt: CommandCtxt<'_>, source: Image, text: Rest, flags: CaptionFlags) -> anyhow::Result<()> {
     let result = ctxt
         .flux_handler()
-        .caption(source.0, text.0, flags.bottom, flags.black, ctxt.data.author.id.get())
+        .caption(
+            source.0,
+            text.0,
+            flags.bottom,
+            flags.black,
+            ctxt.data.author.id.get(),
+            ctxt.data.guild_id.map(|x| x.get()),
+        )
         .await?;
 
     ctxt.reply(result).await?;

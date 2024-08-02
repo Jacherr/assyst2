@@ -11,6 +11,12 @@ pub struct AssystConfig {
     pub prefix: Prefixes,
     pub logging_webhooks: LoggingWebhooks,
     pub dev: DevAttributes,
+    pub entitlements: Entitlements,
+}
+
+#[derive(Deserialize)]
+pub struct Entitlements {
+    pub premium_server_sku_id: u64,
 }
 
 #[derive(Deserialize)]

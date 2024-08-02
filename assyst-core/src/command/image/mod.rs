@@ -28,7 +28,10 @@ pub mod speechbubble;
     send_processing = true
 )]
 pub async fn ahshit(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt.flux_handler().ahshit(source.0, ctxt.data.author.id.get()).await?;
+    let result = ctxt
+        .flux_handler()
+        .ahshit(source.0, ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()))
+        .await?;
 
     ctxt.reply(result).await?;
 
@@ -47,7 +50,7 @@ pub async fn ahshit(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> 
 pub async fn aprilfools(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
     let result = ctxt
         .flux_handler()
-        .aprilfools(source.0, ctxt.data.author.id.get())
+        .aprilfools(source.0, ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()))
         .await?;
 
     ctxt.reply(result).await?;
@@ -67,7 +70,12 @@ pub async fn aprilfools(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<
 pub async fn blur(ctxt: CommandCtxt<'_>, source: Image, strength: Option<f32>) -> anyhow::Result<()> {
     let result = ctxt
         .flux_handler()
-        .blur(source.0, strength, ctxt.data.author.id.get())
+        .blur(
+            source.0,
+            strength,
+            ctxt.data.author.id.get(),
+            ctxt.data.guild_id.map(|x| x.get()),
+        )
         .await?;
 
     ctxt.reply(result).await?;
@@ -86,7 +94,10 @@ pub async fn blur(ctxt: CommandCtxt<'_>, source: Image, strength: Option<f32>) -
     send_processing = true
 )]
 pub async fn deepfry(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt.flux_handler().deepfry(source.0, ctxt.data.author.id.get()).await?;
+    let result = ctxt
+        .flux_handler()
+        .deepfry(source.0, ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()))
+        .await?;
 
     ctxt.reply(result).await?;
 
@@ -103,7 +114,10 @@ pub async fn deepfry(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()>
     send_processing = true
 )]
 pub async fn fisheye(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt.flux_handler().fisheye(source.0, ctxt.data.author.id.get()).await?;
+    let result = ctxt
+        .flux_handler()
+        .fisheye(source.0, ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()))
+        .await?;
 
     ctxt.reply(result).await?;
 
@@ -120,7 +134,10 @@ pub async fn fisheye(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()>
     send_processing = true
 )]
 pub async fn flip(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt.flux_handler().flip(source.0, ctxt.data.author.id.get()).await?;
+    let result = ctxt
+        .flux_handler()
+        .flip(source.0, ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()))
+        .await?;
 
     ctxt.reply(result).await?;
 
@@ -137,7 +154,10 @@ pub async fn flip(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
     send_processing = true
 )]
 pub async fn flop(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt.flux_handler().flip(source.0, ctxt.data.author.id.get()).await?;
+    let result = ctxt
+        .flux_handler()
+        .flip(source.0, ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()))
+        .await?;
 
     ctxt.reply(result).await?;
 
@@ -154,7 +174,10 @@ pub async fn flop(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
     send_processing = true
 )]
 pub async fn frames(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt.flux_handler().frames(source.0, ctxt.data.author.id.get()).await?;
+    let result = ctxt
+        .flux_handler()
+        .frames(source.0, ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()))
+        .await?;
 
     let response = MessageBuilder {
         content: None,
@@ -181,7 +204,7 @@ pub async fn frames(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> 
 pub async fn frameshift(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
     let result = ctxt
         .flux_handler()
-        .frame_shift(source.0, ctxt.data.author.id.get())
+        .frame_shift(source.0, ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()))
         .await?;
 
     ctxt.reply(result).await?;
@@ -201,7 +224,12 @@ pub async fn frameshift(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<
 pub async fn ghost(ctxt: CommandCtxt<'_>, source: Image, depth: Option<u64>) -> anyhow::Result<()> {
     let result = ctxt
         .flux_handler()
-        .ghost(source.0, depth, ctxt.data.author.id.get())
+        .ghost(
+            source.0,
+            depth,
+            ctxt.data.author.id.get(),
+            ctxt.data.guild_id.map(|x| x.get()),
+        )
         .await?;
 
     ctxt.reply(result).await?;
@@ -219,7 +247,10 @@ pub async fn ghost(ctxt: CommandCtxt<'_>, source: Image, depth: Option<u64>) -> 
     send_processing = true
 )]
 pub async fn gif(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt.flux_handler().gif(source.0, ctxt.data.author.id.get()).await?;
+    let result = ctxt
+        .flux_handler()
+        .gif(source.0, ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()))
+        .await?;
 
     ctxt.reply(result).await?;
 
@@ -239,7 +270,7 @@ pub async fn gif(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
 pub async fn gifmagik(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
     let result = ctxt
         .flux_handler()
-        .gif_magik(source.0, ctxt.data.author.id.get())
+        .gif_magik(source.0, ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()))
         .await?;
 
     ctxt.reply(result).await?;
@@ -257,7 +288,10 @@ pub async fn gifmagik(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()
     send_processing = true
 )]
 pub async fn globe(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt.flux_handler().globe(source.0, ctxt.data.author.id.get()).await?;
+    let result = ctxt
+        .flux_handler()
+        .globe(source.0, ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()))
+        .await?;
 
     ctxt.reply(result).await?;
 
@@ -277,7 +311,7 @@ pub async fn globe(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
 pub async fn grayscale(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
     let result = ctxt
         .flux_handler()
-        .grayscale(source.0, ctxt.data.author.id.get())
+        .grayscale(source.0, ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()))
         .await?;
 
     ctxt.reply(result).await?;
@@ -352,7 +386,10 @@ pub async fn imageinfo(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<(
     send_processing = true
 )]
 pub async fn invert(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt.flux_handler().invert(source.0, ctxt.data.author.id.get()).await?;
+    let result = ctxt
+        .flux_handler()
+        .invert(source.0, ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()))
+        .await?;
 
     ctxt.reply(result).await?;
 
@@ -372,7 +409,12 @@ pub async fn invert(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> 
 pub async fn jpeg(ctxt: CommandCtxt<'_>, source: Image, quality: Option<u64>) -> anyhow::Result<()> {
     let result = ctxt
         .flux_handler()
-        .jpeg(source.0, quality, ctxt.data.author.id.get())
+        .jpeg(
+            source.0,
+            quality,
+            ctxt.data.author.id.get(),
+            ctxt.data.guild_id.map(|x| x.get()),
+        )
         .await?;
 
     ctxt.reply(result).await?;
@@ -391,7 +433,10 @@ pub async fn jpeg(ctxt: CommandCtxt<'_>, source: Image, quality: Option<u64>) ->
     send_processing = true
 )]
 pub async fn magik(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt.flux_handler().magik(source.0, ctxt.data.author.id.get()).await?;
+    let result = ctxt
+        .flux_handler()
+        .magik(source.0, ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()))
+        .await?;
 
     ctxt.reply(result).await?;
 
@@ -426,7 +471,13 @@ pub async fn meme(ctxt: CommandCtxt<'_>, source: Image, text: RestNoFlags) -> an
 
     let result = ctxt
         .flux_handler()
-        .meme(source.0, top_text, bottom_text, ctxt.data.author.id.get())
+        .meme(
+            source.0,
+            top_text,
+            bottom_text,
+            ctxt.data.author.id.get(),
+            ctxt.data.guild_id.map(|x| x.get()),
+        )
         .await?;
 
     ctxt.reply(result).await?;
@@ -462,7 +513,13 @@ pub async fn motivate(ctxt: CommandCtxt<'_>, source: Image, text: RestNoFlags) -
 
     let result = ctxt
         .flux_handler()
-        .motivate(source.0, top_text, bottom_text, ctxt.data.author.id.get())
+        .motivate(
+            source.0,
+            top_text,
+            bottom_text,
+            ctxt.data.author.id.get(),
+            ctxt.data.guild_id.map(|x| x.get()),
+        )
         .await?;
 
     ctxt.reply(result).await?;
@@ -481,7 +538,10 @@ pub async fn motivate(ctxt: CommandCtxt<'_>, source: Image, text: RestNoFlags) -
     send_processing = true
 )]
 pub async fn neon(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt.flux_handler().neon(source.0, ctxt.data.author.id.get()).await?;
+    let result = ctxt
+        .flux_handler()
+        .neon(source.0, ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()))
+        .await?;
 
     ctxt.reply(result).await?;
 
@@ -500,7 +560,12 @@ pub async fn neon(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
 pub async fn overlay(ctxt: CommandCtxt<'_>, source: Image, source2: Image) -> anyhow::Result<()> {
     let result = ctxt
         .flux_handler()
-        .overlay(source.0, source2.0, ctxt.data.author.id.get())
+        .overlay(
+            source.0,
+            source2.0,
+            ctxt.data.author.id.get(),
+            ctxt.data.guild_id.map(|x| x.get()),
+        )
         .await?;
 
     ctxt.reply(result).await?;
@@ -518,7 +583,10 @@ pub async fn overlay(ctxt: CommandCtxt<'_>, source: Image, source2: Image) -> an
     send_processing = true
 )]
 pub async fn paint(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt.flux_handler().paint(source.0, ctxt.data.author.id.get()).await?;
+    let result = ctxt
+        .flux_handler()
+        .paint(source.0, ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()))
+        .await?;
 
     ctxt.reply(result).await?;
 
@@ -538,7 +606,7 @@ pub async fn paint(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
 pub async fn pingpong(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
     let result = ctxt
         .flux_handler()
-        .ping_pong(source.0, ctxt.data.author.id.get())
+        .ping_pong(source.0, ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()))
         .await?;
 
     ctxt.reply(result).await?;
@@ -558,7 +626,12 @@ pub async fn pingpong(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()
 pub async fn pixelate(ctxt: CommandCtxt<'_>, source: Image, strength: Option<f32>) -> anyhow::Result<()> {
     let result = ctxt
         .flux_handler()
-        .pixelate(source.0, strength, ctxt.data.author.id.get())
+        .pixelate(
+            source.0,
+            strength,
+            ctxt.data.author.id.get(),
+            ctxt.data.guild_id.map(|x| x.get()),
+        )
         .await?;
 
     ctxt.reply(result).await?;
@@ -576,7 +649,10 @@ pub async fn pixelate(ctxt: CommandCtxt<'_>, source: Image, strength: Option<f32
     send_processing = true
 )]
 pub async fn rainbow(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt.flux_handler().rainbow(source.0, ctxt.data.author.id.get()).await?;
+    let result = ctxt
+        .flux_handler()
+        .rainbow(source.0, ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()))
+        .await?;
 
     ctxt.reply(result).await?;
 
@@ -601,17 +677,33 @@ pub async fn resize(ctxt: CommandCtxt<'_>, source: Image, size: Option<Word>) ->
         let height = height.parse::<u32>().context("Invalid height")?;
 
         ctxt.flux_handler()
-            .resize_absolute(source.0, width, height, ctxt.data.author.id.get())
+            .resize_absolute(
+                source.0,
+                width,
+                height,
+                ctxt.data.author.id.get(),
+                ctxt.data.guild_id.map(|x| x.get()),
+            )
             .await?
     } else if let Some(i_size) = size {
         let scale = i_size.0.parse::<f32>().context("Invalid scale.")?;
 
         ctxt.flux_handler()
-            .resize_scale(source.0, scale, ctxt.data.author.id.get())
+            .resize_scale(
+                source.0,
+                scale,
+                ctxt.data.author.id.get(),
+                ctxt.data.guild_id.map(|x| x.get()),
+            )
             .await?
     } else {
         ctxt.flux_handler()
-            .resize_scale(source.0, 2.0, ctxt.data.author.id.get())
+            .resize_scale(
+                source.0,
+                2.0,
+                ctxt.data.author.id.get(),
+                ctxt.data.guild_id.map(|x| x.get()),
+            )
             .await?
     };
 
@@ -630,7 +722,10 @@ pub async fn resize(ctxt: CommandCtxt<'_>, source: Image, size: Option<Word>) ->
     send_processing = true
 )]
 pub async fn reverse(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt.flux_handler().reverse(source.0, ctxt.data.author.id.get()).await?;
+    let result = ctxt
+        .flux_handler()
+        .reverse(source.0, ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()))
+        .await?;
 
     ctxt.reply(result).await?;
 
@@ -649,7 +744,12 @@ pub async fn reverse(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()>
 pub async fn rotate(ctxt: CommandCtxt<'_>, source: Image, degrees: Option<u64>) -> anyhow::Result<()> {
     let result = ctxt
         .flux_handler()
-        .rotate(source.0, degrees, ctxt.data.author.id.get())
+        .rotate(
+            source.0,
+            degrees,
+            ctxt.data.author.id.get(),
+            ctxt.data.guild_id.map(|x| x.get()),
+        )
         .await?;
 
     ctxt.reply(result).await?;
@@ -670,7 +770,7 @@ pub async fn rotate(ctxt: CommandCtxt<'_>, source: Image, degrees: Option<u64>) 
 pub async fn scramble(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
     let result = ctxt
         .flux_handler()
-        .scramble(source.0, ctxt.data.author.id.get())
+        .scramble(source.0, ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()))
         .await?;
 
     ctxt.reply(result).await?;
@@ -691,7 +791,12 @@ pub async fn scramble(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()
 pub async fn speed(ctxt: CommandCtxt<'_>, source: Image, multiplier: Option<f64>) -> anyhow::Result<()> {
     let result = ctxt
         .flux_handler()
-        .speed(source.0, multiplier, ctxt.data.author.id.get())
+        .speed(
+            source.0,
+            multiplier,
+            ctxt.data.author.id.get(),
+            ctxt.data.guild_id.map(|x| x.get()),
+        )
         .await?;
 
     ctxt.reply(result).await?;
@@ -709,7 +814,10 @@ pub async fn speed(ctxt: CommandCtxt<'_>, source: Image, multiplier: Option<f64>
     send_processing = true
 )]
 pub async fn spin(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt.flux_handler().spin(source.0, ctxt.data.author.id.get()).await?;
+    let result = ctxt
+        .flux_handler()
+        .spin(source.0, ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()))
+        .await?;
 
     ctxt.reply(result).await?;
 
@@ -728,7 +836,12 @@ pub async fn spin(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
 pub async fn spread(ctxt: CommandCtxt<'_>, source: Image, strength: Option<u64>) -> anyhow::Result<()> {
     let result = ctxt
         .flux_handler()
-        .spread(source.0, strength, ctxt.data.author.id.get())
+        .spread(
+            source.0,
+            strength,
+            ctxt.data.author.id.get(),
+            ctxt.data.guild_id.map(|x| x.get()),
+        )
         .await?;
 
     ctxt.reply(result).await?;
@@ -748,7 +861,12 @@ pub async fn spread(ctxt: CommandCtxt<'_>, source: Image, strength: Option<u64>)
 pub async fn swirl(ctxt: CommandCtxt<'_>, source: Image, strength: Option<f32>) -> anyhow::Result<()> {
     let result = ctxt
         .flux_handler()
-        .swirl(source.0, strength, ctxt.data.author.id.get())
+        .swirl(
+            source.0,
+            strength,
+            ctxt.data.author.id.get(),
+            ctxt.data.guild_id.map(|x| x.get()),
+        )
         .await?;
 
     ctxt.reply(result).await?;
@@ -768,7 +886,12 @@ pub async fn swirl(ctxt: CommandCtxt<'_>, source: Image, strength: Option<f32>) 
 pub async fn uncaption(ctxt: CommandCtxt<'_>, source: Image, amount: Option<Word>) -> anyhow::Result<()> {
     let result = ctxt
         .flux_handler()
-        .uncaption(source.0, amount.map(|a| a.0), ctxt.data.author.id.get())
+        .uncaption(
+            source.0,
+            amount.map(|a| a.0),
+            ctxt.data.author.id.get(),
+            ctxt.data.guild_id.map(|x| x.get()),
+        )
         .await?;
 
     ctxt.reply(result).await?;
@@ -788,7 +911,7 @@ pub async fn uncaption(ctxt: CommandCtxt<'_>, source: Image, amount: Option<Word
 pub async fn wormhole(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
     let result = ctxt
         .flux_handler()
-        .wormhole(source.0, ctxt.data.author.id.get())
+        .wormhole(source.0, ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()))
         .await?;
 
     ctxt.reply(result).await?;
@@ -806,7 +929,10 @@ pub async fn wormhole(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()
     send_processing = true
 )]
 pub async fn zoom(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt.flux_handler().zoom(source.0, ctxt.data.author.id.get()).await?;
+    let result = ctxt
+        .flux_handler()
+        .zoom(source.0, ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()))
+        .await?;
 
     ctxt.reply(result).await?;
 
@@ -826,7 +952,12 @@ pub async fn zoom(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
 pub async fn zoomblur(ctxt: CommandCtxt<'_>, source: Image, power: Option<f32>) -> anyhow::Result<()> {
     let result = ctxt
         .flux_handler()
-        .zoom_blur(source.0, power, ctxt.data.author.id.get())
+        .zoom_blur(
+            source.0,
+            power,
+            ctxt.data.author.id.get(),
+            ctxt.data.guild_id.map(|x| x.get()),
+        )
         .await?;
 
     ctxt.reply(result).await?;

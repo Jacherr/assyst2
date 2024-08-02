@@ -27,7 +27,7 @@ use crate::flag_parse_argument;
 pub async fn speechbubble(ctxt: CommandCtxt<'_>, source: Image, flags: SpeechBubbleFlags) -> anyhow::Result<()> {
     let result = ctxt
         .flux_handler()
-        .speech_bubble(source.0, flags.solid, ctxt.data.author.id.get())
+        .speech_bubble(source.0, flags.solid, ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()))
         .await?;
 
     ctxt.reply(result).await?;

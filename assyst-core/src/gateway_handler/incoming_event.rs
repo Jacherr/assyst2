@@ -1,7 +1,7 @@
 use twilight_model::gateway::event::{DispatchEvent, GatewayEvent};
 use twilight_model::gateway::payload::incoming::{
-    ChannelUpdate, GuildCreate, GuildDelete, GuildUpdate, InteractionCreate, MessageCreate, MessageDelete,
-    MessageUpdate, Ready,
+    ChannelUpdate, EntitlementCreate, EntitlementDelete, EntitlementUpdate, GuildCreate, GuildDelete, GuildUpdate,
+    InteractionCreate, MessageCreate, MessageDelete, MessageUpdate, Ready,
 };
 
 #[derive(Debug)]
@@ -15,6 +15,9 @@ pub enum IncomingEvent {
     MessageDelete(MessageDelete),
     MessageUpdate(MessageUpdate),
     ShardReady(Ready),
+    EntitlementCreate(EntitlementCreate),
+    EntitlementUpdate(EntitlementUpdate),
+    EntitlementDelete(EntitlementDelete),
 }
 impl TryFrom<GatewayEvent> for IncomingEvent {
     type Error = ();
@@ -31,6 +34,9 @@ impl TryFrom<GatewayEvent> for IncomingEvent {
                 DispatchEvent::Ready(ready) => Ok(IncomingEvent::ShardReady(*ready)),
                 DispatchEvent::ChannelUpdate(channel) => Ok(IncomingEvent::ChannelUpdate(*channel)),
                 DispatchEvent::InteractionCreate(interaction) => Ok(IncomingEvent::InteractionCreate(interaction)),
+                DispatchEvent::EntitlementCreate(e) => Ok(IncomingEvent::EntitlementCreate(e)),
+                DispatchEvent::EntitlementUpdate(e) => Ok(IncomingEvent::EntitlementUpdate(e)),
+                DispatchEvent::EntitlementDelete(e) => Ok(IncomingEvent::EntitlementDelete(e)),
                 _ => Err(()),
             },
             _ => Err(()),

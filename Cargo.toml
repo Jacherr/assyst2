@@ -8,7 +8,8 @@ members = [
     "assyst-database",
     "assyst-flux-iface",
     "assyst-gateway",
-    "assyst-proc-macro", "assyst-string-fmt",
+    "assyst-proc-macro",
+    "assyst-string-fmt",
     "assyst-tag",
     "assyst-webserver",
 ]
@@ -24,7 +25,9 @@ anyhow = "1.0.75"
 serde = { version = "1.0.123", features = ["derive"] }
 tokio = { version = "1.34.0", features = ["full"] }
 tracing = "0.1.37"
-twilight-gateway = "=0.16.0-rc.1"
-twilight-http = "=0.16.0-rc.1"
-twilight-model = "=0.16.0-rc.1"
-twilight-util = { version = "=0.16.0-rc.1", features = ["builder"] }
+twilight-gateway = { git = "https://github.com/twilight-rs/twilight" }
+twilight-http = { git = "https://github.com/twilight-rs/twilight" }
+twilight-model = { git = "https://github.com/twilight-rs/twilight" }
+twilight-util = { git = "https://github.com/twilight-rs/twilight", features = [
+    "builder",
+] }

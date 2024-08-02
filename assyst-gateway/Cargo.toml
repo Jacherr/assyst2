@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-twilight-gateway = { version = "=0.16.0-rc.1", features = ["twilight-http"] }
+twilight-gateway = { workspace = true }
 anyhow = { workspace = true }
 assyst-common = { path = "../assyst-common" }
 assyst-database = { path = "../assyst-database" }

@@ -1,3 +1,4 @@
+pub mod active_guild_premium_entitlement;
 pub mod badtranslator_channel;
 pub mod badtranslator_messages;
 pub mod colour_role;

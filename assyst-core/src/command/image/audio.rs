@@ -15,7 +15,10 @@ use crate::command::{Availability, Category, CommandCtxt};
     send_processing = true
 )]
 pub async fn drip(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt.flux_handler().drip(source.0, ctxt.data.author.id.get()).await?;
+    let result = ctxt
+        .flux_handler()
+        .drip(source.0, ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()))
+        .await?;
 
     ctxt.reply(result).await?;
 
@@ -34,7 +37,7 @@ pub async fn drip(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
 pub async fn femurbreaker(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
     let result = ctxt
         .flux_handler()
-        .femurbreaker(source.0, ctxt.data.author.id.get())
+        .femurbreaker(source.0, ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()))
         .await?;
 
     ctxt.reply(result).await?;
@@ -52,7 +55,10 @@ pub async fn femurbreaker(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Resul
     send_processing = true
 )]
 pub async fn siren(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt.flux_handler().siren(source.0, ctxt.data.author.id.get()).await?;
+    let result = ctxt
+        .flux_handler()
+        .siren(source.0, ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()))
+        .await?;
 
     ctxt.reply(result).await?;
 
@@ -69,7 +75,10 @@ pub async fn siren(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
     send_processing = true
 )]
 pub async fn sweden(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
-    let result = ctxt.flux_handler().sweden(source.0, ctxt.data.author.id.get()).await?;
+    let result = ctxt
+        .flux_handler()
+        .sweden(source.0, ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()))
+        .await?;
 
     ctxt.reply(result).await?;
 
@@ -88,7 +97,7 @@ pub async fn sweden(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> 
 pub async fn terraria(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
     let result = ctxt
         .flux_handler()
-        .terraria(source.0, ctxt.data.author.id.get())
+        .terraria(source.0, ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()))
         .await?;
 
     ctxt.reply(result).await?;

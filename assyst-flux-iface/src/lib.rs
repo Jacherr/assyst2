@@ -10,11 +10,13 @@ use anyhow::{bail, Context};
 use assyst_common::config::CONFIG;
 use assyst_common::util::process::exec_sync;
 use assyst_common::util::{hash_buffer, string_from_likely_utf8};
+use assyst_database::model::active_guild_premium_entitlement::ActiveGuildPremiumEntitlement;
 use assyst_database::model::free_tier_2_requests::FreeTier2Requests;
 use assyst_database::DatabaseHandler;
 use flux_request::{FluxRequest, FluxStep};
 use jobs::FluxResult;
 use libc::pid_t;
+use limits::{premium_user_to_limits, LimitData, LIMITS_FREE, LIMITS_GUILD_TIER_1, LIMITS_USER_TIER_1};
 use tokio::fs;
 use tokio::process::Command;
 use tokio::time::timeout;
@@ -45,12 +47,18 @@ impl Drop for CompilingCompleteDefer {
 pub struct FluxHandler {
     database_handler: Arc<DatabaseHandler>,
     premium_users: Arc<Mutex<HashMap<u64, u64>>>,
+    premium_guilds: Arc<Mutex<HashMap<i64, ActiveGuildPremiumEntitlement>>>,
 }
 impl FluxHandler {
-    pub fn new(database_handler: Arc<DatabaseHandler>, premium_users: Arc<Mutex<HashMap<u64, u64>>>) -> Self {
+    pub fn new(
+        database_handler: Arc<DatabaseHandler>,
+        premium_users: Arc<Mutex<HashMap<u64, u64>>>,
+        premium_guilds: Arc<Mutex<HashMap<i64, ActiveGuildPremiumEntitlement>>>,
+    ) -> Self {
         Self {
             database_handler,
             premium_users,
+            premium_guilds,
         }
     }
 
@@ -204,12 +212,18 @@ impl FluxHandler {
 
     /// This function will remove a free voter request if the user has any
     /// and are not a patron!
-    pub async fn get_request_tier(&self, user_id: u64) -> Result<usize, anyhow::Error> {
+    pub async fn get_request_limits(&self, user_id: u64, guild_id: Option<u64>) -> Result<LimitData, anyhow::Error> {
         if let Some(p) = {
             let premium_users = self.premium_users.lock().unwrap();
             premium_users.get(&user_id).copied()
         } {
-            return Ok((p as usize).saturating_sub(1));
+            return Ok(premium_user_to_limits(p.saturating_sub(1)));
+        }
+
+        if let Some(guild_id) = guild_id
+            && self.premium_guilds.lock().unwrap().get(&(guild_id as i64)).is_some()
+        {
+            return Ok(LIMITS_GUILD_TIER_1);
         }
 
         let user_tier2 = FreeTier2Requests::get_user_free_tier_2_requests(&self.database_handler, user_id).await?;
@@ -218,9 +232,9 @@ impl FluxHandler {
             user_tier2
                 .change_free_tier_2_requests(&self.database_handler, -1)
                 .await?;
-            Ok(2)
+            Ok(LIMITS_USER_TIER_1)
         } else {
-            Ok(0)
+            Ok(LIMITS_FREE)
         }
     }
 

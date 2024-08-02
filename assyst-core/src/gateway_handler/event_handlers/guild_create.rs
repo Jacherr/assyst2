@@ -5,9 +5,11 @@ use twilight_model::gateway::payload::incoming::GuildCreate;
 use crate::assyst::ThreadSafeAssyst;
 
 pub async fn handle(assyst: ThreadSafeAssyst, event: GuildCreate) {
-    let id = event.id.get();
-    let name = event.name.clone();
-    let member_count = event.member_count.unwrap_or(0);
+    let id = event.id().get();
+    let (name, member_count) = match &event {
+        GuildCreate::Available(g) => (g.name.clone(), g.member_count.unwrap_or(0)),
+        GuildCreate::Unavailable(_) => (String::new(), 0),
+    };
 
     let should_handle = match assyst.persistent_cache_handler.handle_guild_create_event(event).await {
         Ok(s) => s,

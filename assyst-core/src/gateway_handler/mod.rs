@@ -38,5 +38,14 @@ pub async fn handle_raw_event(context: ThreadSafeAssyst, event: IncomingEvent) {
         IncomingEvent::InteractionCreate(event) => {
             event_handlers::interaction_create::handle(context, *event).await;
         },
+        IncomingEvent::EntitlementCreate(event) => {
+            event_handlers::entitlement_create::handle(context, event).await;
+        },
+        IncomingEvent::EntitlementUpdate(event) => {
+            event_handlers::entitlement_update::handle(context, event).await;
+        },
+        IncomingEvent::EntitlementDelete(event) => {
+            event_handlers::entitlement_delete::handle(context, event).await;
+        },
     }
 }

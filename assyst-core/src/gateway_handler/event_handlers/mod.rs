@@ -3,6 +3,9 @@ use assyst_database::model::command_usage::CommandUsage;
 use crate::command::{CommandCtxt, TCommand};
 
 pub mod channel_update;
+pub mod entitlement_create;
+pub mod entitlement_delete;
+pub mod entitlement_update;
 pub mod guild_create;
 pub mod guild_delete;
 pub mod guild_update;

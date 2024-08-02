@@ -1,13 +1,16 @@
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
+use assyst_common::config::CONFIG;
 use assyst_common::err;
+use assyst_database::model::active_guild_premium_entitlement::ActiveGuildPremiumEntitlement;
 use tracing::{debug, warn};
 use twilight_model::application::interaction::application_command::{
     CommandData as DiscordCommandData, CommandDataOption, CommandOptionValue,
 };
 use twilight_model::application::interaction::InteractionData;
 use twilight_model::gateway::payload::incoming::InteractionCreate;
+use twilight_model::util::Timestamp;
 
 use super::after_command_execution_success;
 use crate::assyst::ThreadSafeAssyst;
@@ -29,6 +32,46 @@ fn parse_subcommand_data(data: &DiscordCommandData) -> Option<(String, CommandOp
 }
 
 pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): InteractionCreate) {
+    // look at entitlements to see if there is anything new - we can cache this if so
+    // this usually shouldnt happen except for some edge cases such as a new entitlement was created
+    // when the bot was down
+    let entitlements = interaction.entitlements;
+    let lock = assyst.entitlements.lock().unwrap().clone();
+    let mut new = vec![];
+    for entitlement in entitlements {
+        if let Some(guild_id) = interaction.guild_id
+            && let Some(user_id) = entitlement.user_id
+            && entitlement.sku_id.get() == CONFIG.entitlements.premium_server_sku_id
+            && !lock.contains_key(&(guild_id.get() as i64))
+        {
+            warn!("New entitlement for guild {}, registering", guild_id.get());
+            let active = ActiveGuildPremiumEntitlement {
+                entitlement_id: entitlement.id.get() as i64,
+                guild_id: guild_id.get() as i64,
+                user_id: user_id.get() as i64,
+                started_unix_ms: (entitlement
+                    .starts_at
+                    .unwrap_or(Timestamp::from_micros(0).unwrap())
+                    .as_micros()
+                    / 1000),
+                expiry_unix_ms: (entitlement
+                    .ends_at
+                    .unwrap_or(Timestamp::from_micros(0).unwrap())
+                    .as_micros()
+                    / 1000),
+            };
+            new.push(active);
+        }
+    }
+    for a in new {
+        match a.set(&assyst.database_handler).await {
+            Err(e) => {
+                err!("Error registering new entitlement {}: {e:?}", a.entitlement_id);
+            },
+            _ => {},
+        }
+    }
+
     if let Some(InteractionData::ApplicationCommand(command_data)) = interaction.data {
         let command = find_command_by_name(&command_data.name);
         let subcommand_data = parse_subcommand_data(&command_data);

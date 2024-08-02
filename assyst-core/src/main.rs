@@ -22,6 +22,7 @@ use gateway_handler::handle_raw_event;
 use gateway_handler::incoming_event::IncomingEvent;
 use rest::patreon::init_patreon_refresh;
 use rest::web_media_download::get_web_download_api_urls;
+use task::tasks::refresh_entitlements::refresh_entitlements;
 use task::tasks::refresh_web_download_urls::refresh_web_download_urls;
 use task::tasks::reminders::handle_reminders;
 use tokio::spawn;
@@ -61,6 +62,18 @@ async fn main() {
     tracing_init();
 
     let assyst: ThreadSafeAssyst = Arc::new(Assyst::new().await.unwrap());
+
+    println!(
+        "{:?}",
+        assyst
+            .http_client
+            .entitlements(assyst.application_id)
+            .await
+            .unwrap()
+            .model()
+            .await
+            .unwrap()
+    );
 
     // Custom panic hook that will send errors to a discord channel
     {
@@ -146,6 +159,13 @@ async fn main() {
     ));
     info!("Registered web download url refreshing task");
 
+    assyst.register_task(Task::new(
+        assyst.clone(),
+        Duration::from_secs(60 * 10),
+        function_task_callback!(refresh_entitlements),
+    ));
+    info!("Registered entitlement refreshing task");
+
     info!("Starting assyst-webserver");
     assyst_webserver::run(
         assyst.database_handler.clone(),
@@ -205,7 +225,10 @@ async fn main() {
                         | EventTypeFlags::READY
                         | EventTypeFlags::INTERACTION_CREATE
                         | EventTypeFlags::GUILD_UPDATE
-                        | EventTypeFlags::CHANNEL_UPDATE,
+                        | EventTypeFlags::CHANNEL_UPDATE
+                        | EventTypeFlags::ENTITLEMENT_CREATE
+                        | EventTypeFlags::ENTITLEMENT_DELETE
+                        | EventTypeFlags::ENTITLEMENT_UPDATE,
                 )
                 .ok()
                 .flatten();

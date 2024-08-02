@@ -75,6 +75,7 @@ pub async fn bloom(ctxt: CommandCtxt<'_>, source: Image, flags: BloomFlags) -> a
             flags.sharpness,
             flags.brightness,
             ctxt.data.author.id.get(),
+            ctxt.data.guild_id.map(|x| x.get()),
         )
         .await?;
 
