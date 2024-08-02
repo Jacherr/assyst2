@@ -29,6 +29,8 @@ top_gg_webhook_port = 3000
 filer_key = ""
 # Authentication key for NotSoAPI, for audio identification.
 notsoapi = ""
+# RapidAPI token for the `identify` command.
+rapidapi_token = ""
 
 # Assyst database information.
 [database]

@@ -7,6 +7,7 @@ use super::arguments::ImageUrl;
 use super::CommandCtxt;
 use crate::command::{Availability, Category};
 use crate::rest::audio_identification::identify_song_notsoidentify;
+use crate::rest::identify::identify_image;
 
 pub mod colour;
 pub mod translation;
@@ -43,6 +44,36 @@ pub async fn findsong(ctxt: CommandCtxt<'_>, input: ImageUrl) -> anyhow::Result<
         ctxt.reply(formatted).await?;
     } else {
         ctxt.reply("No results found").await?;
+    }
+
+    Ok(())
+}
+
+#[command(
+    description = "AI identify an image",
+    cooldown = Duration::from_secs(2),
+    access = Availability::Public,
+    category = Category::Fun,
+    usage = "[image]",
+    examples = ["https://link.to.my/image.png"],
+    send_processing = true
+)]
+pub async fn identify(ctxt: CommandCtxt<'_>, input: ImageUrl) -> anyhow::Result<()> {
+    let result = identify_image(&ctxt.assyst().reqwest_client, &input.0)
+        .await
+        .context("Failed to identify image")?;
+
+    if let Some(d) = result.description {
+        let formatted = d
+            .captions
+            .iter()
+            .map(|x| format!("I think it's {} ({:.1}% confidence)", x.text, (x.confidence * 100.0)))
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        ctxt.reply(formatted).await?;
+    } else {
+        ctxt.reply("I really can't describe the picture :flushed:").await?;
     }
 
     Ok(())

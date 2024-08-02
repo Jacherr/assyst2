@@ -37,6 +37,7 @@ pub struct Authentication {
     pub top_gg_webhook_port: u16,
     pub filer_key: String,
     pub notsoapi: String,
+    pub rapidapi_token: String,
 }
 
 #[derive(Deserialize)]

@@ -8,8 +8,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::from_str;
 use tokio::sync::Mutex;
 
-pub const REFRESH_ROUTE: &str = "https://www.patreon.com/api/oauth2/token";
-pub const ROUTE: &str = "https://api.patreon.com/api/oauth2/v2/campaigns/4568373/members?include=user,currently_entitled_tiers&fields%5Buser%5D=social_connections,full_name&fields%5Bmember%5D=is_follower,last_charge_date,last_charge_status,lifetime_support_cents,currently_entitled_amount_cents,patron_status&page%5Bsize%5D=10000";
+const REFRESH_ROUTE: &str = "https://www.patreon.com/api/oauth2/token";
+const ROUTE: &str = "https://api.patreon.com/api/oauth2/v2/campaigns/4568373/members?include=user,currently_entitled_tiers&fields%5Buser%5D=social_connections,full_name&fields%5Bmember%5D=is_follower,last_charge_date,last_charge_status,lifetime_support_cents,currently_entitled_amount_cents,patron_status&page%5Bsize%5D=10000";
 
 pub const TIER_4_AMOUNT: usize = 2000;
 pub const TIER_3_AMOUNT: usize = 1000;

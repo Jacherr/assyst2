@@ -18,6 +18,7 @@ macro_rules! declare_commands {
 
 declare_commands!(
     fun::colour::colour_command,
+    fun::identify_command,
     fun::findsong_command,
     fun::translation::bad_translate_command,
     fun::translation::translate_command,

@@ -4,6 +4,7 @@ pub mod charinfo;
 pub mod cooltext;
 pub mod eval;
 pub mod filer;
+pub mod identify;
 pub mod patreon;
 pub mod r34;
 pub mod rest_cache_handler;
