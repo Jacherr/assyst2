@@ -1,3 +1,5 @@
+use assyst_common::err;
+use assyst_database::model::active_guild_premium_entitlement::ActiveGuildPremiumEntitlement;
 use tracing::info;
 
 use crate::assyst::ThreadSafeAssyst;
@@ -13,6 +15,14 @@ pub async fn refresh_entitlements(assyst: ThreadSafeAssyst) {
                 "Removed expired entitlement {} (guild {})",
                 entitlement.1.entitlement_id, entitlement.1.guild_id
             );
+            if let Err(e) =
+                ActiveGuildPremiumEntitlement::delete(&assyst.database_handler, entitlement.1.entitlement_id).await
+            {
+                err!(
+                    "Error deleting existing entitlement {}: {e:?}",
+                    entitlement.1.entitlement_id
+                );
+            }
         }
     }
 }
