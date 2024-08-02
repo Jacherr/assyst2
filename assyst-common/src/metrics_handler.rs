@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use assyst_database::DatabaseHandler;
 use prometheus::{register_int_counter, register_int_gauge, register_int_gauge_vec, IntCounter, IntGauge, IntGaugeVec};
-use tracing::info;
+use tracing::debug;
 
 use crate::util::process::get_processes_mem_usage;
 use crate::util::rate_tracker::RateTracker;
@@ -44,7 +44,7 @@ impl MetricsHandler {
 
     /// Updates some metrics that are not updated as data comes in.
     pub async fn update(&self) {
-        info!("Collecting prometheus metrics");
+        debug!("Collecting prometheus metrics");
 
         let database_cache_reader = &self.database_handler;
         let prefixes_cache_size = database_cache_reader.cache.get_prefixes_cache_size();

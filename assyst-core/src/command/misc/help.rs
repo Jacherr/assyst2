@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use anyhow::bail;
+use assyst_common::config::CONFIG;
 use assyst_proc_macro::command;
 use assyst_string_fmt::{Ansi, Markdown};
 
@@ -198,7 +199,7 @@ pub async fn help(ctxt: CommandCtxt<'_>, labels: Option<Vec<Word>>) -> anyhow::R
         );
 
         msg += &format!(
-            "{} | {} | {} | {} | {}",
+            "{} | {} | {} | {} | {} | {}",
             "Invite"
                 .codestring()
                 .url("<https://jacher.io/assyst>", Some("Invite link for Assyst.")),
@@ -212,6 +213,13 @@ pub async fn help(ctxt: CommandCtxt<'_>, labels: Option<Vec<Word>>) -> anyhow::R
             "Patreon"
                 .codestring()
                 .url("<https://www.patreon.com/jacher>", Some("Patreon URL for Assyst.")),
+            "Server Premium".codestring().url(
+                &format!(
+                    " <https://discord.com/application-directory/571661221854707713/store/{}>",
+                    CONFIG.entitlements.premium_server_sku_id
+                ),
+                Some("Link to the SKU for Assyst premium servers.")
+            ),
             "Source Code".codestring().url(
                 "<https://github.com/jacherr/assyst2.",
                 Some("Source code URL for Assyst.")
