@@ -73,6 +73,13 @@ mod tests {
         iter_limit: &"{max:0}".repeat(501) => Err(ErrorKind::IterLimit{..}),
         if_then_works: "{if:{argslen}|=|0|ok|wrong}" => Ok("ok"),
         if_else_works: "{if:{argslen}|=|1|wrong|ok}" => Ok("ok"),
+        separator_outside_tag: "a|" => Ok("a|"),
+        separator_outside_tag2: "a|}" => Ok("a|}"),
+        separator_outside_tag3: "a|b" => Ok("a|b"),
+        spoiler: "a||b||c" => Ok("a||b||c"),
+        spoiler2: "a||b||" => Ok("a||b||"),
+        spoiler_in_subparser: "{eval:a||b||c}" => Ok("a"),
+        spoiler_in_subtag: "{note:a||b||c}" => Err(ErrorKind::MissingClosingBrace { .. }),
     );
 
     test!(ParseMode::IgnoreOnError;

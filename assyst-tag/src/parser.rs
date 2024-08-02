@@ -136,9 +136,11 @@ pub struct Parser<'a> {
     rng: ThreadRng,
     /// Context for this parser
     cx: &'a dyn Context,
-    /// Recursive depth, to avoid stack overflow in {eval} calls
-    depth: u32,
-    /// Stack of tag start positions, exclusively used for error reporting.
+    /// The current depth of this subparser. This exists to avoid stack overflow in {eval} calls
+    /// or other ways to create recursive tags
+    subparser_depth: u32,
+    /// Stack of tag start positions.
+    /// Note that this also includes the root text node.
     tag_start_positions: Vec<BytePos>,
 }
 
@@ -168,7 +170,7 @@ impl<'a> Parser<'a> {
             state: other.state.clone(),
             rng: rand::thread_rng(),
             cx: other.cx,
-            depth: other.depth + 1,
+            subparser_depth: other.subparser_depth + 1,
             tag_start_positions: Vec::new(),
         }
     }
@@ -189,7 +191,7 @@ impl<'a> Parser<'a> {
             idx: 0,
             state,
             rng: rand::thread_rng(),
-            depth: 0,
+            subparser_depth: 0,
             tag_start_positions: Vec::new(),
         }
     }
@@ -393,7 +395,9 @@ impl<'a> Parser<'a> {
 
                     output.append(&mut result.into_bytes());
                 },
-                b'|' | b'}' => {
+                // only interpret | and } as the end of the segment if we're actually in a visible subtag
+                // (ie not the root text node), see #25
+                b'|' | b'}' if self.tag_start_positions.len() > 1 => {
                     break;
                 },
                 _ => {
@@ -538,7 +542,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn depth(&self) -> u32 {
-        self.depth
+        self.subparser_depth
     }
 
     pub fn context(&self) -> &'a dyn Context {
