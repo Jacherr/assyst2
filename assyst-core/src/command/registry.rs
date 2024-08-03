@@ -132,11 +132,10 @@ pub fn find_command_by_name(name: &str) -> Option<TCommand> {
 pub async fn register_interaction_commands(assyst: ThreadSafeAssyst) -> anyhow::Result<Vec<InteractionCommand>> {
     let commands = get_or_init_commands()
         .iter()
-        .filter_map(|x| match x.1.metadata().age_restricted {
-            false => Some(x.1.as_interaction_command()),
-            true => None,
+        .filter_map(|x| {
+            let i = x.1.as_interaction_command();
+            if !i.name.is_empty() { Some(i) } else { None }
         })
-        .filter(|x| !x.name.is_empty())
         .collect::<Vec<_>>();
 
     // deduplicate out aliases
