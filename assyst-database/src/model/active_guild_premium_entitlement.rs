@@ -1,6 +1,10 @@
 use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use anyhow::bail;
+use twilight_model::application::monetization::Entitlement;
+use twilight_model::util::Timestamp;
+
 use crate::{is_unique_violation, DatabaseHandler};
 
 #[derive(sqlx::FromRow, Clone)]
@@ -64,5 +68,43 @@ impl ActiveGuildPremiumEntitlement {
     pub fn expired(&self) -> bool {
         let current = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
         current > self.expiry_unix_ms as u128
+    }
+}
+impl TryFrom<Entitlement> for ActiveGuildPremiumEntitlement {
+    type Error = anyhow::Error;
+
+    fn try_from(value: Entitlement) -> Result<Self, Self::Error> {
+        let Some(guild_id) = value.guild_id else {
+            bail!(
+                "Entitlement ID {} (guild {:?} user {:?}) has no assiated guild!",
+                value.id,
+                value.guild_id,
+                value.user_id
+            )
+        };
+
+        let Some(user_id) = value.user_id else {
+            bail!(
+                "Entitlement ID {} (guild {:?} user {:?}) has no assiated user!",
+                value.id,
+                value.guild_id,
+                value.user_id
+            )
+        };
+
+        // no expiry/created = test entitlement, requires special handling
+        let active = Self {
+            entitlement_id: value.id.get() as i64,
+            guild_id: guild_id.get() as i64,
+            user_id: user_id.get() as i64,
+            started_unix_ms: value
+                .starts_at
+                .unwrap_or(Timestamp::from_micros(0).unwrap())
+                .as_micros()
+                / 1000,
+            expiry_unix_ms: value.ends_at.unwrap_or(Timestamp::from_micros(0).unwrap()).as_micros() / 1000,
+        };
+
+        Ok(active)
     }
 }
