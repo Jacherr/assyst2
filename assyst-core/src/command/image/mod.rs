@@ -156,7 +156,7 @@ pub async fn flip(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
 pub async fn flop(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
     let result = ctxt
         .flux_handler()
-        .flip(source.0, ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()))
+        .flop(source.0, ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()))
         .await?;
 
     ctxt.reply(result).await?;
