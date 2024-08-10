@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use assyst_database::DatabaseHandler;
-use prometheus::{register_int_counter, register_int_gauge, register_int_gauge_vec, IntCounter, IntGauge, IntGaugeVec};
+use prometheus::{register_int_counter, register_int_gauge_vec, IntCounter, IntGaugeVec};
 use tracing::debug;
 
 use crate::util::process::get_processes_mem_usage;
@@ -13,7 +13,7 @@ use crate::util::rate_tracker::RateTracker;
 pub struct MetricsHandler {
     pub cache_sizes: IntGaugeVec,
     pub memory_usage: IntGaugeVec,
-    pub guilds: IntGauge,
+    pub guilds: IntGaugeVec,
     pub guilds_rate_tracker: Mutex<RateTracker>,
     pub events: IntCounter,
     pub events_rate_tracker: Mutex<RateTracker>,
@@ -27,7 +27,7 @@ impl MetricsHandler {
         Ok(MetricsHandler {
             cache_sizes: register_int_gauge_vec!("cache_sizes", "Cache sizes", &["cache"])?,
             memory_usage: register_int_gauge_vec!("memory_usage", "Memory usage in MB", &["process"])?,
-            guilds: register_int_gauge!("guilds", "Total guilds")?,
+            guilds: register_int_gauge_vec!("guilds", "Total guilds and user installs", &["context"])?,
             guilds_rate_tracker: Mutex::new(RateTracker::new(Duration::from_secs(60 * 60))),
             events: register_int_counter!("events", "Total number of events")?,
             events_rate_tracker: Mutex::new(RateTracker::new(Duration::from_secs(1))),
@@ -43,7 +43,7 @@ impl MetricsHandler {
     }
 
     /// Updates some metrics that are not updated as data comes in.
-    pub async fn update(&self) {
+    pub async fn update(&self, user_installs: u64) {
         debug!("Collecting prometheus metrics");
 
         let database_cache_reader = &self.database_handler;
@@ -52,6 +52,8 @@ impl MetricsHandler {
 
         let memory_usages = get_processes_mem_usage();
 
+        self.guilds.with_label_values(&["installs"]).set(user_installs as i64);
+
         for usage in memory_usages {
             self.memory_usage
                 .with_label_values(&[usage.0])
@@ -59,18 +61,22 @@ impl MetricsHandler {
         }
     }
 
+    pub fn set_user_installs(&self, installs: u64) {
+        self.guilds.with_label_values(&["installs"]).set(installs as i64);
+    }
+
     pub fn add_guilds(&self, guilds: u64) {
-        self.guilds.add(guilds as i64);
+        self.guilds.with_label_values(&["guilds"]).add(guilds as i64);
     }
 
     pub fn inc_guilds(&self) {
         self.guilds_rate_tracker.lock().unwrap().add_sample();
-        self.guilds.inc();
+        self.guilds.with_label_values(&["guilds"]).inc();
     }
 
     pub fn dec_guilds(&self) {
         self.guilds_rate_tracker.lock().unwrap().remove_sample();
-        self.guilds.dec();
+        self.guilds.with_label_values(&["guilds"]).dec();
     }
 
     pub fn add_event(&self) {

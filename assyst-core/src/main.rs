@@ -7,6 +7,7 @@
     if_let_guard,
     iterator_try_collect
 )]
+#![allow(deprecated)]
 
 use std::sync::Arc;
 use std::time::Duration;

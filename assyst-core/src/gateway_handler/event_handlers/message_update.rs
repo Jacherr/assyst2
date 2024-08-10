@@ -115,6 +115,7 @@ fn convert_message_update_to_message(event: MessageUpdate) -> Option<Message> {
     Some(Message {
         application_id: None,
         interaction: None,
+        interaction_metadata: None,
         activity: None,
         application: None,
         attachments,

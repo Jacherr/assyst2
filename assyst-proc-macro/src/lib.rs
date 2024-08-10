@@ -181,6 +181,15 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
                     nsfw: Some(meta.age_restricted),
                     options,
                     version: twilight_model::id::Id::new(1),
+                    contexts: Some(vec![
+                        twilight_model::application::interaction::InteractionContextType::Guild,
+                        twilight_model::application::interaction::InteractionContextType::BotDm,
+                        twilight_model::application::interaction::InteractionContextType::PrivateChannel
+                    ]),
+                    integration_types: Some(vec![
+                            twilight_model::oauth::ApplicationIntegrationType::GuildInstall,
+                            twilight_model::oauth::ApplicationIntegrationType::UserInstall
+                    ])
                 }
             }
 

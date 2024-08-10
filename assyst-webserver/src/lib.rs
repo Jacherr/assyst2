@@ -69,7 +69,21 @@ struct RouteState {
 
 #[axum::debug_handler]
 async fn prometheus_metrics(State(route_state): State<RouteState>) -> String {
-    route_state.metrics_handler.update().await;
+    let installs = match route_state.http_client.current_user_application().await {
+        Ok(a) => match a.model().await {
+            Ok(a) => a.approximate_user_install_count.unwrap_or(0),
+            Err(e) => {
+                err!("Failed to get user installs: {e:?}");
+                0
+            },
+        },
+        Err(e) => {
+            err!("Failed to get user installs: {e:?}");
+            0
+        },
+    };
+
+    route_state.metrics_handler.update(installs).await;
 
     let encoder = TextEncoder::new();
     let family = prometheus::gather();

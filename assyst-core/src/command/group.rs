@@ -102,10 +102,16 @@ macro_rules! define_commandgroup {
                         default_member_permissions: None,
                         description: meta.description.to_owned(),
                         description_localizations: None,
-                        // TODO: set based on if dms are allowed
-                        // TODO: update to `contexts` once this is required
-                        // (see https://discord.com/developers/docs/interactions/application-commands#create-global-application-command)
-                        dm_permission: Some(false),
+                        contexts: Some(vec![
+                            twilight_model::application::interaction::InteractionContextType::Guild,
+                            twilight_model::application::interaction::InteractionContextType::BotDm,
+                            twilight_model::application::interaction::InteractionContextType::PrivateChannel
+                        ]),
+                        integration_types: Some(vec![
+                            twilight_model::oauth::ApplicationIntegrationType::GuildInstall,
+                            twilight_model::oauth::ApplicationIntegrationType::UserInstall
+                        ]),
+                        dm_permission: Some(true),
                         guild_id: None,
                         id: None,
                         kind: twilight_model::application::command::CommandType::ChatInput,
