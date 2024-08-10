@@ -150,6 +150,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
                 interaction_token: Some(interaction.token),
                 interaction_id: Some(interaction.id),
                 interaction_attachments: command_data.resolved.map(|x| x.attachments).unwrap_or(HashMap::new()),
+                command_from_install_context: false, // todo
             };
 
             let ctxt = InteractionCommandParseCtxt::new(CommandCtxt::new(&data), &sorted_incoming_options);

@@ -103,6 +103,8 @@ pub enum TagParseError {
     InteractionCommandIsBaseSubcommand,
     MismatchedCommandOptionType((String, CommandOptionValue)),
     FlagParseError(anyhow::Error),
+    FailedToGetMessageHistory,
+    MessageHistoryUnavailableInContext,
 }
 
 impl GetErrorSeverity for TagParseError {
@@ -113,6 +115,8 @@ impl GetErrorSeverity for TagParseError {
             | Self::DownloadError(..)
             | Self::UnsupportedSticker(..)
             | Self::Reqwest(..)
+            | Self::FailedToGetMessageHistory
+            | Self::MessageHistoryUnavailableInContext
             | Self::NoInteractionSubcommandProvided => ErrorSeverity::High,
             _ => ErrorSeverity::Low,
         }
@@ -185,6 +189,12 @@ impl Display for TagParseError {
                 f.write_str("Interaction subcommand is base subcommand")
             },
             TagParseError::FlagParseError(x) => write!(f, "Error parsing command flags ({x})"),
+            TagParseError::FailedToGetMessageHistory => f.write_str(
+                "Failed to get message history. Make sure Assyst has permission to do this, in the server settings.",
+            ),
+            TagParseError::MessageHistoryUnavailableInContext => f.write_str(
+                "Assyst can't search the channel for images in a user install. Please provide an image to operate on.",
+            ),
         }
     }
 }

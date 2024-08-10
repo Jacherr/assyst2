@@ -697,7 +697,10 @@ impl ImageUrl {
         assyst: &Assyst,
         channel_id: Id<ChannelMarker>,
     ) -> Result<ImageUrl, TagParseError> {
-        let messages = assyst.http_client.channel_messages(channel_id).await?.models().await?;
+        let messages = match assyst.http_client.channel_messages(channel_id).await {
+            Ok(m) => m.models().await?,
+            Err(_) => return Err(TagParseError::FailedToGetMessageHistory),
+        };
 
         macro_rules! handle {
             ($v:expr) => {
@@ -746,7 +749,11 @@ impl ParseArgument for ImageUrl {
             handle!(commit_if_ok!(ctxt, ImageUrl::from_reply, label));
             handle!(commit_if_ok!(ctxt, ImageUrl::from_emoji_raw_message, label));
             handle!(commit_if_ok!(ctxt, ImageUrl::from_sticker, label));
-            handle!(ImageUrl::from_channel_history(ctxt.cx.assyst(), ctxt.cx.data.channel_id).await);
+            if !ctxt.cx.data.command_from_install_context {
+                handle!(ImageUrl::from_channel_history(ctxt.cx.assyst(), ctxt.cx.data.channel_id).await)
+            } else {
+                return Err(TagParseError::MessageHistoryUnavailableInContext);
+            };
             Err(TagParseError::NoImageFound)
         }
 

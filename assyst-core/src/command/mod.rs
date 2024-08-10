@@ -264,6 +264,7 @@ pub struct CommandData<'a> {
     pub interaction_token: Option<String>,
     pub interaction_id: Option<Id<InteractionMarker>>,
     pub interaction_attachments: HashMap<Id<AttachmentMarker>, Attachment>,
+    pub command_from_install_context: bool,
 }
 
 pub type RawMessageArgsIter<'a> = SplitAsciiWhitespace<'a>;
