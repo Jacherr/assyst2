@@ -8,7 +8,7 @@ use tracing::{debug, warn};
 use twilight_model::application::interaction::application_command::{
     CommandData as DiscordCommandData, CommandDataOption, CommandOptionValue,
 };
-use twilight_model::application::interaction::InteractionData;
+use twilight_model::application::interaction::{InteractionContextType, InteractionData};
 use twilight_model::gateway::payload::incoming::InteractionCreate;
 use twilight_model::util::Timestamp;
 
@@ -150,7 +150,10 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
                 interaction_token: Some(interaction.token),
                 interaction_id: Some(interaction.id),
                 interaction_attachments: command_data.resolved.map(|x| x.attachments).unwrap_or(HashMap::new()),
-                command_from_install_context: false, // todo
+                command_from_install_context: match interaction.context {
+                    Some(c) => c == InteractionContextType::PrivateChannel,
+                    None => false,
+                },
             };
 
             let ctxt = InteractionCommandParseCtxt::new(CommandCtxt::new(&data), &sorted_incoming_options);
