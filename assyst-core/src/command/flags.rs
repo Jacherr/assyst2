@@ -19,8 +19,11 @@ macro_rules! flag_parse_argument {
                 Ok(parsed)
             }
 
-            async fn parse_command_option(ctxt: &mut InteractionCommandParseCtxt<'_>) -> Result<Self, TagParseError> {
-                let word = ctxt.next_option();
+            async fn parse_command_option(
+                ctxt: &mut InteractionCommandParseCtxt<'_>,
+                label: $crate::command::Label,
+            ) -> Result<Self, TagParseError> {
+                let word = &ctxt.option_by_name(&label.unwrap().0);
 
                 if let Ok(option) = word {
                     if let CommandOptionValue::String(ref option) = option.value {

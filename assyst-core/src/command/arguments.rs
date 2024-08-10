@@ -27,7 +27,10 @@ pub trait ParseArgument: Sized {
     /// Parses `Self`, given a command, where the source is a raw message.
     async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>, label: Label) -> Result<Self, TagParseError>;
     /// Parses `Self`, given a command, where the source is an interaction command.
-    async fn parse_command_option(ctxt: &mut InteractionCommandParseCtxt<'_>) -> Result<Self, TagParseError>;
+    async fn parse_command_option(
+        ctxt: &mut InteractionCommandParseCtxt<'_>,
+        label: Label,
+    ) -> Result<Self, TagParseError>;
     fn as_command_option(name: &str) -> CommandOption;
     fn usage(name: &str) -> String {
         format!("<{name}>")
@@ -40,8 +43,11 @@ impl ParseArgument for u64 {
         Ok(word.parse()?)
     }
 
-    async fn parse_command_option(ctxt: &mut InteractionCommandParseCtxt<'_>) -> Result<Self, TagParseError> {
-        let next = &ctxt.next_option()?.value;
+    async fn parse_command_option(
+        ctxt: &mut InteractionCommandParseCtxt<'_>,
+        label: Label,
+    ) -> Result<Self, TagParseError> {
+        let next = &ctxt.option_by_name(&label.unwrap().0)?.value;
         if let CommandOptionValue::Integer(option) = next {
             Ok(*option as u64)
         } else {
@@ -64,8 +70,11 @@ impl ParseArgument for f64 {
         Ok(word.parse()?)
     }
 
-    async fn parse_command_option(ctxt: &mut InteractionCommandParseCtxt<'_>) -> Result<Self, TagParseError> {
-        let next = &ctxt.next_option()?.value;
+    async fn parse_command_option(
+        ctxt: &mut InteractionCommandParseCtxt<'_>,
+        label: Label,
+    ) -> Result<Self, TagParseError> {
+        let next = &ctxt.option_by_name(&label.unwrap().0)?.value;
         if let CommandOptionValue::Number(option) = next {
             Ok(*option)
         } else {
@@ -87,8 +96,11 @@ impl ParseArgument for f32 {
         Ok(word.parse()?)
     }
 
-    async fn parse_command_option(ctxt: &mut InteractionCommandParseCtxt<'_>) -> Result<Self, TagParseError> {
-        let next = &ctxt.next_option()?.value;
+    async fn parse_command_option(
+        ctxt: &mut InteractionCommandParseCtxt<'_>,
+        label: Label,
+    ) -> Result<Self, TagParseError> {
+        let next = &ctxt.option_by_name(&label.unwrap().0)?.value;
         if let CommandOptionValue::Number(option) = next {
             Ok(*option as f32)
         } else {
@@ -114,9 +126,12 @@ impl<T: ParseArgument> ParseArgument for Option<T> {
         }
     }
 
-    async fn parse_command_option(ctxt: &mut InteractionCommandParseCtxt<'_>) -> Result<Self, TagParseError> {
+    async fn parse_command_option(
+        ctxt: &mut InteractionCommandParseCtxt<'_>,
+        label: Label,
+    ) -> Result<Self, TagParseError> {
         // TODO: should we be using commit_if_ok to undo failed parsers?
-        match T::parse_command_option(ctxt).await {
+        match T::parse_command_option(ctxt, label).await {
             Ok(v) => Ok(Some(v)),
             Err(err) if err.get_severity() == ErrorSeverity::High => Err(err),
             _ => Ok(None),
@@ -149,8 +164,11 @@ impl ParseArgument for Vec<Word> {
         Ok(items)
     }
 
-    async fn parse_command_option(ctxt: &mut InteractionCommandParseCtxt<'_>) -> Result<Self, TagParseError> {
-        let text = Word::parse_command_option(ctxt).await?;
+    async fn parse_command_option(
+        ctxt: &mut InteractionCommandParseCtxt<'_>,
+        label: Label,
+    ) -> Result<Self, TagParseError> {
+        let text = Word::parse_command_option(ctxt, label).await?;
         let items = text
             .0
             .split_ascii_whitespace()
@@ -182,17 +200,20 @@ impl ParseArgument for Time {
         Ok(Time { millis })
     }
 
-    async fn parse_command_option(ctxt: &mut InteractionCommandParseCtxt<'_>) -> Result<Self, TagParseError> {
-        let word = ctxt.next_option()?;
+    async fn parse_command_option(
+        ctxt: &mut InteractionCommandParseCtxt<'_>,
+        label: Label,
+    ) -> Result<Self, TagParseError> {
+        let word = &ctxt.option_by_name(&label.unwrap().0)?.value;
 
-        if let CommandOptionValue::String(ref option) = word.value {
+        if let CommandOptionValue::String(ref option) = word {
             let millis = parse_to_millis(option)?;
 
             Ok(Time { millis })
         } else {
             Err(TagParseError::MismatchedCommandOptionType((
                 "String (time)".to_owned(),
-                word.value.clone(),
+                word.clone(),
             )))
         }
     }
@@ -211,15 +232,18 @@ impl ParseArgument for Word {
         Ok(Self(ctxt.next_word(label)?.to_owned()))
     }
 
-    async fn parse_command_option(ctxt: &mut InteractionCommandParseCtxt<'_>) -> Result<Self, TagParseError> {
-        let word = ctxt.next_option()?;
+    async fn parse_command_option(
+        ctxt: &mut InteractionCommandParseCtxt<'_>,
+        label: Label,
+    ) -> Result<Self, TagParseError> {
+        let word = &ctxt.option_by_name(&label.unwrap().0)?.value;
 
-        if let CommandOptionValue::String(ref option) = word.value {
+        if let CommandOptionValue::String(ref option) = word {
             Ok(Word(option.clone()))
         } else {
             Err(TagParseError::MismatchedCommandOptionType((
                 "String".to_owned(),
-                word.value.clone(),
+                word.clone(),
             )))
         }
     }
@@ -243,15 +267,18 @@ impl ParseArgument for Codeblock {
         }
     }
 
-    async fn parse_command_option(ctxt: &mut InteractionCommandParseCtxt<'_>) -> Result<Self, TagParseError> {
-        let word = ctxt.next_option()?;
+    async fn parse_command_option(
+        ctxt: &mut InteractionCommandParseCtxt<'_>,
+        label: Label,
+    ) -> Result<Self, TagParseError> {
+        let word = &ctxt.option_by_name(&label.unwrap().0)?.value;
 
-        if let CommandOptionValue::String(ref option) = word.value {
+        if let CommandOptionValue::String(ref option) = word {
             Ok(Codeblock(option.clone()))
         } else {
             Err(TagParseError::MismatchedCommandOptionType((
                 "String".to_owned(),
-                word.value.clone(),
+                word.clone(),
             )))
         }
     }
@@ -283,15 +310,18 @@ impl ParseArgument for User {
         Ok(User(user))
     }
 
-    async fn parse_command_option(ctxt: &mut InteractionCommandParseCtxt<'_>) -> Result<Self, TagParseError> {
-        let word = ctxt.next_option()?;
+    async fn parse_command_option(
+        ctxt: &mut InteractionCommandParseCtxt<'_>,
+        label: Label,
+    ) -> Result<Self, TagParseError> {
+        let word = &ctxt.option_by_name(&label.unwrap().0)?.value;
 
-        if let CommandOptionValue::User(id) = word.value {
+        if let CommandOptionValue::User(id) = word {
             let user = ctxt
                 .cx
                 .assyst()
                 .http_client
-                .user(id)
+                .user(*id)
                 .await
                 .map_err(|e| TagParseError::TwilightHttp(Box::new(e)))?
                 .model()
@@ -302,7 +332,7 @@ impl ParseArgument for User {
         } else {
             Err(TagParseError::MismatchedCommandOptionType((
                 "User".to_owned(),
-                word.value.clone(),
+                word.clone(),
             )))
         }
     }
@@ -334,15 +364,18 @@ impl ParseArgument for Channel {
         Ok(Channel(channel))
     }
 
-    async fn parse_command_option(ctxt: &mut InteractionCommandParseCtxt<'_>) -> Result<Self, TagParseError> {
-        let word = ctxt.next_option()?;
+    async fn parse_command_option(
+        ctxt: &mut InteractionCommandParseCtxt<'_>,
+        label: Label,
+    ) -> Result<Self, TagParseError> {
+        let word = &ctxt.option_by_name(&label.unwrap().0)?.value;
 
-        if let CommandOptionValue::Channel(id) = word.value {
+        if let CommandOptionValue::Channel(id) = word {
             let channel = ctxt
                 .cx
                 .assyst()
                 .http_client
-                .channel(id)
+                .channel(*id)
                 .await
                 .map_err(|e| TagParseError::TwilightHttp(Box::new(e)))?
                 .model()
@@ -353,7 +386,7 @@ impl ParseArgument for Channel {
         } else {
             Err(TagParseError::MismatchedCommandOptionType((
                 "Channel".to_owned(),
-                word.value.clone(),
+                word.clone(),
             )))
         }
     }
@@ -382,17 +415,20 @@ impl ParseArgument for Rest {
         }
     }
 
-    async fn parse_command_option(ctxt: &mut InteractionCommandParseCtxt<'_>) -> Result<Self, TagParseError> {
+    async fn parse_command_option(
+        ctxt: &mut InteractionCommandParseCtxt<'_>,
+        label: Label,
+    ) -> Result<Self, TagParseError> {
         // treat Rest as same as Word because there is no option type which is just one
         // whitespace-delimited word
-        let word = ctxt.next_option()?;
+        let word = &ctxt.option_by_name(&label.unwrap().0)?.value;
 
-        if let CommandOptionValue::String(ref option) = word.value {
+        if let CommandOptionValue::String(ref option) = word {
             Ok(Rest(option.clone()))
         } else {
             Err(TagParseError::MismatchedCommandOptionType((
                 "String (Rest)".to_owned(),
-                word.value.clone(),
+                word.clone(),
             )))
         }
     }
@@ -425,17 +461,20 @@ impl ParseArgument for RestNoFlags {
         }
     }
 
-    async fn parse_command_option(ctxt: &mut InteractionCommandParseCtxt<'_>) -> Result<Self, TagParseError> {
+    async fn parse_command_option(
+        ctxt: &mut InteractionCommandParseCtxt<'_>,
+        label: Label,
+    ) -> Result<Self, TagParseError> {
         // treat Rest as same as Word because there is no option type which is just one
         // whitespace-delimited word
-        let word = ctxt.next_option()?;
+        let word = &ctxt.option_by_name(&label.unwrap().0)?.value;
 
-        if let CommandOptionValue::String(ref option) = word.value {
+        if let CommandOptionValue::String(ref option) = word {
             Ok(RestNoFlags(option.clone()))
         } else {
             Err(TagParseError::MismatchedCommandOptionType((
                 "String (Rest)".to_owned(),
-                word.value.clone(),
+                word.clone(),
             )))
         }
     }
@@ -475,11 +514,11 @@ impl ImageUrl {
 
     async fn from_mention_command_option(
         ctxt: &mut InteractionCommandParseCtxt<'_>,
-        _: Label,
+        label: Label,
     ) -> Result<Self, TagParseError> {
-        let word = ctxt.next_option()?;
+        let word = &ctxt.option_by_name(&label.unwrap().0)?.value;
 
-        if let CommandOptionValue::String(ref option) = word.value {
+        if let CommandOptionValue::String(ref option) = word {
             let user_id = id_from_mention(option).ok_or(TagParseError::NoMention)?;
 
             if user_id == 0 {
@@ -499,7 +538,7 @@ impl ImageUrl {
         } else {
             Err(TagParseError::MismatchedCommandOptionType((
                 "String (mention aregument)".to_owned(),
-                word.value.clone(),
+                word.clone(),
             )))
         }
     }
@@ -519,11 +558,11 @@ impl ImageUrl {
 
     async fn from_url_argument_command_option(
         ctxt: &mut InteractionCommandParseCtxt<'_>,
-        _: Label,
+        label: Label,
     ) -> Result<Self, TagParseError> {
-        let word = ctxt.next_option()?;
+        let word = &ctxt.option_by_name(&label.unwrap().0)?.value;
 
-        if let CommandOptionValue::String(ref option) = word.value {
+        if let CommandOptionValue::String(ref option) = word {
             if regex::URL.is_match(option) {
                 Ok(Self(option.to_owned()))
             } else {
@@ -532,7 +571,7 @@ impl ImageUrl {
         } else {
             Err(TagParseError::MismatchedCommandOptionType((
                 "String (url argument)".to_owned(),
-                word.value.clone(),
+                word.clone(),
             )))
         }
     }
@@ -548,18 +587,18 @@ impl ImageUrl {
 
     async fn from_attachment_interaction_command(
         ctxt: &mut InteractionCommandParseCtxt<'_>,
-        _: Label,
+        label: Label,
     ) -> Result<Self, TagParseError> {
-        let word = ctxt.next_option()?;
+        let word = &ctxt.option_by_name(&label.unwrap().0)?.value;
 
-        if let CommandOptionValue::Attachment(ref option) = word.value {
+        if let CommandOptionValue::Attachment(ref option) = word {
             let attachment = ctxt.cx.data.interaction_attachments.get(option);
             let attachment = attachment.ok_or(TagParseError::NoAttachment)?;
             Self::attachment(Some(attachment))
         } else {
             Err(TagParseError::MismatchedCommandOptionType((
                 "Attachment".to_owned(),
-                word.value.clone(),
+                word.clone(),
             )))
         }
     }
@@ -660,11 +699,11 @@ impl ImageUrl {
 
     async fn from_emoji_command_option(
         ctxt: &mut InteractionCommandParseCtxt<'_>,
-        _: Label,
+        label: Label,
     ) -> Result<Self, TagParseError> {
-        let word = ctxt.next_option()?;
+        let word = &ctxt.option_by_name(&label.unwrap().0)?.value;
 
-        if let CommandOptionValue::String(ref option) = word.value {
+        if let CommandOptionValue::String(ref option) = word {
             if regex::URL.is_match(option) {
                 Ok(Self::emoji(&mut ctxt.cx, option).await?)
             } else {
@@ -673,7 +712,7 @@ impl ImageUrl {
         } else {
             Err(TagParseError::MismatchedCommandOptionType((
                 "String (emoji argument)".to_owned(),
-                word.value.clone(),
+                word.clone(),
             )))
         }
     }
@@ -771,8 +810,14 @@ impl ParseArgument for ImageUrl {
         Ok(Self(url))
     }
 
-    async fn parse_command_option(ctxt: &mut InteractionCommandParseCtxt<'_>) -> Result<Self, TagParseError> {
-        async fn combined_parsers(ctxt: &mut InteractionCommandParseCtxt<'_>) -> Result<ImageUrl, TagParseError> {
+    async fn parse_command_option(
+        ctxt: &mut InteractionCommandParseCtxt<'_>,
+        label: Label,
+    ) -> Result<Self, TagParseError> {
+        async fn combined_parsers(
+            ctxt: &mut InteractionCommandParseCtxt<'_>,
+            label: Label,
+        ) -> Result<ImageUrl, TagParseError> {
             macro_rules! handle {
                 ($v:expr) => {
                     match $v {
@@ -783,15 +828,19 @@ impl ParseArgument for ImageUrl {
                 };
             }
 
-            handle!(commit_if_ok!(ctxt, ImageUrl::from_attachment_interaction_command, None));
-            handle!(commit_if_ok!(ctxt, ImageUrl::from_mention_command_option, None));
-            handle!(commit_if_ok!(ctxt, ImageUrl::from_url_argument_command_option, None));
-            handle!(commit_if_ok!(ctxt, ImageUrl::from_emoji_command_option, None));
+            handle!(commit_if_ok!(
+                ctxt,
+                ImageUrl::from_attachment_interaction_command,
+                label
+            ));
+            handle!(commit_if_ok!(ctxt, ImageUrl::from_mention_command_option, label));
+            handle!(commit_if_ok!(ctxt, ImageUrl::from_url_argument_command_option, label));
+            handle!(commit_if_ok!(ctxt, ImageUrl::from_emoji_command_option, label));
             handle!(ImageUrl::from_channel_history(ctxt.cx.assyst(), ctxt.cx.data.channel_id).await);
             Err(TagParseError::NoImageFound)
         }
 
-        let ImageUrl(mut url) = combined_parsers(ctxt).await?;
+        let ImageUrl(mut url) = combined_parsers(ctxt, label).await?;
 
         // tenor urls only typically return a png, so this code visits the url
         // and extracts the appropriate GIF url from the page.
@@ -826,8 +875,11 @@ impl ParseArgument for Image {
         Ok(Image(data))
     }
 
-    async fn parse_command_option(ctxt: &mut InteractionCommandParseCtxt<'_>) -> Result<Self, TagParseError> {
-        let ImageUrl(url) = ImageUrl::parse_command_option(ctxt).await?;
+    async fn parse_command_option(
+        ctxt: &mut InteractionCommandParseCtxt<'_>,
+        label: Label,
+    ) -> Result<Self, TagParseError> {
+        let ImageUrl(url) = ImageUrl::parse_command_option(ctxt, label).await?;
 
         let data = downloader::download_content(
             &ctxt.cx.assyst().reqwest_client,

@@ -28,7 +28,6 @@
 
 use std::collections::HashMap;
 use std::fmt::Display;
-use std::slice;
 use std::str::SplitAsciiWhitespace;
 use std::time::{Duration, Instant};
 
@@ -268,7 +267,7 @@ pub struct CommandData<'a> {
 }
 
 pub type RawMessageArgsIter<'a> = SplitAsciiWhitespace<'a>;
-pub type InteractionMessageArgsIter<'a> = slice::Iter<'a, CommandDataOption>;
+pub type InteractionMessageArgs<'a> = HashMap<String, &'a CommandDataOption>;
 
 /// A parsing context. Parsing contexts can either be for raw message commands or interaction
 /// commands, and the parsing method differs for each.
@@ -360,24 +359,29 @@ impl<'a> ParseCtxt<'a, RawMessageArgsIter<'a>> {
     }
 }
 
-impl<'a> ParseCtxt<'a, InteractionMessageArgsIter<'a>> {
+impl<'a> ParseCtxt<'a, InteractionMessageArgs<'a>> {
     pub fn new(ctxt: CommandCtxt<'a>, args: &'a [CommandDataOption]) -> Self {
-        Self {
-            args: args.iter(),
-            cx: ctxt,
+        let mut map = HashMap::new();
+        for arg in args {
+            map.insert(arg.name.clone(), arg);
         }
+
+        Self { args: map, cx: ctxt }
     }
 
-    /// Eagerly takes an option.
+    /// Eagerly finds an option by its name.
     /// If you want to "peek" or you aren't sure if you might want to undo this,
     /// consider using `commit_if_ok` or `fork` to try it in a subcontext.
-    pub fn next_option(&mut self) -> Result<&'a CommandDataOption, ArgsExhausted> {
-        self.args.next().ok_or(ArgsExhausted(None))
+    pub fn option_by_name(&mut self, name: &str) -> Result<&'a CommandDataOption, ArgsExhausted> {
+        self.args
+            .get(name)
+            .copied()
+            .ok_or(ArgsExhausted(Some((name.to_owned(), String::new()))))
     }
 }
 
 pub type RawMessageParseCtxt<'a> = ParseCtxt<'a, RawMessageArgsIter<'a>>;
-pub type InteractionCommandParseCtxt<'a> = ParseCtxt<'a, InteractionMessageArgsIter<'a>>;
+pub type InteractionCommandParseCtxt<'a> = ParseCtxt<'a, InteractionMessageArgs<'a>>;
 
 #[derive(Clone)]
 pub struct CommandCtxt<'a> {

@@ -5,7 +5,8 @@
     trait_alias,
     async_closure,
     if_let_guard,
-    iterator_try_collect
+    iterator_try_collect,
+    str_split_remainder
 )]
 #![allow(deprecated)]
 
