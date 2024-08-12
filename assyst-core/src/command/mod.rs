@@ -431,6 +431,16 @@ pub async fn check_metadata(
         };
     };
 
+    let is_guild_manager = if let Some(g) = ctxt.data.guild_id {
+        ctxt.assyst()
+            .rest_cache_handler
+            .user_is_guild_manager(g.get(), ctxt.data.author.id.get())
+            .await
+            .unwrap_or(false)
+    } else {
+        false
+    };
+
     if let Some(g) = ctxt.data.guild_id {
         let disabled_entry = GuildDisabledCommand {
             guild_id: g.get() as i64,
@@ -441,6 +451,7 @@ pub async fn check_metadata(
             .is_disabled(&ctxt.assyst().database_handler)
             .await
             .map_err(|_| ExecutionError::MetadataCheck(MetadataCheckError::CommandDisabled))?
+            && !is_guild_manager
         {
             return Err(ExecutionError::MetadataCheck(MetadataCheckError::CommandDisabled));
         }
@@ -454,18 +465,10 @@ pub async fn check_metadata(
             }
         },
         Availability::ServerManagers => {
-            if let Some(guild_id) = ctxt.data.guild_id {
-                if !ctxt
-                    .assyst()
-                    .rest_cache_handler
-                    .user_is_guild_manager(guild_id.get(), ctxt.data.author.id.get())
-                    .await
-                    .unwrap_or(false)
-                {
-                    return Err(ExecutionError::MetadataCheck(
-                        MetadataCheckError::GuildManagerOnlyCommand,
-                    ));
-                }
+            if ctxt.data.guild_id.is_some() && !is_guild_manager {
+                return Err(ExecutionError::MetadataCheck(
+                    MetadataCheckError::GuildManagerOnlyCommand,
+                ));
             }
         },
         _ => {},

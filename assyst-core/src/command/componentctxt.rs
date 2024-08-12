@@ -6,13 +6,13 @@ use tokio::sync::Mutex;
 use twilight_model::application::interaction::message_component::MessageComponentInteractionData;
 use twilight_model::application::interaction::modal::ModalInteractionData;
 use twilight_model::channel::message::component::{Button, ButtonStyle};
-use twilight_model::channel::message::{AllowedMentions, Component, MessageFlags};
+use twilight_model::channel::message::{AllowedMentions, Component, EmojiReactionType, MessageFlags};
 use twilight_model::http::interaction::{InteractionResponse, InteractionResponseType};
 use twilight_model::id::marker::{GuildMarker, InteractionMarker, UserMarker};
 use twilight_model::id::Id;
 use twilight_util::builder::InteractionResponseDataBuilder;
 
-use super::misc::tag::TagListComponentMetadata;
+use super::misc::tag::TagPaginatorComponentMetadata;
 use crate::assyst::ThreadSafeAssyst;
 
 /// A register of all custom IDs that will trigger a certain component context callback.
@@ -138,7 +138,18 @@ pub async fn respond_modal(
 
 #[derive(Clone)]
 pub enum ComponentMetadata {
-    TagList(TagListComponentMetadata),
+    TagList(TagPaginatorComponentMetadata),
+}
+
+pub fn button_emoji_new(custom_id: &str, emoji: EmojiReactionType, style: ButtonStyle) -> Button {
+    Button {
+        custom_id: Some(custom_id.to_owned()),
+        disabled: false,
+        emoji: Some(emoji),
+        label: None,
+        style,
+        url: None,
+    }
 }
 
 pub fn button_new(custom_id: &str, label: &str, style: ButtonStyle) -> Button {

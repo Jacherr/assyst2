@@ -12,16 +12,17 @@ use assyst_tag::parser::ParseMode;
 use assyst_tag::ParseResult;
 use tokio::runtime::Handle;
 use twilight_model::channel::message::component::{ActionRow, ButtonStyle, TextInput, TextInputStyle};
-use twilight_model::channel::message::Component;
+use twilight_model::channel::message::{Component, EmojiReactionType};
 use twilight_model::channel::Message;
-use twilight_model::id::marker::{ChannelMarker, UserMarker};
+use twilight_model::id::marker::{ChannelMarker, EmojiMarker, UserMarker};
 use twilight_model::id::Id;
 
 use super::CommandCtxt;
 use crate::assyst::ThreadSafeAssyst;
 use crate::command::arguments::{Image, ImageUrl, RestNoFlags, User, Word};
 use crate::command::componentctxt::{
-    button_new, respond_modal, respond_update_text, ComponentCtxt, ComponentInteractionData, ComponentMetadata,
+    button_emoji_new, button_new, respond_modal, respond_update_text, ComponentCtxt, ComponentInteractionData,
+    ComponentMetadata,
 };
 use crate::command::flags::{flags_from_str, FlagDecode, FlagType};
 use crate::command::messagebuilder::MessageBuilder;
@@ -164,8 +165,9 @@ pub async fn delete(ctxt: CommandCtxt<'_>, name: Word) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Used for both listing and searching tags
 #[derive(Clone, Debug)]
-pub struct TagListComponentMetadata {
+pub struct TagPaginatorComponentMetadata {
     pub current_page: u64,
     pub page_next_cid: String,
     pub page_prev_cid: String,
@@ -176,8 +178,9 @@ pub struct TagListComponentMetadata {
     pub target_user_id: Option<Id<UserMarker>>,
     pub tag_count: u64,
     pub calling_prefix: String,
+    pub search_criteria: Option<String>,
 }
-impl TagListComponentMetadata {
+impl TagPaginatorComponentMetadata {
     pub async fn component_callback(&mut self, data: &ComponentInteractionData) -> anyhow::Result<()> {
         if data.invocation_user_id != self.invocating_user_id {
             bail!("This command was not ran by you.");
@@ -224,7 +227,7 @@ impl TagListComponentMetadata {
                 .clone()
                 .context("No value in text field??")?
                 .parse::<u64>()
-                .context("Invalid page number.")?;
+                .context("Invalid page number")?;
 
             if parsed > pages as u64 || parsed < 1 {
                 bail!("That page doesn't exist.");
@@ -248,29 +251,60 @@ impl TagListComponentMetadata {
         let offset = (self.current_page as i64 - 1) * DEFAULT_LIST_COUNT;
 
         let tags = match self.target_user_id {
-            Some(u) => {
-                Tag::get_paged_for_user(
-                    &data.assyst.database_handler,
-                    data.invocation_guild_id.unwrap().get() as i64,
-                    u.get() as i64,
-                    offset,
-                    DEFAULT_LIST_COUNT,
-                )
-                .await?
+            Some(u) => match self.search_criteria {
+                Some(ref s) => {
+                    let all = Tag::search_in_guild_for_user(
+                        &data.assyst.database_handler,
+                        data.invocation_guild_id.unwrap().get() as i64,
+                        u.get() as i64,
+                        s,
+                    )
+                    .await?;
+                    all[offset as usize..(offset + DEFAULT_LIST_COUNT).clamp(1, self.tag_count as i64) as usize]
+                        .to_vec()
+                },
+                None => {
+                    Tag::get_paged_for_user(
+                        &data.assyst.database_handler,
+                        data.invocation_guild_id.unwrap().get() as i64,
+                        u.get() as i64,
+                        offset,
+                        DEFAULT_LIST_COUNT,
+                    )
+                    .await?
+                },
             },
-            None => {
-                Tag::get_paged(
-                    &data.assyst.database_handler,
-                    data.invocation_guild_id.unwrap().get() as i64,
-                    offset,
-                    DEFAULT_LIST_COUNT,
-                )
-                .await?
+            None => match self.search_criteria {
+                Some(ref s) => {
+                    let all = Tag::search_in_guild(
+                        &data.assyst.database_handler,
+                        data.invocation_guild_id.unwrap().get() as i64,
+                        s,
+                    )
+                    .await?;
+                    all[offset as usize..(offset + DEFAULT_LIST_COUNT).clamp(1, self.tag_count as i64) as usize]
+                        .to_vec()
+                },
+                None => {
+                    Tag::get_paged(
+                        &data.assyst.database_handler,
+                        data.invocation_guild_id.unwrap().get() as i64,
+                        offset,
+                        DEFAULT_LIST_COUNT,
+                    )
+                    .await?
+                },
             },
         };
 
         let mut message = format!(
-            "🗒️ **Tags in this server{0}**\nView a tag by running `{1}t <name>`\n\n",
+            "🗒️ **Tags in this server{0}{1}**\nView a tag by running `{2}t <name>`\n\n",
+            {
+                match self.search_criteria {
+                    Some(ref s) => format!(" with search criteria {}", s.codestring()),
+                    None => "".to_owned(),
+                }
+            },
             {
                 match self.target_user_id {
                     Some(u) => format!(" for user <@{u}>"),
@@ -440,9 +474,25 @@ pub async fn list(ctxt: CommandCtxt<'_>, user: Option<User>, flags: TagListFlags
         content: Some(message),
         attachment: None,
         components: Some(vec![
-            Component::Button(button_new(&page_prev, "Previous Page", ButtonStyle::Secondary)),
-            Component::Button(button_new(&page_next, "Next Page", ButtonStyle::Secondary)),
-            Component::Button(button_new(&jump_to_page, "Jump to page", ButtonStyle::Secondary)),
+            Component::Button(button_emoji_new(
+                &page_prev,
+                EmojiReactionType::Custom {
+                    name: Some("arrow_left".to_owned()),
+                    animated: false,
+                    id: Id::<EmojiMarker>::new(1272681864204779560),
+                },
+                ButtonStyle::Secondary,
+            )),
+            Component::Button(button_new(&jump_to_page, "Jump", ButtonStyle::Primary)),
+            Component::Button(button_emoji_new(
+                &page_next,
+                EmojiReactionType::Custom {
+                    name: Some("arrow_right".to_owned()),
+                    animated: false,
+                    id: Id::<EmojiMarker>::new(1272681890129645568),
+                },
+                ButtonStyle::Secondary,
+            )),
         ]),
         component_ctxt: Some((
             vec![
@@ -453,7 +503,7 @@ pub async fn list(ctxt: CommandCtxt<'_>, user: Option<User>, flags: TagListFlags
             ],
             ComponentCtxt::new(
                 ctxt.assyst().clone(),
-                ComponentMetadata::TagList(TagListComponentMetadata {
+                ComponentMetadata::TagList(TagPaginatorComponentMetadata {
                     page_next_cid: page_next,
                     page_prev_cid: page_prev,
                     page_jump_cid: jump_to_page,
@@ -464,6 +514,7 @@ pub async fn list(ctxt: CommandCtxt<'_>, user: Option<User>, flags: TagListFlags
                     target_user_id: user_id,
                     tag_count: count as u64,
                     calling_prefix: ctxt.data.calling_prefix.clone(),
+                    search_criteria: None,
                 }),
             ),
         )),
@@ -541,13 +592,15 @@ pub async fn raw(ctxt: CommandCtxt<'_>, name: Word) -> anyhow::Result<()> {
     usage = "[query] <page> <user id|mention>",
     examples = ["1 test @jacher", "1 test"]
 )]
-pub async fn search(ctxt: CommandCtxt<'_>, page: u64, query: Word, user: Option<User>) -> anyhow::Result<()> {
+pub async fn search(ctxt: CommandCtxt<'_>, query: Word, user: Option<User>) -> anyhow::Result<()> {
     let Some(guild_id) = ctxt.data.guild_id else {
         bail!("Tags can only be listed in guilds.")
     };
 
     // user-specific search if arg is a mention
-    let user_id: Option<i64> = user.map(|x| x.0.id.get() as i64);
+    let user_id = user.map(|x| x.0.id);
+
+    let page = 1;
 
     ensure!(page >= 1, "Page must be greater or equal to 1");
 
@@ -557,7 +610,7 @@ pub async fn search(ctxt: CommandCtxt<'_>, page: u64, query: Word, user: Option<
             Tag::search_in_guild_for_user(
                 &ctxt.assyst().database_handler,
                 guild_id.get() as i64,
-                u,
+                u.get() as i64,
                 &query.0.to_ascii_lowercase(),
             )
             .await?
@@ -580,7 +633,7 @@ pub async fn search(ctxt: CommandCtxt<'_>, page: u64, query: Word, user: Option<
     let tags = &tags[offset as usize..(offset + DEFAULT_LIST_COUNT).clamp(1, tags.len() as i64) as usize];
 
     let mut message = format!(
-        "🗒️ **Tags in this server matching query {0}{1}**\nView a tag by running `{2}t <name>`, or go to the next page by running `{2}t list {3} {0}`\n\n",
+        "🗒️ **Tags in this server with search criteria {0}{1}**\nView a tag by running `{2}t <name>`, or go to the next page by running `{2}t list {3} {0}`\n\n",
         query.0,
         {
             match user_id {
@@ -612,7 +665,63 @@ pub async fn search(ctxt: CommandCtxt<'_>, page: u64, query: Word, user: Option<
         tags.len()
     )?;
 
-    ctxt.reply(message).await?;
+    let timestamp = unix_timestamp();
+    let page_next = format!("page_next-{timestamp}");
+    let page_prev = format!("page_prev-{timestamp}");
+    let jump_to_page = format!("page_jump-{timestamp}");
+    let modal_cid = format!("page_jump-modal-{timestamp}");
+    let modal_text_cid = format!("page_jump-modal-text-{timestamp}");
+
+    ctxt.reply(MessageBuilder {
+        content: Some(message),
+        attachment: None,
+        components: Some(vec![
+            Component::Button(button_emoji_new(
+                &page_prev,
+                EmojiReactionType::Custom {
+                    name: Some("arrow_left".to_owned()),
+                    animated: false,
+                    id: Id::<EmojiMarker>::new(1272681864204779560),
+                },
+                ButtonStyle::Secondary,
+            )),
+            Component::Button(button_new(&jump_to_page, "Jump", ButtonStyle::Primary)),
+            Component::Button(button_emoji_new(
+                &page_next,
+                EmojiReactionType::Custom {
+                    name: Some("arrow_right".to_owned()),
+                    animated: false,
+                    id: Id::<EmojiMarker>::new(1272681890129645568),
+                },
+                ButtonStyle::Secondary,
+            )),
+        ]),
+        component_ctxt: Some((
+            vec![
+                page_next.clone(),
+                page_prev.clone(),
+                jump_to_page.clone(),
+                modal_cid.clone(),
+            ],
+            ComponentCtxt::new(
+                ctxt.assyst().clone(),
+                ComponentMetadata::TagList(TagPaginatorComponentMetadata {
+                    page_next_cid: page_next,
+                    page_prev_cid: page_prev,
+                    page_jump_cid: jump_to_page,
+                    jump_modal_cid: modal_cid,
+                    jump_modal_text_cid: modal_text_cid,
+                    current_page: page,
+                    invocating_user_id: ctxt.data.author.id,
+                    target_user_id: user_id,
+                    tag_count: count as u64,
+                    calling_prefix: ctxt.data.calling_prefix.clone(),
+                    search_criteria: Some(query.0),
+                }),
+            ),
+        )),
+    })
+    .await?;
 
     Ok(())
 }

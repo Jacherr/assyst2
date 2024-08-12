@@ -1,6 +1,6 @@
 use crate::{is_unique_violation, Count, DatabaseHandler};
 
-#[derive(sqlx::FromRow, Debug)]
+#[derive(sqlx::FromRow, Debug, Clone)]
 pub struct Tag {
     pub name: String,
     pub data: String,
