@@ -32,6 +32,7 @@ use std::str::SplitAsciiWhitespace;
 use std::time::{Duration, Instant};
 
 use assyst_common::config::CONFIG;
+use assyst_database::model::guild_disabled_command::GuildDisabledCommand;
 use assyst_flux_iface::FluxHandler;
 use async_trait::async_trait;
 use errors::TagParseError;
@@ -429,6 +430,21 @@ pub async fn check_metadata(
             ));
         };
     };
+
+    if let Some(g) = ctxt.data.guild_id {
+        let disabled_entry = GuildDisabledCommand {
+            guild_id: g.get() as i64,
+            command_name: metadata.name.to_owned(),
+        };
+
+        if disabled_entry
+            .is_disabled(&ctxt.assyst().database_handler)
+            .await
+            .map_err(|_| ExecutionError::MetadataCheck(MetadataCheckError::CommandDisabled))?
+        {
+            return Err(ExecutionError::MetadataCheck(MetadataCheckError::CommandDisabled));
+        }
+    }
 
     // command availability check
     match metadata.access {
