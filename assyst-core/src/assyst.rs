@@ -15,6 +15,7 @@ use twilight_model::id::marker::ApplicationMarker;
 use twilight_model::id::Id;
 
 use crate::bad_translator::{BadTranslator, BadTranslatorEntry};
+use crate::command::componentctxt::ComponentCtxts;
 use crate::command_ratelimits::CommandRatelimits;
 use crate::persistent_cache_handler::PersistentCacheHandler;
 use crate::replies::Replies;
@@ -61,6 +62,8 @@ pub struct Assyst {
     /// All entitlements. At present, these entitlements are a single tier of guild subscription.
     /// `Arc`ed since it's also included as part of the Flux handler
     pub entitlements: Arc<Mutex<HashMap<i64, ActiveGuildPremiumEntitlement>>>,
+    /// Component contexts, mapping a custom ID (e.g., a button) to a context.
+    pub component_contexts: ComponentCtxts,
 }
 impl Assyst {
     pub async fn new() -> anyhow::Result<Assyst> {
@@ -94,6 +97,7 @@ impl Assyst {
             rest_cache_handler: RestCacheHandler::new(http_client.clone()),
             command_ratelimits: CommandRatelimits::new(),
             entitlements,
+            component_contexts: ComponentCtxts::new(),
         })
     }
 

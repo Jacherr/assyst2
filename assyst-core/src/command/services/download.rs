@@ -11,16 +11,13 @@ use rand::{thread_rng, Rng};
 use tokio::sync::Mutex;
 use tokio::task::JoinSet;
 use tokio::time::{sleep, timeout};
-use twilight_model::application::interaction::application_command::CommandOptionValue;
-use twilight_util::builder::command::StringBuilder;
 use zip::write::SimpleFileOptions;
 use zip::ZipWriter;
 
-use crate::command::arguments::{ParseArgument, Word};
-use crate::command::errors::TagParseError;
+use crate::command::arguments::Word;
 use crate::command::flags::{flags_from_str, FlagDecode, FlagType};
 use crate::command::messagebuilder::Attachment;
-use crate::command::{Availability, Category, CommandCtxt, InteractionCommandParseCtxt, Label, RawMessageParseCtxt};
+use crate::command::{Availability, Category, CommandCtxt};
 use crate::flag_parse_argument;
 use crate::rest::web_media_download::{download_web_media, get_youtube_playlist_entries, WebDownloadOpts};
 

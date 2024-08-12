@@ -51,6 +51,7 @@ use super::gateway_handler::reply as gateway_reply;
 use crate::assyst::ThreadSafeAssyst;
 
 pub mod arguments;
+pub mod componentctxt;
 pub mod errors;
 pub mod flags;
 pub mod fun;

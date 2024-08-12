@@ -10,10 +10,12 @@ use twilight_model::application::interaction::application_command::{
 };
 use twilight_model::application::interaction::{InteractionContextType, InteractionData};
 use twilight_model::gateway::payload::incoming::InteractionCreate;
+use twilight_model::http::interaction::{InteractionResponse, InteractionResponseType};
 use twilight_model::util::Timestamp;
 
 use super::after_command_execution_success;
 use crate::assyst::ThreadSafeAssyst;
+use crate::command::componentctxt::ComponentInteractionData;
 use crate::command::registry::find_command_by_name;
 use crate::command::source::Source;
 use crate::command::{
@@ -175,6 +177,90 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
                 "Received interaction for non-existent command: {}, ignoring",
                 command_data.name
             );
+        }
+    } else if let Some(InteractionData::MessageComponent(component)) = interaction.data {
+        let ctxt = assyst.component_contexts.get(&component.custom_id);
+        let component_data = ComponentInteractionData {
+            assyst: assyst.clone(),
+            custom_id: component.custom_id.clone(),
+            message_interaction_data: Some(component),
+            modal_submit_interaction_data: None,
+            invocation_guild_id: interaction.guild_id,
+            invocation_user_id: interaction
+                .member
+                .map(|m| m.user.unwrap().id)
+                .or(interaction.user.map(|u| u.id))
+                .unwrap(),
+            interaction_id: interaction.id,
+            interaction_token: interaction.token.clone(),
+        };
+
+        match ctxt {
+            Some(cx) => match cx.lock().await.handle_component_interaction(&component_data).await {
+                Err(e) => {
+                    err!("Failed to handle component interaction: {e:?}");
+                },
+                _ => {},
+            },
+            None => {
+                let response = InteractionResponse {
+                    kind: InteractionResponseType::DeferredUpdateMessage,
+                    data: None,
+                };
+
+                match assyst
+                    .interaction_client()
+                    .create_response(interaction.id, &interaction.token, &response)
+                    .await
+                {
+                    Err(e) => {
+                        err!("Failed to send deferred update message: {e:?}");
+                    },
+                    _ => {},
+                };
+            },
+        }
+    } else if let Some(InteractionData::ModalSubmit(component)) = interaction.data {
+        let ctxt = assyst.component_contexts.get(&component.custom_id);
+        let component_data = ComponentInteractionData {
+            assyst: assyst.clone(),
+            custom_id: component.custom_id.clone(),
+            message_interaction_data: None,
+            modal_submit_interaction_data: Some(component),
+            invocation_guild_id: interaction.guild_id,
+            invocation_user_id: interaction
+                .member
+                .map(|m| m.user.unwrap().id)
+                .or(interaction.user.map(|u| u.id))
+                .unwrap(),
+            interaction_id: interaction.id,
+            interaction_token: interaction.token.clone(),
+        };
+
+        match ctxt {
+            Some(cx) => match cx.lock().await.handle_component_interaction(&component_data).await {
+                Err(e) => {
+                    err!("Failed to handle component interaction: {e:?}");
+                },
+                _ => {},
+            },
+            None => {
+                let response = InteractionResponse {
+                    kind: InteractionResponseType::DeferredUpdateMessage,
+                    data: None,
+                };
+
+                match assyst
+                    .interaction_client()
+                    .create_response(interaction.id, &interaction.token, &response)
+                    .await
+                {
+                    Err(e) => {
+                        err!("Failed to send deferred update message: {e:?}");
+                    },
+                    _ => {},
+                };
+            },
         }
     }
 }

@@ -5,31 +5,37 @@ use anyhow::{bail, Context};
 #[macro_export]
 macro_rules! flag_parse_argument {
     ($s:ty) => {
-        impl ParseArgument for $s {
+        impl $crate::command::arguments::ParseArgument for $s {
             fn as_command_option(name: &str) -> twilight_model::application::command::CommandOption {
-                StringBuilder::new(name, "flags input").required(false).build()
+                twilight_util::builder::command::StringBuilder::new(name, "flags input")
+                    .required(false)
+                    .build()
             }
 
             async fn parse_raw_message(
-                ctxt: &mut RawMessageParseCtxt<'_>,
-                label: Label,
-            ) -> Result<Self, TagParseError> {
+                ctxt: &mut $crate::command::RawMessageParseCtxt<'_>,
+                label: $crate::command::Label,
+            ) -> Result<Self, $crate::command::TagParseError> {
                 let args = ctxt.rest_all(label);
-                let parsed = Self::from_str(&args).map_err(|x| TagParseError::FlagParseError(x))?;
+                let parsed = Self::from_str(&args).map_err(|x| $crate::command::TagParseError::FlagParseError(x))?;
                 Ok(parsed)
             }
 
             async fn parse_command_option(
-                ctxt: &mut InteractionCommandParseCtxt<'_>,
+                ctxt: &mut $crate::command::InteractionCommandParseCtxt<'_>,
                 label: $crate::command::Label,
-            ) -> Result<Self, TagParseError> {
+            ) -> Result<Self, $crate::command::TagParseError> {
                 let word = &ctxt.option_by_name(&label.unwrap().0);
 
                 if let Ok(option) = word {
-                    if let CommandOptionValue::String(ref option) = option.value {
-                        Ok(Self::from_str(&option[..]).map_err(|x| TagParseError::FlagParseError(x))?)
+                    if let twilight_model::application::interaction::application_command::CommandOptionValue::String(
+                        ref option,
+                    ) = option.value
+                    {
+                        Ok(Self::from_str(&option[..])
+                            .map_err(|x| $crate::command::TagParseError::FlagParseError(x))?)
                     } else {
-                        Err(TagParseError::MismatchedCommandOptionType((
+                        Err($crate::command::TagParseError::MismatchedCommandOptionType((
                             "String (Flags)".to_owned(),
                             option.value.clone(),
                         )))

@@ -49,6 +49,10 @@ impl MetricsHandler {
         let database_cache_reader = &self.database_handler;
         let prefixes_cache_size = database_cache_reader.cache.get_prefixes_cache_size();
         self.update_cache_size("prefixes", prefixes_cache_size);
+        self.update_cache_size(
+            "disabled_commands",
+            database_cache_reader.cache.get_guild_disabled_commands_size(),
+        );
 
         let memory_usages = get_processes_mem_usage();
 

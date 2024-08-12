@@ -3,13 +3,10 @@ use std::time::Duration;
 
 use anyhow::Context;
 use assyst_proc_macro::command;
-use twilight_model::application::interaction::application_command::CommandOptionValue;
-use twilight_util::builder::command::StringBuilder;
 
-use crate::command::arguments::{Image, ParseArgument};
-use crate::command::errors::TagParseError;
+use crate::command::arguments::Image;
 use crate::command::flags::{flags_from_str, FlagDecode, FlagType};
-use crate::command::{Availability, Category, CommandCtxt, InteractionCommandParseCtxt, Label, RawMessageParseCtxt};
+use crate::command::{Availability, Category, CommandCtxt};
 use crate::flag_parse_argument;
 
 #[derive(Default)]

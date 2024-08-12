@@ -12,15 +12,11 @@ use dash_vm::Vm;
 use serde::Deserialize;
 use tokio::fs;
 use toml::from_str;
-use twilight_model::application::interaction::application_command::CommandOptionValue;
-use twilight_util::builder::command::StringBuilder;
 
-use crate::command::arguments::{Codeblock, ParseArgument};
+use crate::command::arguments::Codeblock;
 use crate::command::flags::{flags_from_str, FlagDecode, FlagType};
 use crate::command::messagebuilder::{Attachment, MessageBuilder};
-use crate::command::{
-    Availability, Category, CommandCtxt, InteractionCommandParseCtxt, Label, RawMessageParseCtxt, TagParseError,
-};
+use crate::command::{Availability, Category, CommandCtxt};
 use crate::downloader::download_content;
 use crate::rest::rust::{run_benchmark, run_binary, run_clippy, run_godbolt, run_miri, OptimizationLevel};
 use crate::{define_commandgroup, flag_parse_argument};
@@ -173,6 +169,8 @@ pub async fn charge(ctxt: CommandCtxt<'_>, script: Codeblock, flags: ChargeFlags
                     name: "out.txt".into(),
                     data: stdout.as_bytes().to_vec(),
                 }),
+                components: None,
+                component_ctxt: None,
             })
             .await?;
         }

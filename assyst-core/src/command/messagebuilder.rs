@@ -1,6 +1,8 @@
 use assyst_common::util::filetype::{get_sig, Type};
+use twilight_model::channel::message::Component;
 
 use super::arguments::Image;
+use super::componentctxt::ComponentCtxtRegister;
 
 #[derive(Debug)]
 pub struct Attachment {
@@ -18,10 +20,11 @@ impl From<Image> for Attachment {
     }
 }
 
-#[derive(Debug)]
 pub struct MessageBuilder {
     pub content: Option<String>,
     pub attachment: Option<Attachment>,
+    pub components: Option<Vec<Component>>,
+    pub component_ctxt: Option<ComponentCtxtRegister>,
 }
 
 impl From<&str> for MessageBuilder {
@@ -29,6 +32,8 @@ impl From<&str> for MessageBuilder {
         Self {
             content: Some(value.into()),
             attachment: None,
+            components: None,
+            component_ctxt: None,
         }
     }
 }
@@ -37,6 +42,8 @@ impl From<String> for MessageBuilder {
         Self {
             content: Some(value),
             attachment: None,
+            components: None,
+            component_ctxt: None,
         }
     }
 }
@@ -46,6 +53,8 @@ impl From<Attachment> for MessageBuilder {
         Self {
             content: None,
             attachment: Some(value),
+            components: None,
+            component_ctxt: None,
         }
     }
 }
@@ -55,6 +64,8 @@ impl From<(Attachment, String)> for MessageBuilder {
         Self {
             content: Some(value.1),
             attachment: Some(value.0),
+            components: None,
+            component_ctxt: None,
         }
     }
 }
@@ -64,6 +75,8 @@ impl From<Image> for MessageBuilder {
         Self {
             content: None,
             attachment: Some(value.into()),
+            components: None,
+            component_ctxt: None,
         }
     }
 }
@@ -72,6 +85,8 @@ impl From<(Image, &str)> for MessageBuilder {
         Self {
             attachment: Some(image.into()),
             content: Some(text.into()),
+            components: None,
+            component_ctxt: None,
         }
     }
 }
@@ -80,6 +95,8 @@ impl From<Vec<u8>> for MessageBuilder {
         Self {
             attachment: Some(Image(value).into()),
             content: None,
+            components: None,
+            component_ctxt: None,
         }
     }
 }
@@ -88,6 +105,8 @@ impl From<(Vec<u8>, &str)> for MessageBuilder {
         Self {
             attachment: Some(Image(value).into()),
             content: Some(text.into()),
+            components: None,
+            component_ctxt: None,
         }
     }
 }

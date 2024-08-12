@@ -179,12 +179,14 @@ pub async fn frames(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> 
         .frames(source.0, ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()))
         .await?;
 
-    let response = MessageBuilder {
+    let response: MessageBuilder = MessageBuilder {
         content: None,
         attachment: Some(Attachment {
             name: "frames.zip".to_owned().into_boxed_str(),
             data: result,
         }),
+        component_ctxt: None,
+        components: None,
     };
 
     ctxt.reply(response).await?;

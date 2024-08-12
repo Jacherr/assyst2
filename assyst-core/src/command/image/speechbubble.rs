@@ -2,13 +2,10 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use assyst_proc_macro::command;
-use twilight_model::application::interaction::application_command::CommandOptionValue;
-use twilight_util::builder::command::StringBuilder;
 
-use crate::command::arguments::{Image, ParseArgument};
-use crate::command::errors::TagParseError;
+use crate::command::arguments::Image;
 use crate::command::flags::{flags_from_str, FlagDecode, FlagType};
-use crate::command::{Availability, Category, CommandCtxt, InteractionCommandParseCtxt, Label, RawMessageParseCtxt};
+use crate::command::{Availability, Category, CommandCtxt};
 use crate::flag_parse_argument;
 
 #[command(
@@ -27,7 +24,12 @@ use crate::flag_parse_argument;
 pub async fn speechbubble(ctxt: CommandCtxt<'_>, source: Image, flags: SpeechBubbleFlags) -> anyhow::Result<()> {
     let result = ctxt
         .flux_handler()
-        .speech_bubble(source.0, flags.solid, ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()))
+        .speech_bubble(
+            source.0,
+            flags.solid,
+            ctxt.data.author.id.get(),
+            ctxt.data.guild_id.map(|x| x.get()),
+        )
         .await?;
 
     ctxt.reply(result).await?;

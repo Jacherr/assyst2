@@ -5,13 +5,10 @@ use anyhow::{bail, Context};
 use assyst_common::util::{normalize_emojis, normalize_mentions, table};
 use assyst_proc_macro::command;
 use assyst_string_fmt::Markdown;
-use twilight_model::application::interaction::application_command::CommandOptionValue;
-use twilight_util::builder::command::StringBuilder;
 
-use crate::command::arguments::{ParseArgument, Rest, Word};
-use crate::command::errors::TagParseError;
+use crate::command::arguments::{Rest, Word};
 use crate::command::flags::{flags_from_str, FlagDecode, FlagType};
-use crate::command::{Availability, Category, CommandCtxt, InteractionCommandParseCtxt, Label, RawMessageParseCtxt};
+use crate::command::{Availability, Category, CommandCtxt};
 use crate::flag_parse_argument;
 use crate::rest::bad_translation::{
     bad_translate as bad_translate_default, bad_translate_with_count, get_languages, translate_single, TranslateResult,

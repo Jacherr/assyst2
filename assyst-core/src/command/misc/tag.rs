@@ -1,26 +1,34 @@
+use std::collections::HashMap;
 use std::fmt::Write;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use anyhow::{anyhow, bail, ensure, Context};
 use assyst_common::util::discord::{format_discord_timestamp, format_tag, get_avatar_url};
-use assyst_common::util::string_from_likely_utf8;
+use assyst_common::util::{string_from_likely_utf8, unix_timestamp};
 use assyst_database::model::tag::Tag;
 use assyst_proc_macro::command;
 use assyst_string_fmt::Markdown;
 use assyst_tag::parser::ParseMode;
 use assyst_tag::ParseResult;
 use tokio::runtime::Handle;
+use twilight_model::channel::message::component::{ActionRow, ButtonStyle, TextInput, TextInputStyle};
+use twilight_model::channel::message::Component;
 use twilight_model::channel::Message;
-use twilight_model::id::marker::ChannelMarker;
+use twilight_model::id::marker::{ChannelMarker, UserMarker};
 use twilight_model::id::Id;
 
 use super::CommandCtxt;
 use crate::assyst::ThreadSafeAssyst;
 use crate::command::arguments::{Image, ImageUrl, RestNoFlags, User, Word};
+use crate::command::componentctxt::{
+    button_new, respond_modal, respond_update_text, ComponentCtxt, ComponentInteractionData, ComponentMetadata,
+};
+use crate::command::flags::{flags_from_str, FlagDecode, FlagType};
+use crate::command::messagebuilder::MessageBuilder;
 use crate::command::{Availability, Category};
-use crate::define_commandgroup;
 use crate::downloader::{download_content, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES};
 use crate::rest::eval::fake_eval;
+use crate::{define_commandgroup, flag_parse_argument};
 
 const DEFAULT_LIST_COUNT: i64 = 15;
 
@@ -156,27 +164,207 @@ pub async fn delete(ctxt: CommandCtxt<'_>, name: Word) -> anyhow::Result<()> {
     Ok(())
 }
 
+#[derive(Clone, Debug)]
+pub struct TagListComponentMetadata {
+    pub current_page: u64,
+    pub page_next_cid: String,
+    pub page_prev_cid: String,
+    pub page_jump_cid: String,
+    pub jump_modal_cid: String,
+    pub jump_modal_text_cid: String,
+    pub invocating_user_id: Id<UserMarker>,
+    pub target_user_id: Option<Id<UserMarker>>,
+    pub tag_count: u64,
+    pub calling_prefix: String,
+}
+impl TagListComponentMetadata {
+    pub async fn component_callback(&mut self, data: &ComponentInteractionData) -> anyhow::Result<()> {
+        if data.invocation_user_id != self.invocating_user_id {
+            bail!("This command was not ran by you.");
+        }
+
+        let pages = (self.tag_count as f64 / DEFAULT_LIST_COUNT as f64).ceil() as i64;
+
+        // respond with modal to jump to page
+        if data.custom_id == self.page_jump_cid {
+            let pages = (self.tag_count as f64 / DEFAULT_LIST_COUNT as f64).ceil() as i64;
+            let pages_digits = pages.to_string().len();
+            respond_modal(
+                data.assyst.clone(),
+                data.interaction_id,
+                &data.interaction_token,
+                "Jump to page",
+                vec![Component::ActionRow(ActionRow {
+                    components: vec![Component::TextInput(TextInput {
+                        custom_id: self.jump_modal_text_cid.clone(),
+                        label: "Page".to_string(),
+                        max_length: Some(pages_digits as u16),
+                        min_length: Some(1),
+                        placeholder: None,
+                        required: Some(true),
+                        style: TextInputStyle::Short,
+                        value: None,
+                    })],
+                })],
+                &self.jump_modal_cid,
+            )
+            .await?;
+
+            return Ok(());
+        } else if data.custom_id == self.jump_modal_cid {
+            let modal = data.modal_submit_interaction_data.clone().context("No modal data??")?;
+            let action_row = modal.components.first().context("No modal components??")?;
+            let text_component = action_row
+                .components
+                .iter()
+                .find(|c| c.custom_id == self.jump_modal_text_cid)
+                .context("No page jump component??")?;
+            let parsed = text_component
+                .value
+                .clone()
+                .context("No value in text field??")?
+                .parse::<u64>()
+                .context("Invalid page number.")?;
+
+            if parsed > pages as u64 || parsed < 1 {
+                bail!("That page doesn't exist.");
+            };
+
+            self.current_page = parsed;
+        }
+
+        if data.custom_id == self.page_next_cid {
+            self.current_page += 1;
+        } else if data.custom_id == self.page_prev_cid {
+            self.current_page -= 1;
+        };
+
+        if self.current_page > pages as u64 {
+            self.current_page = 1;
+        } else if self.current_page < 1 {
+            self.current_page = pages as u64;
+        }
+
+        let offset = (self.current_page as i64 - 1) * DEFAULT_LIST_COUNT;
+
+        let tags = match self.target_user_id {
+            Some(u) => {
+                Tag::get_paged_for_user(
+                    &data.assyst.database_handler,
+                    data.invocation_guild_id.unwrap().get() as i64,
+                    u.get() as i64,
+                    offset,
+                    DEFAULT_LIST_COUNT,
+                )
+                .await?
+            },
+            None => {
+                Tag::get_paged(
+                    &data.assyst.database_handler,
+                    data.invocation_guild_id.unwrap().get() as i64,
+                    offset,
+                    DEFAULT_LIST_COUNT,
+                )
+                .await?
+            },
+        };
+
+        let mut message = format!(
+            "🗒️ **Tags in this server{0}**\nView a tag by running `{1}t <name>`\n\n",
+            {
+                match self.target_user_id {
+                    Some(u) => format!(" for user <@{u}>"),
+                    None => "".to_owned(),
+                }
+            },
+            self.calling_prefix,
+        );
+
+        for (index, tag) in tags.iter().enumerate() {
+            let offset = (index as i64) + offset + 1;
+            writeln!(
+                message,
+                "{}. {} {}",
+                offset,
+                tag.name.to_ascii_lowercase(),
+                match self.target_user_id {
+                    Some(_) => "".to_owned(),
+                    None => format!("(<@{}>)", tag.author),
+                }
+            )?;
+        }
+
+        write!(
+            message,
+            "\nShowing {} tags (page {}/{pages}) ({} total tags)",
+            tags.len(),
+            self.current_page,
+            self.tag_count
+        )?;
+
+        respond_update_text(
+            data.assyst.clone(),
+            data.interaction_id,
+            &data.interaction_token,
+            &message,
+        )
+        .await?;
+
+        Ok(())
+    }
+}
+
+#[derive(Default)]
+pub struct TagListFlags {
+    pub page: u64,
+}
+impl FlagDecode for TagListFlags {
+    fn from_str(input: &str) -> anyhow::Result<Self>
+    where
+        Self: Sized,
+    {
+        let mut valid_flags = HashMap::new();
+        valid_flags.insert("page", FlagType::WithValue);
+
+        let raw_decode = flags_from_str(input, valid_flags)?;
+        let page = raw_decode
+            .get("page")
+            .and_then(|x| x.as_deref())
+            .map(|x| x.parse::<u64>())
+            .unwrap_or(Ok(1))
+            .context("Failed to parse page number")?;
+
+        let result = Self { page };
+
+        Ok(result)
+    }
+}
+flag_parse_argument! { TagListFlags }
+
 #[command(
     description = "list tags in the server (or owned by a certain user in the server)",
     cooldown = Duration::from_secs(2),
     access = Availability::Public,
     category = Category::Misc,
-    usage = "<page> <user id|mention>",
-    examples = ["1 @jacher", "1"]
+    usage = "<user id|mention>",
+    examples = ["@jacher"],
+    flag_descriptions = [("page <page>", "start at this page number")]
 )]
-pub async fn list(ctxt: CommandCtxt<'_>, page: u64, user: Option<User>) -> anyhow::Result<()> {
+pub async fn list(ctxt: CommandCtxt<'_>, user: Option<User>, flags: TagListFlags) -> anyhow::Result<()> {
     let Some(guild_id) = ctxt.data.guild_id else {
         bail!("Tags can only be listed in guilds.")
     };
 
+    let page = flags.page;
+
     // user-specific search if arg is a mention
-    let user_id: Option<i64> = user.map(|x| x.0.id.get() as i64);
+    let user_id = user.map(|x| x.0.id);
 
     ensure!(page >= 1, "Page must be greater or equal to 1");
 
     let offset = (page as i64 - 1) * DEFAULT_LIST_COUNT;
     let count = match user_id {
-        Some(u) => Tag::get_count_for_user(&ctxt.assyst().database_handler, guild_id.get() as i64, u)
+        Some(u) => Tag::get_count_for_user(&ctxt.assyst().database_handler, guild_id.get() as i64, u.get() as i64)
             .await
             .context("Failed to get tag count for user in guild")?,
         None => Tag::get_count_in_guild(&ctxt.assyst().database_handler, guild_id.get() as i64)
@@ -193,7 +381,7 @@ pub async fn list(ctxt: CommandCtxt<'_>, page: u64, user: Option<User>) -> anyho
             Tag::get_paged_for_user(
                 &ctxt.assyst().database_handler,
                 guild_id.get() as i64,
-                u,
+                u.get() as i64,
                 offset,
                 DEFAULT_LIST_COUNT,
             )
@@ -211,7 +399,7 @@ pub async fn list(ctxt: CommandCtxt<'_>, page: u64, user: Option<User>) -> anyho
     };
 
     let mut message = format!(
-        "🗒️ **Tags in this server{0}**\nView a tag by running `{1}t <name>`, or go to the next page by running `{1}t list {2}`\n\n",
+        "🗒️ **Tags in this server{0}**\nView a tag by running `{1}t <name>`\n\n",
         {
             match user_id {
                 Some(u) => format!(" for user <@{u}>"),
@@ -219,7 +407,6 @@ pub async fn list(ctxt: CommandCtxt<'_>, page: u64, user: Option<User>) -> anyho
             }
         },
         ctxt.data.calling_prefix,
-        page + 1
     );
 
     for (index, tag) in tags.iter().enumerate() {
@@ -242,7 +429,46 @@ pub async fn list(ctxt: CommandCtxt<'_>, page: u64, user: Option<User>) -> anyho
         tags.len()
     )?;
 
-    ctxt.reply(message).await?;
+    let timestamp = unix_timestamp();
+    let page_next = format!("page_next-{timestamp}");
+    let page_prev = format!("page_prev-{timestamp}");
+    let jump_to_page = format!("page_jump-{timestamp}");
+    let modal_cid = format!("page_jump-modal-{timestamp}");
+    let modal_text_cid = format!("page_jump-modal-text-{timestamp}");
+
+    ctxt.reply(MessageBuilder {
+        content: Some(message),
+        attachment: None,
+        components: Some(vec![
+            Component::Button(button_new(&page_prev, "Previous Page", ButtonStyle::Secondary)),
+            Component::Button(button_new(&page_next, "Next Page", ButtonStyle::Secondary)),
+            Component::Button(button_new(&jump_to_page, "Jump to page", ButtonStyle::Secondary)),
+        ]),
+        component_ctxt: Some((
+            vec![
+                page_next.clone(),
+                page_prev.clone(),
+                jump_to_page.clone(),
+                modal_cid.clone(),
+            ],
+            ComponentCtxt::new(
+                ctxt.assyst().clone(),
+                ComponentMetadata::TagList(TagListComponentMetadata {
+                    page_next_cid: page_next,
+                    page_prev_cid: page_prev,
+                    page_jump_cid: jump_to_page,
+                    jump_modal_cid: modal_cid,
+                    jump_modal_text_cid: modal_text_cid,
+                    current_page: page,
+                    invocating_user_id: ctxt.data.author.id,
+                    target_user_id: user_id,
+                    tag_count: count as u64,
+                    calling_prefix: ctxt.data.calling_prefix.clone(),
+                }),
+            ),
+        )),
+    })
+    .await?;
 
     Ok(())
 }

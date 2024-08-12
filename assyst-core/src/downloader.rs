@@ -100,7 +100,7 @@ pub async fn download_content(
     limit: usize,
     untrusted: bool,
 ) -> Result<Vec<u8>, DownloadError> {
-    const WHITLISTED_DOMAINS: &[&str] = &[
+    const WHITELISTED_DOMAINS: &[&str] = &[
         "tenor.com",
         "jacher.io",
         "discordapp.com",
@@ -120,7 +120,7 @@ pub async fn download_content(
     let url_p = Url::parse(url).map_err(DownloadError::Url)?;
     let host = url_p.host_str().ok_or(DownloadError::NoHost)?;
 
-    let is_whitelisted = WHITLISTED_DOMAINS.iter().any(|d| host.contains(d));
+    let is_whitelisted = WHITELISTED_DOMAINS.iter().any(|d| host.contains(d));
 
     if !config.urls.proxy.is_empty() && !is_whitelisted && untrusted {
         // First, try to download with proxy

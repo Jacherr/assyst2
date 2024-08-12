@@ -58,6 +58,11 @@ impl DatabaseCache {
         self.disabled_commands.get(&guild_id)
     }
 
+    pub fn get_guild_disabled_commands_size(&self) -> usize {
+        self.disabled_commands.run_pending_tasks();
+        self.disabled_commands.entry_count() as usize
+    }
+
     pub fn set_command_disabled(&self, guild_id: u64, command: &str) {
         let disabled_commands = self.get_guild_disabled_commands(guild_id);
         if let Some(old) = disabled_commands {

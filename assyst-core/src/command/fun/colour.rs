@@ -5,15 +5,12 @@ use anyhow::{bail, Context};
 use assyst_database::model::colour_role::ColourRole;
 use assyst_proc_macro::command;
 use assyst_string_fmt::Markdown;
-use twilight_model::application::interaction::application_command::CommandOptionValue;
 use twilight_model::id::marker::{GuildMarker, RoleMarker};
 use twilight_model::id::Id;
-use twilight_util::builder::command::StringBuilder;
 
-use crate::command::arguments::{ParseArgument, Word};
-use crate::command::errors::TagParseError;
+use crate::command::arguments::Word;
 use crate::command::flags::{flags_from_str, FlagDecode, FlagType};
-use crate::command::{Availability, Category, CommandCtxt, InteractionCommandParseCtxt, Label, RawMessageParseCtxt};
+use crate::command::{Availability, Category, CommandCtxt};
 use crate::{define_commandgroup, flag_parse_argument};
 
 const DEFAULT_COLOURS: &[(&str, u32)] = &[

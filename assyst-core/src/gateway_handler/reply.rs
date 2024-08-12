@@ -1,7 +1,10 @@
+use std::sync::Arc;
 use std::time::Instant;
 
 use assyst_common::util::filetype::{get_sig, Type};
-use twilight_model::channel::message::AllowedMentions;
+use tokio::sync::Mutex;
+use twilight_model::channel::message::component::ActionRow;
+use twilight_model::channel::message::{AllowedMentions, Component};
 use twilight_model::http::attachment::Attachment as TwilightAttachment;
 use twilight_model::http::interaction::InteractionResponse;
 use twilight_model::id::Id;
@@ -161,7 +164,14 @@ async fn create_message(ctxt: &CommandCtxt<'_>, builder: MessageBuilder) -> anyh
         };
     }
 
+    let cs;
+    if let Some(components) = builder.components {
+        cs = vec![Component::ActionRow(ActionRow { components })];
+        message = message.components(&cs);
+    }
+
     let reply = message.await?.model().await?;
+
     ctxt.data.assyst.replies.insert_raw_message(
         ctxt.data.message.unwrap().id.get(),
         Reply {
@@ -172,6 +182,13 @@ async fn create_message(ctxt: &CommandCtxt<'_>, builder: MessageBuilder) -> anyh
             _created: Instant::now(),
         },
     );
+
+    if let Some(cx) = builder.component_ctxt {
+        let wrapped = Arc::new(Mutex::new(cx.1.clone()));
+        for cid in cx.0 {
+            ctxt.data.assyst.component_contexts.insert(&cid, &wrapped);
+        }
+    }
 
     Ok(())
 }
@@ -230,6 +247,10 @@ pub async fn reply_interaction_command(ctxt: &CommandCtxt<'_>, builder: MessageB
 
         if let Some(ref c) = builder.content {
             update = update.content(Some(c));
+        }
+
+        if let Some(ref components) = builder.components {
+            update = update.components(Some(components));
         }
 
         update.await?;
