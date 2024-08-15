@@ -104,6 +104,7 @@ pub struct CommandMetadata {
     pub send_processing: bool,
     pub age_restricted: bool,
     pub flag_descriptions: HashMap<&'static str, &'static str>,
+    pub context_menu_command: bool,
 }
 
 #[derive(Debug)]

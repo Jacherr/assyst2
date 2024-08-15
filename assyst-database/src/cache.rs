@@ -18,6 +18,13 @@ fn default_cache<K: TCacheK, V: TCacheV>() -> Cache<K, V> {
         .build()
 }
 
+fn default_cache_sized<K: TCacheK, V: TCacheV>(size: u64) -> Cache<K, V> {
+    Cache::builder()
+        .max_capacity(size)
+        .time_to_idle(Duration::from_secs(60 * 5))
+        .build()
+}
+
 /// In-memory cache collection for frequently accessed areas of the database.
 pub struct DatabaseCache {
     prefixes: Cache<u64, Prefix>,
@@ -27,7 +34,7 @@ pub struct DatabaseCache {
 impl DatabaseCache {
     pub fn new() -> Self {
         DatabaseCache {
-            prefixes: default_cache(),
+            prefixes: default_cache_sized(100000),
             global_blacklist: default_cache(),
             disabled_commands: default_cache(),
         }

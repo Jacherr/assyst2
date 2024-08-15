@@ -22,6 +22,7 @@ macro_rules! defaults {
     (usage) => { "" };
     (send_processing $x:expr) => { $x };
     (send_processing) => { false };
+    (context_menu_command) => { false };
 }
 
 #[allow(clippy::crate_in_macro_def)]
@@ -73,7 +74,8 @@ macro_rules! define_commandgroup {
                         age_restricted: $crate::defaults!(age_restricted $($age_restricted)?),
                         usage: $crate::defaults!(usage $($usage)?).to_string(),
                         send_processing: $crate::defaults!(send_processing $($send_processing)?),
-                        flag_descriptions: std::collections::HashMap::new()
+                        flag_descriptions: std::collections::HashMap::new(),
+                        context_menu_command: $crate::defaults!(context_menu_command)
                     })
                 }
 

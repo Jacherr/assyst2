@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::OnceLock;
 
 use tracing::debug;
-use twilight_model::application::command::Command as InteractionCommand;
+use twilight_model::application::command::{Command as InteractionCommand, CommandType};
 
 use super::{fun, image, misc, services, TCommand};
 use crate::assyst::ThreadSafeAssyst;
@@ -130,19 +130,30 @@ pub fn find_command_by_name(name: &str) -> Option<TCommand> {
 }
 
 pub async fn register_interaction_commands(assyst: ThreadSafeAssyst) -> anyhow::Result<Vec<InteractionCommand>> {
-    let commands = get_or_init_commands()
+    let commands = get_or_init_commands();
+    let interaction_commands = commands
         .iter()
         .filter_map(|x| {
             let i = x.1.as_interaction_command();
-            if !i.name.is_empty() { Some(i) } else { None }
+            let m = x.1.metadata();
+            if !i.name.is_empty() {
+                Some((i, m.context_menu_command))
+            } else {
+                None
+            }
         })
         .collect::<Vec<_>>();
 
     // deduplicate out aliases
     let mut deduplicated_commands: Vec<InteractionCommand> = vec![];
-    for command in commands {
-        if !deduplicated_commands.iter().any(|x| x.name == command.name) {
-            deduplicated_commands.push(command);
+    for command in interaction_commands {
+        if !deduplicated_commands.iter().any(|x| x.name == command.0.name) {
+            if command.1 {
+                let mut copy = command.0.clone();
+                copy.kind = CommandType::Message;
+                deduplicated_commands.push(copy);
+            }
+            deduplicated_commands.push(command.0);
         }
     }
 

@@ -119,6 +119,7 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
         });
     let send_processing = fields.remove("send_processing").unwrap_or_else(false_expr);
     let age_restricted = fields.remove("age_restricted").unwrap_or_else(false_expr);
+    let context_menu_command = fields.remove("context_menu_command").unwrap_or_else(false_expr);
     let flag_descriptions = fields.remove("flag_descriptions").unwrap_or_else(empty_array_expr);
 
     let following = quote::quote! {
@@ -146,7 +147,8 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
                     usage: format!("{}", #usage),
                     send_processing: #send_processing,
                     age_restricted: #age_restricted,
-                    flag_descriptions: descriptions
+                    flag_descriptions: descriptions,
+                    context_menu_command: #context_menu_command
                 })
             }
 
