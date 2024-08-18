@@ -123,7 +123,11 @@ pub async fn charge(ctxt: CommandCtxt<'_>, script: Codeblock, flags: ChargeFlags
         let bin_result = if std::fs::metadata(executable).is_ok() {
             Some(exec_sync(&format!(
                 "cd {dir} && {}./a.out",
-                if flags.valgrind { "valgrind -q " } else { "" }
+                if flags.valgrind {
+                    "valgrind -q --leak-check=full "
+                } else {
+                    ""
+                }
             ))?)
         } else {
             None
