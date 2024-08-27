@@ -221,7 +221,7 @@ pub async fn help(ctxt: CommandCtxt<'_>, labels: Option<Vec<Word>>) -> anyhow::R
                 Some("Link to the SKU for Assyst premium servers.")
             ),
             "Source Code".codestring().url(
-                "<https://github.com/jacherr/assyst2",
+                "<https://github.com/jacherr/assyst2>",
                 Some("Source code URL for Assyst.")
             )
         );
