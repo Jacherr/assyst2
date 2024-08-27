@@ -71,6 +71,7 @@ declare_commands!(
     image::reverse_command,
     image::rotate_command,
     image::scramble_command,
+    image::setloop_command,
     image::speechbubble::speechbubble_command,
     image::speed_command,
     image::spin_command,

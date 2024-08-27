@@ -37,6 +37,33 @@ pub trait ParseArgument: Sized {
     }
 }
 
+impl ParseArgument for i64 {
+    async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>, label: Label) -> Result<Self, TagParseError> {
+        let word = ctxt.next_word(label)?;
+        Ok(word.parse()?)
+    }
+
+    async fn parse_command_option(
+        ctxt: &mut InteractionCommandParseCtxt<'_>,
+        label: Label,
+    ) -> Result<Self, TagParseError> {
+        let next = &ctxt.option_by_name(&label.unwrap().0)?.value;
+        if let CommandOptionValue::Integer(option) = next {
+            Ok(*option as i64)
+        } else {
+            // cloning is fine since this should (ideally) never happen
+            Err(TagParseError::MismatchedCommandOptionType((
+                "i64".to_owned(),
+                next.clone(),
+            )))
+        }
+    }
+
+    fn as_command_option(name: &str) -> CommandOption {
+        IntegerBuilder::new(name, "integer option").required(true).build()
+    }
+}
+
 impl ParseArgument for u64 {
     async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>, label: Label) -> Result<Self, TagParseError> {
         let word = ctxt.next_word(label)?;

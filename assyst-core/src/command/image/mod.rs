@@ -781,6 +781,27 @@ pub async fn scramble(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()
 }
 
 #[command(
+    description = "set how many times a gif loops",
+    aliases = ["loop"],
+    cooldown = Duration::from_secs(6),
+    access = Availability::Public,
+    category = Category::Image,
+    usage = "[image] [loop count (-1 for infinite)]",
+    examples = ["https://link.to.my/image.png 3", "https://link.to.my/image.png -1"],
+    send_processing = true
+)]
+pub async fn setloop(ctxt: CommandCtxt<'_>, source: Image, loops: i64) -> anyhow::Result<()> {
+    let result = ctxt
+        .flux_handler()
+        .set_loop(source.0, ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()), loops)
+        .await?;
+    
+    ctxt.reply(result).await?;
+
+    Ok(())
+}
+
+#[command(
     description = "speed up or slow down a gif or video",
     aliases = ["gspeed", "gifspeed"],
     cooldown = Duration::from_secs(3),

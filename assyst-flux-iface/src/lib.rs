@@ -171,9 +171,9 @@ impl FluxHandler {
 
         if !output.status.success() {
             bail!(
-                "Something went wrong ({}): {}",
-                output.status.to_string(),
-                string_from_likely_utf8(output.stderr).trim()
+                "{} ({})",
+                string_from_likely_utf8(output.stderr).trim(),
+                output.status.to_string()
             );
         }
 

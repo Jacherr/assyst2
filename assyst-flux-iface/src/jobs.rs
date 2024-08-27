@@ -550,6 +550,20 @@ impl FluxHandler {
         self.run_flux(request, limits.time).await
     }
 
+    pub async fn set_loop(&self, media: Vec<u8>, user_id: u64, guild_id: Option<u64>, loops: i64) -> FluxResult {
+        let limits = self.get_request_limits(user_id, guild_id).await?;
+
+        let mut request = FluxRequest::new_with_input_and_limits(media, &limits);
+
+        let mut options = HashMap::new();
+        options.insert("loops".to_owned(), loops.to_string());
+
+        request.operation("set-loop".to_owned(), options);
+        request.output();
+
+        self.run_flux(request, limits.time).await
+    }
+
     pub async fn scramble(&self, media: Vec<u8>, user_id: u64, guild_id: Option<u64>) -> FluxResult {
         let limits = self.get_request_limits(user_id, guild_id).await?;
 
