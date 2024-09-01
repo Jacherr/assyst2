@@ -375,7 +375,7 @@ define_commandgroup! {
     aliases: ["color", "colours", "colors"],
     cooldown: Duration::from_secs(5),
     description: "Assyst colour roles",
-    examples: ["red", "", "add red #ff0000", "add-defaults", "remove red", "reset", "remove-all"],
+    examples: ["red", "", "add red #ff0000", "add-default", "remove red", "reset", "remove-all"],
     usage: "[colour]",
     commands: [
         "add" => add,
