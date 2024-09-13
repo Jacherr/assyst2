@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::fmt::Write;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::u64;
 
 use anyhow::{anyhow, bail, ensure, Context};
 use assyst_common::util::discord::{format_discord_timestamp, format_tag, get_avatar_url};
@@ -390,7 +391,7 @@ pub async fn list(ctxt: CommandCtxt<'_>, user: Option<User>, flags: TagListFlags
         bail!("Tags can only be listed in guilds.")
     };
 
-    let page = flags.page;
+    let page = flags.page.clamp(1, u64::MAX);
 
     // user-specific search if arg is a mention
     let user_id = user.map(|x| x.0.id);
