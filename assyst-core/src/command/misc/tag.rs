@@ -50,12 +50,13 @@ pub async fn create(ctxt: CommandCtxt<'_>, name: Word, contents: RestNoFlags) ->
     let Some(guild_id) = ctxt.data.guild_id else {
         bail!("Tags can only be created in guilds.")
     };
+
     ensure!(name.0.len() < 20, "Tag names cannot exceed 20 characters.");
     ensure!(
         !RESERVED_NAMES.contains(&&name.0[..]),
         "Tag names cannot be a reserved word."
     );
-    ensure!(name.0.contains(" "), "Tag names cannot contain spaces.");
+    ensure!(!name.0.contains(" "), "Tag names cannot contain spaces.");
 
     let tag = Tag {
         name: name.0.to_ascii_lowercase(),
