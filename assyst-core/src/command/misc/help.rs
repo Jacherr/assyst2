@@ -64,7 +64,11 @@ pub async fn help(ctxt: CommandCtxt<'_>, labels: Option<Vec<Word>>) -> anyhow::R
 
                 let subcommands = command.subcommands();
 
-                match subcommands.and_then(|x| x.iter().find(|y| y.0 == label).map(|z| z.1)) {
+                match subcommands.and_then(|x| {
+                    x.iter()
+                        .find(|y| y.0 == label || y.1.metadata().aliases.contains(&label.as_str()))
+                        .map(|z| z.1)
+                }) {
                     Some(sc) => command = sc,
                     None => bail!(
                         "subcommand {} does not exist (use {}help {})",

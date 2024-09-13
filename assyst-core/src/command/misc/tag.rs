@@ -52,8 +52,9 @@ pub async fn create(ctxt: CommandCtxt<'_>, name: Word, contents: RestNoFlags) ->
     ensure!(name.0.len() < 20, "Tag names cannot exceed 20 characters.");
     ensure!(
         !RESERVED_NAMES.contains(&&name.0[..]),
-        "Tag name cannot be a reserved word."
+        "Tag names cannot be a reserved word."
     );
+    ensure!(name.0.contains(" "), "Tag names cannot contain spaces.");
 
     let tag = Tag {
         name: name.0.to_ascii_lowercase(),

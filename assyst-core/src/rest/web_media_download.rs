@@ -110,8 +110,7 @@ async fn test_route(client: &Client, url: &str) -> bool {
     success && (elapsed < TEST_URL_TIMEOUT)
 }
 
-/// Always returns the main API instance (api.cobalt.tools) at the minimum. \
-/// Other URLs must be a score of at least 90 (i.e., most sites supported), must support YouTube,
+/// URLs must be a score of at least 90 (i.e., most sites supported), must support YouTube,
 /// and must have a domain over https.
 pub async fn get_web_download_api_urls(client: &Client) -> anyhow::Result<Vec<String>> {
     let res = client
@@ -126,7 +125,7 @@ pub async fn get_web_download_api_urls(client: &Client) -> anyhow::Result<Vec<St
     let test_urls = json
         .iter()
         .filter_map(|entry: &InstancesQueryResult| {
-            if (entry.protocol == "https" && entry.score >= TEST_SCORE_THRESHOLD) || (entry.api == "api.cobalt.tools") {
+            if entry.protocol == "https" && entry.score >= TEST_SCORE_THRESHOLD {
                 Some(format!("https://{}/api/json", entry.api))
             } else {
                 None
@@ -139,12 +138,8 @@ pub async fn get_web_download_api_urls(client: &Client) -> anyhow::Result<Vec<St
             timeout(
                 TEST_URL_TIMEOUT,
                 tokio::spawn(async move {
-                    if url != "https://api.cobalt.tools/api/json" {
-                        let res = test_route(&c, &url).await;
-                        (url, res)
-                    } else {
-                        (url, true)
-                    }
+                    let res = test_route(&c, &url).await;
+                    (url, res)
                 }),
             )
         })

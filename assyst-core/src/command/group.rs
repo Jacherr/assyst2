@@ -168,7 +168,10 @@ macro_rules! define_commandgroup {
 }
 
 pub fn find_subcommand(sub: &str, cmds: &[(&str, TCommand)]) -> Option<TCommand> {
-    cmds.iter().find(|(k, _)| *k == sub).map(|(_, v)| v).copied()
+    cmds.iter()
+        .find(|(k, v)| *k == sub || v.metadata().aliases.contains(&sub))
+        .map(|(_, v)| v)
+        .copied()
 }
 
 /// Tries to execute a subcommand from a "raw" message, by taking the next word from the arguments
