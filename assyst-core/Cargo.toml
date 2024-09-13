@@ -17,8 +17,8 @@ assyst-webserver = { path = "../assyst-webserver" }
 async-trait = "0.1.77"
 bincode = "1.3.3"
 bytes = "1.5.0"
-dash_rt = { git = "https://github.com/y21/dash" }
-dash_vm = { git = "https://github.com/y21/dash" }
+dash_rt = { git = "https://github.com/y21/dash", rev = "f3fe12b" }
+dash_vm = { git = "https://github.com/y21/dash", rev = "f3fe12b" }
 emoji = { git = "https://github.com/Jacherr/emoji-rs/", package = "emoji" }
 futures-util = "0.3.30"
 human_bytes = { version = "0.4", default-features = false }
