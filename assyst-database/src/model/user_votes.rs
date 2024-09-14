@@ -1,7 +1,7 @@
 use crate::DatabaseHandler;
 
 /// A Voter is a user with a certain number of accrued votes. In the old Assyst, it was possible to
-/// get a leaderboard of the top voters with their username and discriminator (hance these fields),
+/// get a leaderboard of the top voters with their username and discriminator (hence these fields),
 /// but these have since become unused. In a future version, they may be removed entirely.
 #[derive(sqlx::FromRow, Debug)]
 pub struct UserVotes {

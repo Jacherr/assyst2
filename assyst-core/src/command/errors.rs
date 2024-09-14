@@ -50,6 +50,7 @@ pub enum MetadataCheckError {
     DevOnlyCommand,
     GuildManagerOnlyCommand,
     CommandDisabled,
+    GuildOnly,
 }
 impl Display for MetadataCheckError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -67,6 +68,7 @@ impl Display for MetadataCheckError {
                 f.write_str("This command is limited to server managers only.")
             },
             MetadataCheckError::CommandDisabled => f.write_str("This command is disabled in this guild."),
+            MetadataCheckError::GuildOnly => f.write_str("This command is only available within Discord servers."),
         }
     }
 }

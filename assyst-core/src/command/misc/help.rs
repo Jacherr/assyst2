@@ -218,7 +218,7 @@ pub async fn help(ctxt: CommandCtxt<'_>, labels: Option<Vec<Word>>) -> anyhow::R
                 .codestring()
                 .url("<https://www.patreon.com/jacher>", Some("Patreon URL for Assyst.")),
             "Server Premium".codestring().url(
-                &format!(
+                format!(
                     " <https://discord.com/application-directory/571661221854707713/store/{}>",
                     CONFIG.entitlements.premium_server_sku_id
                 ),

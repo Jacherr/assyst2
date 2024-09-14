@@ -19,6 +19,7 @@ resolver = "2"
 [workspace.lints.clippy]
 uninlined_format_args = "warn"
 redundant_clone = "warn"
+too_long_first_doc_paragraph = "allow"
 
 [workspace.dependencies]
 anyhow = "1.0.75"

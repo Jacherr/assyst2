@@ -11,7 +11,7 @@ pub struct FilerStats {
 
 pub async fn get_filer_stats(client: &Client) -> anyhow::Result<FilerStats> {
     Ok(client
-        .get(&format!("{}/stats", CONFIG.urls.filer))
+        .get(format!("{}/stats", CONFIG.urls.filer))
         .send()
         .await?
         .json::<FilerStats>()

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::fmt::Write;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use std::u64;
+use std::io::{Cursor, Write as IoWrite};
+use std::time::Duration;
 
 use anyhow::{anyhow, bail, ensure, Context};
 use assyst_common::util::discord::{format_discord_timestamp, format_tag, get_avatar_url};
@@ -17,6 +17,8 @@ use twilight_model::channel::message::{Component, EmojiReactionType};
 use twilight_model::channel::Message;
 use twilight_model::id::marker::{ChannelMarker, EmojiMarker, UserMarker};
 use twilight_model::id::Id;
+use zip::write::SimpleFileOptions;
+use zip::ZipWriter;
 
 use super::CommandCtxt;
 use crate::assyst::ThreadSafeAssyst;
@@ -26,7 +28,7 @@ use crate::command::componentctxt::{
     ComponentMetadata,
 };
 use crate::command::flags::{flags_from_str, FlagDecode, FlagType};
-use crate::command::messagebuilder::MessageBuilder;
+use crate::command::messagebuilder::{Attachment, MessageBuilder};
 use crate::command::{Availability, Category};
 use crate::downloader::{download_content, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES};
 use crate::rest::eval::fake_eval;
@@ -41,7 +43,8 @@ const DEFAULT_LIST_COUNT: i64 = 15;
     access = Availability::Public,
     category = Category::Misc,
     usage = "[name] [contents]",
-    examples = ["test hello", "script 1+2 is: {js:1+2}"]
+    examples = ["test hello", "script 1+2 is: {js:1+2}"],
+    guild_only = true
 )]
 pub async fn create(ctxt: CommandCtxt<'_>, name: Word, contents: RestNoFlags) -> anyhow::Result<()> {
     const RESERVED_NAMES: &[&str] = &["create", "add", "edit", "raw", "remove", "delete", "list", "info"];
@@ -63,7 +66,7 @@ pub async fn create(ctxt: CommandCtxt<'_>, name: Word, contents: RestNoFlags) ->
         guild_id: guild_id.get() as i64,
         data: contents.0,
         author: author as i64,
-        created_at: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as i64,
+        created_at: unix_timestamp() as i64,
     };
 
     let success = tag
@@ -88,7 +91,8 @@ pub async fn create(ctxt: CommandCtxt<'_>, name: Word, contents: RestNoFlags) ->
     access = Availability::Public,
     category = Category::Misc,
     usage = "[name] [contents]",
-    examples = ["test hello there", "script 2+2 is: {js:2+2}"]
+    examples = ["test hello there", "script 2+2 is: {js:2+2}"],
+    guild_only = true
 )]
 pub async fn edit(ctxt: CommandCtxt<'_>, name: Word, contents: RestNoFlags) -> anyhow::Result<()> {
     let author = ctxt.data.author.id.get();
@@ -124,7 +128,8 @@ pub async fn edit(ctxt: CommandCtxt<'_>, name: Word, contents: RestNoFlags) -> a
     access = Availability::Public,
     category = Category::Misc,
     usage = "[name]",
-    examples = ["test", "script"]
+    examples = ["test", "script"],
+    guild_only = true
 )]
 pub async fn delete(ctxt: CommandCtxt<'_>, name: Word) -> anyhow::Result<()> {
     let author = ctxt.data.author.id.get();
@@ -385,7 +390,8 @@ flag_parse_argument! { TagListFlags }
     category = Category::Misc,
     usage = "<user id|mention>",
     examples = ["@jacher"],
-    flag_descriptions = [("page <page>", "start at this page number")]
+    flag_descriptions = [("page <page>", "start at this page number")],
+    guild_only = true
 )]
 pub async fn list(ctxt: CommandCtxt<'_>, user: Option<User>, flags: TagListFlags) -> anyhow::Result<()> {
     let Some(guild_id) = ctxt.data.guild_id else {
@@ -533,7 +539,8 @@ pub async fn list(ctxt: CommandCtxt<'_>, user: Option<User>, flags: TagListFlags
     access = Availability::Public,
     category = Category::Misc,
     usage = "[name]",
-    examples = ["test", "script"]
+    examples = ["test", "script"],
+    guild_only = true
 )]
 pub async fn info(ctxt: CommandCtxt<'_>, name: Word) -> anyhow::Result<()> {
     let Some(guild_id) = ctxt.data.guild_id else {
@@ -567,7 +574,8 @@ pub async fn info(ctxt: CommandCtxt<'_>, name: Word) -> anyhow::Result<()> {
     access = Availability::Public,
     category = Category::Misc,
     usage = "[name]",
-    examples = ["test", "script"]
+    examples = ["test", "script"],
+    guild_only = true
 )]
 pub async fn raw(ctxt: CommandCtxt<'_>, name: Word) -> anyhow::Result<()> {
     let Some(guild_id) = ctxt.data.guild_id else {
@@ -582,7 +590,11 @@ pub async fn raw(ctxt: CommandCtxt<'_>, name: Word) -> anyhow::Result<()> {
     .await?
     .context("Tag not found in this server.")?;
 
-    ctxt.reply(tag.data.codeblock("")).await?;
+    ctxt.reply(Attachment {
+        name: format!("tag-{}.txt", name.0).into_boxed_str(),
+        data: tag.data.into_bytes(),
+    })
+    .await?;
 
     Ok(())
 }
@@ -593,7 +605,8 @@ pub async fn raw(ctxt: CommandCtxt<'_>, name: Word) -> anyhow::Result<()> {
     access = Availability::Public,
     category = Category::Misc,
     usage = "[query] <page> <user id|mention>",
-    examples = ["1 test @jacher", "1 test"]
+    examples = ["1 test @jacher", "1 test"],
+    guild_only = true
 )]
 pub async fn search(ctxt: CommandCtxt<'_>, query: Word, user: Option<User>) -> anyhow::Result<()> {
     let Some(guild_id) = ctxt.data.guild_id else {
@@ -730,13 +743,140 @@ pub async fn search(ctxt: CommandCtxt<'_>, query: Word, user: Option<User>) -> a
 }
 
 #[command(
+    description = "retrieve a dump of all your owned tags in the current server",
+    cooldown = Duration::from_secs(5),
+    access = Availability::Public,
+    category = Category::Misc,
+    usage = "[name]",
+    examples = [""],
+    guild_only = true
+)]
+pub async fn backup(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
+    let Some(guild_id) = ctxt.data.guild_id else {
+        bail!("Tags can only be backed up from guilds.")
+    };
+
+    let all_author = Tag::get_for_user(
+        &ctxt.assyst().database_handler,
+        guild_id.get() as i64,
+        ctxt.data.author.id.get() as i64,
+    )
+    .await
+    .context("Failed to fetch tags")?;
+
+    ensure!(!all_author.is_empty(), "You don't own any tags in this server.");
+
+    let mut buf = Cursor::new(Vec::new());
+    let mut zip = ZipWriter::new(&mut buf);
+
+    fn sanitise_filename(n: &str) -> String {
+        let mut sanitise_round1 = n.replace("/", "?").replace(std::ptr::null::<char>() as u8 as char, "?");
+        if sanitise_round1 == ".." {
+            sanitise_round1 = "__..??".to_owned();
+        } else if sanitise_round1 == "." {
+            sanitise_round1 = "__.??".to_owned();
+        }
+
+        sanitise_round1
+    }
+
+    for (i, tag) in all_author.iter().enumerate() {
+        let name = format!("tag-{i}-{}.txt", sanitise_filename(&tag.name));
+        zip.start_file(name, SimpleFileOptions::default())?;
+        zip.write_all(tag.data.as_bytes())?;
+    }
+
+    let finished = zip.finish()?;
+    let out = finished.clone().into_inner();
+
+    ctxt.reply(Attachment {
+        name: "tags.zip".into(),
+        data: out,
+    })
+    .await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "copy a tag to your clipboard (use tag paste to paste a copied tag)",
+    cooldown = Duration::from_secs(2),
+    access = Availability::Public,
+    category = Category::Misc,
+    usage = "[name]",
+    examples = ["test", "script"],
+    guild_only = true
+)]
+pub async fn copy(ctxt: CommandCtxt<'_>, name: Word) -> anyhow::Result<()> {
+    let Some(guild_id) = ctxt.data.guild_id else {
+        bail!("Tags can only be copied from guilds.")
+    };
+
+    let tag = Tag::get(
+        &ctxt.assyst().database_handler,
+        guild_id.get() as i64,
+        &name.0.to_ascii_lowercase(),
+    )
+    .await?
+    .context("Tag not found in this server.")?;
+
+    ctxt.assyst()
+        .database_handler
+        .cache
+        .insert_copied_tag(ctxt.data.author.id.get(), tag.data);
+
+    ctxt.reply(format!("Tag {} copied successfully.", name.0)).await?;
+
+    Ok(())
+}
+
+#[command(
+    description = "paste the tag on your clipboard",
+    cooldown = Duration::from_secs(2),
+    access = Availability::Public,
+    category = Category::Misc,
+    usage = "[name]",
+    examples = ["test2"],
+    guild_only = true
+)]
+pub async fn paste(ctxt: CommandCtxt<'_>, name: Word) -> anyhow::Result<()> {
+    let Some(guild_id) = ctxt.data.guild_id else {
+        bail!("Tags can only be pasted into guilds.")
+    };
+
+    let content = ctxt
+        .assyst()
+        .database_handler
+        .cache
+        .get_copied_tag(ctxt.data.author.id.get())
+        .context("You don't have any tag copied. It may have expired.")?;
+
+    let t = Tag {
+        guild_id: guild_id.get() as i64,
+        name: name.0.clone(),
+        data: content,
+        author: ctxt.data.author.id.get() as i64,
+        created_at: unix_timestamp() as i64,
+    };
+
+    t.set(&ctxt.assyst().database_handler)
+        .await
+        .context("Failed to create tag")?;
+
+    ctxt.reply(format!("Tag {} pasted successfully.", name.0)).await?;
+
+    Ok(())
+}
+
+#[command(
     description = "run a tag in the current server",
     cooldown = Duration::from_secs(2),
     access = Availability::Public,
     category = Category::Misc,
     usage = "[tag name] <arguments...>",
     examples = ["test", "whatever"],
-    send_processing = true
+    send_processing = true,
+    guild_only = true
 )]
 pub async fn default(ctxt: CommandCtxt<'_>, tag_name: Word, arguments: Option<Vec<Word>>) -> anyhow::Result<()> {
     let Some(guild_id) = ctxt.data.guild_id else {
@@ -907,6 +1047,7 @@ define_commandgroup! {
     cooldown: Duration::from_secs(2),
     description: "assyst's tag system (documentation: https://jacher.io/tags)",
     usage: "[subcommand|tag name] <arguments...>",
+    guild_only: true,
     commands: [
         "create" => create,
         "edit" => edit,
@@ -914,7 +1055,10 @@ define_commandgroup! {
         "list" => list,
         "info" => info,
         "raw" => raw,
-        "search" => search
+        "search" => search,
+        "backup" => backup,
+        "copy" => copy,
+        "paste" => paste
     ],
     default_interaction_subcommand: "run",
     default: default

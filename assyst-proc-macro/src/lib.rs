@@ -121,6 +121,7 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
     let age_restricted = fields.remove("age_restricted").unwrap_or_else(false_expr);
     let context_menu_command = fields.remove("context_menu_command").unwrap_or_else(false_expr);
     let flag_descriptions = fields.remove("flag_descriptions").unwrap_or_else(empty_array_expr);
+    let guild_only = fields.remove("guild_only").unwrap_or_else(false_expr);
 
     let following = quote::quote! {
         #[allow(non_camel_case_types)]
@@ -148,7 +149,8 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
                     send_processing: #send_processing,
                     age_restricted: #age_restricted,
                     flag_descriptions: descriptions,
-                    context_menu_command: #context_menu_command
+                    context_menu_command: #context_menu_command,
+                    guild_only: #guild_only
                 })
             }
 
@@ -183,15 +185,27 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
                     nsfw: Some(meta.age_restricted),
                     options,
                     version: twilight_model::id::Id::new(1),
-                    contexts: Some(vec![
-                        twilight_model::application::interaction::InteractionContextType::Guild,
-                        twilight_model::application::interaction::InteractionContextType::BotDm,
-                        twilight_model::application::interaction::InteractionContextType::PrivateChannel
-                    ]),
-                    integration_types: Some(vec![
-                            twilight_model::oauth::ApplicationIntegrationType::GuildInstall,
-                            twilight_model::oauth::ApplicationIntegrationType::UserInstall
-                    ])
+                    contexts: Some(if meta.guild_only {
+                            vec![
+                                twilight_model::application::interaction::InteractionContextType::Guild,
+                            ]
+                        } else {
+                            vec![
+                                twilight_model::application::interaction::InteractionContextType::Guild,
+                                twilight_model::application::interaction::InteractionContextType::BotDm,
+                                twilight_model::application::interaction::InteractionContextType::PrivateChannel
+                            ]
+                        }),
+                    integration_types: Some(if meta.guild_only {
+                            vec![
+                                twilight_model::oauth::ApplicationIntegrationType::GuildInstall
+                            ]
+                        } else {
+                            vec![
+                                twilight_model::oauth::ApplicationIntegrationType::GuildInstall,
+                                twilight_model::oauth::ApplicationIntegrationType::UserInstall
+                            ]
+                    })
                 }
             }
 

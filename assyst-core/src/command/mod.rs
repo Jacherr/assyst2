@@ -105,6 +105,7 @@ pub struct CommandMetadata {
     pub age_restricted: bool,
     pub flag_descriptions: HashMap<&'static str, &'static str>,
     pub context_menu_command: bool,
+    pub guild_only: bool,
 }
 
 #[derive(Debug)]
@@ -495,6 +496,10 @@ pub async fn check_metadata(
         ctxt.assyst()
             .command_ratelimits
             .insert(id, metadata.name, Instant::now());
+    }
+
+    if metadata.guild_only && ctxt.data.guild_id.is_none() {
+        return Err(ExecutionError::MetadataCheck(MetadataCheckError::GuildOnly));
     }
 
     if metadata.send_processing && ctxt.data.source == Source::RawMessage {

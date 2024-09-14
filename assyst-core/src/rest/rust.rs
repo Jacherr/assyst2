@@ -102,7 +102,7 @@ pub async fn request(
     tests: Option<bool>,
 ) -> Result<ApiResult, Error> {
     client
-        .post(&format!("{API_BASE}/{path}"))
+        .post(format!("{API_BASE}/{path}"))
         .json(&json!({
             "code": code,
             "channel": channel.unwrap_or("stable"),

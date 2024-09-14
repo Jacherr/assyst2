@@ -49,7 +49,7 @@ impl ParseArgument for i64 {
     ) -> Result<Self, TagParseError> {
         let next = &ctxt.option_by_name(&label.unwrap().0)?.value;
         if let CommandOptionValue::Integer(option) = next {
-            Ok(*option as i64)
+            Ok(*option)
         } else {
             // cloning is fine since this should (ideally) never happen
             Err(TagParseError::MismatchedCommandOptionType((

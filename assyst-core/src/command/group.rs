@@ -22,6 +22,8 @@ macro_rules! defaults {
     (usage) => { "" };
     (send_processing $x:expr) => { $x };
     (send_processing) => { false };
+    (guild_only $x:expr) => { $x };
+    (guild_only) => { false };
     (context_menu_command) => { false };
 }
 
@@ -38,6 +40,7 @@ macro_rules! define_commandgroup {
         $(examples: $examples:expr,)?
         $(usage: $usage:expr,)?
         $(send_processing: $send_processing:expr,)?
+        $(guild_only: $guild_only:expr,)?
         $(age_restricted: $age_restricted:expr,)?
         commands: [
             $(
@@ -74,6 +77,7 @@ macro_rules! define_commandgroup {
                         age_restricted: $crate::defaults!(age_restricted $($age_restricted)?),
                         usage: $crate::defaults!(usage $($usage)?).to_string(),
                         send_processing: $crate::defaults!(send_processing $($send_processing)?),
+                        guild_only: $crate::defaults!(guild_only $($guild_only)?),
                         flag_descriptions: std::collections::HashMap::new(),
                         context_menu_command: $crate::defaults!(context_menu_command)
                     })
@@ -104,15 +108,27 @@ macro_rules! define_commandgroup {
                         default_member_permissions: None,
                         description: meta.description.to_owned(),
                         description_localizations: None,
-                        contexts: Some(vec![
-                            twilight_model::application::interaction::InteractionContextType::Guild,
-                            twilight_model::application::interaction::InteractionContextType::BotDm,
-                            twilight_model::application::interaction::InteractionContextType::PrivateChannel
-                        ]),
-                        integration_types: Some(vec![
-                            twilight_model::oauth::ApplicationIntegrationType::GuildInstall,
-                            twilight_model::oauth::ApplicationIntegrationType::UserInstall
-                        ]),
+                        contexts: Some(if meta.guild_only {
+                            vec![
+                                twilight_model::application::interaction::InteractionContextType::Guild,
+                            ]
+                        } else {
+                            vec![
+                                twilight_model::application::interaction::InteractionContextType::Guild,
+                                twilight_model::application::interaction::InteractionContextType::BotDm,
+                                twilight_model::application::interaction::InteractionContextType::PrivateChannel
+                            ]
+                        }),
+                        integration_types: Some(if meta.guild_only {
+                            vec![
+                                twilight_model::oauth::ApplicationIntegrationType::GuildInstall
+                            ]
+                        } else {
+                            vec![
+                                twilight_model::oauth::ApplicationIntegrationType::GuildInstall,
+                                twilight_model::oauth::ApplicationIntegrationType::UserInstall
+                            ]
+                        }),
                         dm_permission: Some(true),
                         guild_id: None,
                         id: None,

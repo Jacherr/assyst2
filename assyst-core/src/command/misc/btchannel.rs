@@ -18,6 +18,7 @@ use crate::rest::bad_translation::validate_language;
     category = Category::Misc,
     usage = "[channel] [language]",
     examples = ["#bt en"],
+    guild_only = true
 )]
 pub async fn add(ctxt: CommandCtxt<'_>, channel: Channel, target_language: Word) -> anyhow::Result<()> {
     let Some(guild_id) = ctxt.data.guild_id else {
@@ -71,6 +72,7 @@ pub async fn add(ctxt: CommandCtxt<'_>, channel: Channel, target_language: Word)
     category = Category::Misc,
     usage = "[channel]",
     examples = ["#bt"],
+    guild_only = true
 )]
 pub async fn remove(ctxt: CommandCtxt<'_>, channel: Channel) -> anyhow::Result<()> {
     let Some(guild_id) = ctxt.data.guild_id else {
@@ -123,6 +125,7 @@ define_commandgroup! {
     category: Category::Misc,
     description: "manage badtranslator channels",
     usage: "[subcommand] <arguments...>",
+    guild_only: true,
     commands: [
         "add" => add,
         "remove" => remove

@@ -124,6 +124,16 @@ impl Tag {
             .await
     }
 
+    pub async fn get_for_user(handler: &DatabaseHandler, guild_id: i64, user_id: i64) -> Result<Vec<Tag>, sqlx::Error> {
+        let query = r#"SELECT * FROM tags WHERE guild_id = $1 AND author = $2 ORDER BY created_at DESC"#;
+
+        sqlx::query_as(query)
+            .bind(guild_id)
+            .bind(user_id)
+            .fetch_all(&handler.pool)
+            .await
+    }
+
     pub async fn get_count_in_guild(handler: &DatabaseHandler, guild_id: i64) -> Result<i64, sqlx::Error> {
         let query = r#"SELECT count(*) FROM tags WHERE guild_id = $1"#;
 
