@@ -280,6 +280,39 @@ impl ParseArgument for Word {
     }
 }
 
+/// A single word argument, with autocompletion.
+#[derive(Debug)]
+pub struct WordAutocomplete(pub String);
+
+impl ParseArgument for WordAutocomplete {
+    async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>, label: Label) -> Result<Self, TagParseError> {
+        Ok(Self(ctxt.next_word(label)?.to_owned()))
+    }
+
+    async fn parse_command_option(
+        ctxt: &mut InteractionCommandParseCtxt<'_>,
+        label: Label,
+    ) -> Result<Self, TagParseError> {
+        let word = &ctxt.option_by_name(&label.unwrap().0)?.value;
+
+        if let CommandOptionValue::String(ref option) = word {
+            Ok(WordAutocomplete(option.clone()))
+        } else {
+            Err(TagParseError::MismatchedCommandOptionType((
+                "String (Word Autocomplete)".to_owned(),
+                word.clone(),
+            )))
+        }
+    }
+
+    fn as_command_option(name: &str) -> CommandOption {
+        StringBuilder::new(name, "word input")
+            .autocomplete(true)
+            .required(true)
+            .build()
+    }
+}
+
 /// A codeblock argument (may also be plaintext).
 #[derive(Debug)]
 pub struct Codeblock(pub String);

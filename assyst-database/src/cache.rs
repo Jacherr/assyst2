@@ -31,6 +31,7 @@ pub struct DatabaseCache {
     global_blacklist: Cache<u64, bool>,
     disabled_commands: Cache<u64, Arc<Mutex<HashSet<String>>>>,
     copied_tags: Cache<u64 /* user id */, String /* content */>,
+    guild_tag_names: Cache<u64, Vec<String>>,
 }
 impl DatabaseCache {
     pub fn new() -> Self {
@@ -39,6 +40,7 @@ impl DatabaseCache {
             global_blacklist: default_cache(),
             disabled_commands: default_cache(),
             copied_tags: default_cache_sized(u64::MAX),
+            guild_tag_names: default_cache(),
         }
     }
 
@@ -139,6 +141,14 @@ impl DatabaseCache {
 
     pub fn get_copied_tag(&self, user_id: u64) -> Option<String> {
         self.copied_tags.get(&user_id)
+    }
+
+    pub fn insert_guild_tag_names(&self, guild_id: u64, names: Vec<String>) {
+        self.guild_tag_names.insert(guild_id, names);
+    }
+
+    pub fn get_guild_tag_names(&self, guild_id: u64) -> Option<Vec<String>> {
+        self.guild_tag_names.get(&guild_id)
     }
 }
 

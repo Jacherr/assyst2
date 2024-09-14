@@ -4,10 +4,15 @@ use assyst_proc_macro::command;
 use assyst_string_fmt::Markdown;
 use rand::{thread_rng, Rng};
 
-use crate::command::arguments::{Rest, Word};
+use crate::command::arguments::{Rest, WordAutocomplete};
 use crate::command::{Availability, Category, CommandCtxt};
 use crate::define_commandgroup;
 use crate::rest::cooltext::STYLES;
+
+pub fn cooltext_options_autocomplete() -> Vec<String> {
+    let options = STYLES.iter().map(|x| x.0.to_owned()).collect::<Vec<_>>();
+    options
+}
 
 #[command(
     description = "make some cool text",
@@ -17,7 +22,7 @@ use crate::rest::cooltext::STYLES;
     examples = ["burning hello", "saint fancy", "random im random"],
     send_processing = true
 )]
-pub async fn default(ctxt: CommandCtxt<'_>, style: Word, text: Rest) -> anyhow::Result<()> {
+pub async fn default(ctxt: CommandCtxt<'_>, style: WordAutocomplete, text: Rest) -> anyhow::Result<()> {
     let style = if &style.0 == "random" {
         let rand = thread_rng().gen_range(0..STYLES.len());
         STYLES[rand].0
@@ -63,6 +68,6 @@ define_commandgroup! {
     commands: [
         "list" => list
     ],
-    default_interaction_subcommand: "run",
+    default_interaction_subcommand: "create",
     default: default
 }

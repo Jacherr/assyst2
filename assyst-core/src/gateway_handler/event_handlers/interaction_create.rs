@@ -8,13 +8,14 @@ use tracing::{debug, warn};
 use twilight_model::application::interaction::application_command::{
     CommandData as DiscordCommandData, CommandDataOption, CommandOptionValue,
 };
-use twilight_model::application::interaction::{InteractionContextType, InteractionData};
+use twilight_model::application::interaction::{InteractionContextType, InteractionData, InteractionType};
 use twilight_model::gateway::payload::incoming::InteractionCreate;
 use twilight_model::http::interaction::{InteractionResponse, InteractionResponseType};
 use twilight_model::util::Timestamp;
 
 use super::after_command_execution_success;
 use crate::assyst::ThreadSafeAssyst;
+use crate::command::autocomplete::handle_autocomplete;
 use crate::command::componentctxt::ComponentInteractionData;
 use crate::command::registry::find_command_by_name;
 use crate::command::source::Source;
@@ -74,7 +75,9 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
         }
     }
 
-    if let Some(InteractionData::ApplicationCommand(command_data)) = interaction.data {
+    if interaction.kind == InteractionType::ApplicationCommand
+        && let Some(InteractionData::ApplicationCommand(command_data)) = interaction.data
+    {
         let command = find_command_by_name(&command_data.name);
         let subcommand_data = parse_subcommand_data(&command_data);
 
@@ -261,6 +264,63 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
                     _ => {},
                 };
             },
+        }
+    } else if interaction.kind == InteractionType::ApplicationCommandAutocomplete
+        && let Some(InteractionData::ApplicationCommand(command_data)) = interaction.data
+    {
+        let command = find_command_by_name(&command_data.name);
+        let subcommand_data = parse_subcommand_data(&command_data);
+
+        if let Some(command) = command {
+            let incoming_options = if let Some(d) = subcommand_data.clone() {
+                match d.1 {
+                    CommandOptionValue::SubCommand(s) => s,
+                    _ => unreachable!(),
+                }
+            } else {
+                command_data.options
+            };
+
+            let interaction_subcommand = if let Some(d) = subcommand_data {
+                match d.1 {
+                    CommandOptionValue::SubCommand(_) => Some(d),
+                    _ => unreachable!(),
+                }
+            } else {
+                None
+            };
+
+            let focused_option = incoming_options
+                .iter()
+                .find(|x| matches!(x.value, CommandOptionValue::Focused(_, _)))
+                .expect("no focused option?");
+
+            // we will probably only ever use autocomplete on `Word` arguments
+            // FIXME: add support for more arg types here?
+            let inner_option = if let CommandOptionValue::Focused(x, y) = focused_option.value.clone() {
+                (x, y)
+            } else {
+                unreachable!()
+            };
+
+            // full_name will use the interaction command replacement for any "default" subcommand (e.g., "tag
+            // run")
+            let full_name = if let Some(i) = interaction_subcommand {
+                format!("{} {}", command.metadata().name, i.0)
+            } else {
+                command.metadata().name.to_owned()
+            };
+
+            handle_autocomplete(
+                assyst.clone(),
+                interaction.id,
+                interaction.token,
+                interaction.guild_id,
+                &full_name,
+                &focused_option.name,
+                &inner_option.0,
+            )
+            .await;
         }
     }
 }

@@ -22,7 +22,7 @@ use zip::ZipWriter;
 
 use super::CommandCtxt;
 use crate::assyst::ThreadSafeAssyst;
-use crate::command::arguments::{Image, ImageUrl, RestNoFlags, User, Word};
+use crate::command::arguments::{Image, ImageUrl, RestNoFlags, User, Word, WordAutocomplete};
 use crate::command::componentctxt::{
     button_emoji_new, button_new, respond_modal, respond_update_text, ComponentCtxt, ComponentInteractionData,
     ComponentMetadata,
@@ -877,6 +877,12 @@ pub async fn paste(ctxt: CommandCtxt<'_>, name: Word) -> anyhow::Result<()> {
     Ok(())
 }
 
+pub async fn tag_names_autocomplete(assyst: ThreadSafeAssyst, guild_id: u64) -> Vec<String> {
+    Tag::get_names_in_guild(&assyst.database_handler, guild_id as i64)
+        .await
+        .unwrap_or(vec![])
+}
+
 #[command(
     description = "run a tag in the current server",
     cooldown = Duration::from_secs(2),
@@ -887,7 +893,11 @@ pub async fn paste(ctxt: CommandCtxt<'_>, name: Word) -> anyhow::Result<()> {
     send_processing = true,
     guild_only = true
 )]
-pub async fn default(ctxt: CommandCtxt<'_>, tag_name: Word, arguments: Option<Vec<Word>>) -> anyhow::Result<()> {
+pub async fn default(
+    ctxt: CommandCtxt<'_>,
+    tag_name: WordAutocomplete,
+    arguments: Option<Vec<Word>>,
+) -> anyhow::Result<()> {
     let Some(guild_id) = ctxt.data.guild_id else {
         bail!("Tags can only be used in guilds.")
     };
