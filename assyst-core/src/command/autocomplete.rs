@@ -23,10 +23,10 @@ pub async fn handle_autocomplete(
     // FIXME: minimise hardcoding strings etc as much as possible
     // future improvement is to use callbacks, but quite a lot of work
     // considering this is only used in a small handful of places
-    let opts = match command_full_name {
-        "cooltext create" => cooltext_options_autocomplete(),
+    let opts = match (command_full_name, option) {
+        ("cooltext create", "style") => cooltext_options_autocomplete(),
         // FIXME: this unwrap needs handling properly when tags come to dms etc
-        "tag run" | "tag raw" | "tag copy" | "tag info" => {
+        ("tag run", "name") | ("tag raw", "name") | ("tag copy", "name") | ("tag info", "name") => {
             tag_names_autocomplete(assyst.clone(), guild_id.unwrap().get()).await
         },
         _ => {
