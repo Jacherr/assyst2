@@ -35,6 +35,7 @@ use crate::rest::eval::fake_eval;
 use crate::{define_commandgroup, flag_parse_argument};
 
 const DEFAULT_LIST_COUNT: i64 = 15;
+const RESERVED_NAMES: &[&str] = &["create", "add", "edit", "raw", "remove", "delete", "list", "info"];
 
 #[command(
     description = "create a tag",
@@ -47,8 +48,6 @@ const DEFAULT_LIST_COUNT: i64 = 15;
     guild_only = true
 )]
 pub async fn create(ctxt: CommandCtxt<'_>, name: Word, contents: RestNoFlags) -> anyhow::Result<()> {
-    const RESERVED_NAMES: &[&str] = &["create", "add", "edit", "raw", "remove", "delete", "list", "info"];
-
     let author = ctxt.data.author.id.get();
     let Some(guild_id) = ctxt.data.guild_id else {
         bail!("Tags can only be created in guilds.")
@@ -844,6 +843,13 @@ pub async fn paste(ctxt: CommandCtxt<'_>, name: Word) -> anyhow::Result<()> {
         bail!("Tags can only be pasted into guilds.")
     };
 
+    ensure!(name.0.len() < 20, "Tag names cannot exceed 20 characters.");
+    ensure!(
+        !RESERVED_NAMES.contains(&&name.0[..]),
+        "Tag names cannot be a reserved word."
+    );
+    ensure!(!name.0.contains(" "), "Tag names cannot contain spaces.");
+
     let content = ctxt
         .assyst()
         .database_handler
@@ -859,9 +865,12 @@ pub async fn paste(ctxt: CommandCtxt<'_>, name: Word) -> anyhow::Result<()> {
         created_at: unix_timestamp() as i64,
     };
 
-    t.set(&ctxt.assyst().database_handler)
+    let success = t
+        .set(&ctxt.assyst().database_handler)
         .await
         .context("Failed to create tag")?;
+
+    ensure!(success, "That tag name is already used in this server.");
 
     ctxt.reply(format!("Tag {} pasted successfully.", name.0)).await?;
 
