@@ -541,7 +541,7 @@ pub async fn list(ctxt: CommandCtxt<'_>, user: Option<User>, flags: TagListFlags
     examples = ["test", "script"],
     guild_only = true
 )]
-pub async fn info(ctxt: CommandCtxt<'_>, name: Word) -> anyhow::Result<()> {
+pub async fn info(ctxt: CommandCtxt<'_>, name: WordAutocomplete) -> anyhow::Result<()> {
     let Some(guild_id) = ctxt.data.guild_id else {
         bail!("Tag information can only be fetched in guilds.")
     };
@@ -576,7 +576,7 @@ pub async fn info(ctxt: CommandCtxt<'_>, name: Word) -> anyhow::Result<()> {
     examples = ["test", "script"],
     guild_only = true
 )]
-pub async fn raw(ctxt: CommandCtxt<'_>, name: Word) -> anyhow::Result<()> {
+pub async fn raw(ctxt: CommandCtxt<'_>, name: WordAutocomplete) -> anyhow::Result<()> {
     let Some(guild_id) = ctxt.data.guild_id else {
         bail!("Tag raw content can only be fetched in guilds.")
     };
@@ -806,7 +806,7 @@ pub async fn backup(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
     examples = ["test", "script"],
     guild_only = true
 )]
-pub async fn copy(ctxt: CommandCtxt<'_>, name: Word) -> anyhow::Result<()> {
+pub async fn copy(ctxt: CommandCtxt<'_>, name: WordAutocomplete) -> anyhow::Result<()> {
     let Some(guild_id) = ctxt.data.guild_id else {
         bail!("Tags can only be copied from guilds.")
     };

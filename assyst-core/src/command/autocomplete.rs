@@ -26,7 +26,9 @@ pub async fn handle_autocomplete(
     let opts = match command_full_name {
         "cooltext create" => cooltext_options_autocomplete(),
         // FIXME: this unwrap needs handling properly when tags come to dms etc
-        "tag run" => tag_names_autocomplete(assyst.clone(), guild_id.unwrap().get()).await,
+        "tag run" | "tag raw" | "tag copy" | "tag info" => {
+            tag_names_autocomplete(assyst.clone(), guild_id.unwrap().get()).await
+        },
         _ => {
             err!("Trying to autocomplete for invalid command: {command_full_name} (arg {option})");
             return;
