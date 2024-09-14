@@ -31,7 +31,7 @@ pub struct DatabaseCache {
     global_blacklist: Cache<u64, bool>,
     disabled_commands: Cache<u64, Arc<Mutex<HashSet<String>>>>,
     copied_tags: Cache<u64 /* user id */, String /* content */>,
-    guild_tag_names: Cache<u64, Vec<String>>,
+    guild_tag_names: Cache<u64, Vec<(u64 /* auhtor id */, String)>>,
 }
 impl DatabaseCache {
     pub fn new() -> Self {
@@ -143,11 +143,11 @@ impl DatabaseCache {
         self.copied_tags.get(&user_id)
     }
 
-    pub fn insert_guild_tag_names(&self, guild_id: u64, names: Vec<String>) {
+    pub fn insert_guild_tag_names(&self, guild_id: u64, names: Vec<(u64, String)>) {
         self.guild_tag_names.insert(guild_id, names);
     }
 
-    pub fn get_guild_tag_names(&self, guild_id: u64) -> Option<Vec<String>> {
+    pub fn get_guild_tag_names(&self, guild_id: u64) -> Option<Vec<(u64, String)>> {
         self.guild_tag_names.get(&guild_id)
     }
 }

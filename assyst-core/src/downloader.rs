@@ -50,7 +50,7 @@ async fn download_with_proxy(
     limit: usize,
 ) -> Result<impl Stream<Item = Result<Bytes, reqwest::Error>>, DownloadError> {
     let resp = client
-        .get(&format!("{}/proxy", get_next_proxy()))
+        .get(format!("{}/proxy", get_next_proxy()))
         .query(&[("url", url), ("limit", &limit.to_string())])
         .timeout(Duration::from_secs(10))
         .send()

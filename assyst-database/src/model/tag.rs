@@ -105,7 +105,10 @@ impl Tag {
             .await
     }
 
-    pub async fn get_names_in_guild(handler: &DatabaseHandler, guild_id: i64) -> Result<Vec<String>, sqlx::Error> {
+    pub async fn get_names_in_guild(
+        handler: &DatabaseHandler,
+        guild_id: i64,
+    ) -> Result<Vec<(u64, String)>, sqlx::Error> {
         if let Some(g) = handler.cache.get_guild_tag_names(guild_id as u64) {
             return Ok(g);
         }
@@ -113,7 +116,11 @@ impl Tag {
         let query = r#"SELECT * FROM tags WHERE guild_id = $1"#;
 
         let result: Vec<Tag> = sqlx::query_as(query).bind(guild_id).fetch_all(&handler.pool).await?;
-        let names = result.iter().map(|x| &x.name).cloned().collect::<Vec<_>>();
+        let names = result
+            .iter()
+            .map(|x| (x.author as u64, x.name.clone()))
+            .collect::<Vec<_>>();
+
         handler.cache.insert_guild_tag_names(guild_id as u64, names.clone());
 
         Ok(names)

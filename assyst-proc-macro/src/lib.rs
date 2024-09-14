@@ -72,6 +72,7 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
     let mut parse_idents = Vec::new();
     let mut parse_exprs = Vec::new();
     let mut parse_usage = Vec::new();
+    let mut parse_attrs = Vec::new();
     let mut interaction_parse_exprs = Vec::new();
     let mut command_option_exprs = Vec::new();
 
@@ -84,7 +85,7 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
     for (index, input) in item.sig.inputs.iter().skip(1).enumerate() {
         match input {
             FnArg::Receiver(_) => panic!("#[command] cannot have `self` arguments"),
-            FnArg::Typed(PatType { ty, pat, .. }) => {
+            FnArg::Typed(PatType { ty, pat, attrs, .. }) => {
                 if let Pat::Ident(ident) = &**pat {
                     let ident_string = ident.ident.to_string();
 
@@ -93,6 +94,7 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
                     }});
                 }
 
+                parse_attrs.push((stringify!(#pat).to_string(), attrs.clone()));
                 parse_idents.push(Ident::new(&format!("p{index}"), Span::call_site()));
                 parse_exprs.push(quote!(<#ty>::parse_raw_message(&mut ctxt, Some((stringify!(#pat).to_string(), stringify!(#ty).to_string()))).await));
                 parse_usage.push(quote!(<#ty as crate::command::arguments::ParseArgument>::usage(stringify!(#pat))));
@@ -173,9 +175,6 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
                     default_member_permissions: None,
                     description: meta.description.to_owned(),
                     description_localizations: None,
-                    // TODO: set based on if dms are allowed
-                    // TODO: update to `contexts` once this is required
-                    // (see https://discord.com/developers/docs/interactions/application-commands#create-global-application-command)
                     dm_permission: Some(true),
                     guild_id: None,
                     id: None,

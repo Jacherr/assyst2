@@ -93,7 +93,7 @@ pub async fn create(ctxt: CommandCtxt<'_>, name: Word, contents: RestNoFlags) ->
     examples = ["test hello there", "script 2+2 is: {js:2+2}"],
     guild_only = true
 )]
-pub async fn edit(ctxt: CommandCtxt<'_>, name: Word, contents: RestNoFlags) -> anyhow::Result<()> {
+pub async fn edit(ctxt: CommandCtxt<'_>, name: WordAutocomplete, contents: RestNoFlags) -> anyhow::Result<()> {
     let author = ctxt.data.author.id.get();
     let Some(guild_id) = ctxt.data.guild_id else {
         bail!("Tags can only be edited in guilds.")
@@ -130,7 +130,7 @@ pub async fn edit(ctxt: CommandCtxt<'_>, name: Word, contents: RestNoFlags) -> a
     examples = ["test", "script"],
     guild_only = true
 )]
-pub async fn delete(ctxt: CommandCtxt<'_>, name: Word) -> anyhow::Result<()> {
+pub async fn delete(ctxt: CommandCtxt<'_>, name: WordAutocomplete) -> anyhow::Result<()> {
     let author = ctxt.data.author.id.get();
     let Some(guild_id) = ctxt.data.guild_id else {
         bail!("Tags can only be deleted in guilds.")
@@ -881,6 +881,18 @@ pub async fn tag_names_autocomplete(assyst: ThreadSafeAssyst, guild_id: u64) -> 
     Tag::get_names_in_guild(&assyst.database_handler, guild_id as i64)
         .await
         .unwrap_or(vec![])
+        .iter()
+        .map(|x| x.1.clone())
+        .collect::<Vec<_>>()
+}
+
+pub async fn tag_names_autocomplete_for_user(assyst: ThreadSafeAssyst, guild_id: u64, user_id: u64) -> Vec<String> {
+    Tag::get_names_in_guild(&assyst.database_handler, guild_id as i64)
+        .await
+        .unwrap_or(vec![])
+        .iter()
+        .filter_map(|x| if x.0 == user_id { Some(x.1.clone()) } else { None })
+        .collect::<Vec<_>>()
 }
 
 #[command(

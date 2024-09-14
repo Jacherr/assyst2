@@ -38,7 +38,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
     // look at entitlements to see if there is anything new - we can cache this if so
     // this usually shouldnt happen except for some edge cases such as a new entitlement was created
     // when the bot was down
-    let entitlements = interaction.entitlements;
+    let entitlements = interaction.entitlements.clone();
     let lock = assyst.entitlements.lock().unwrap().clone();
     let mut new = vec![];
     for entitlement in entitlements {
@@ -266,7 +266,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
             },
         }
     } else if interaction.kind == InteractionType::ApplicationCommandAutocomplete
-        && let Some(InteractionData::ApplicationCommand(command_data)) = interaction.data
+        && let Some(InteractionData::ApplicationCommand(command_data)) = interaction.data.clone()
     {
         let command = find_command_by_name(&command_data.name);
         let subcommand_data = parse_subcommand_data(&command_data);
@@ -311,11 +311,14 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
                 command.metadata().name.to_owned()
             };
 
+            let author_id = interaction.author().unwrap().id;
+
             handle_autocomplete(
                 assyst.clone(),
                 interaction.id,
                 interaction.token,
                 interaction.guild_id,
+                author_id,
                 &full_name,
                 &focused_option.name,
                 &inner_option.0,
