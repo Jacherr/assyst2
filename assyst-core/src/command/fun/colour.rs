@@ -2,13 +2,15 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use anyhow::{bail, Context};
+use assyst_common::err;
 use assyst_database::model::colour_role::ColourRole;
 use assyst_proc_macro::command;
 use assyst_string_fmt::Markdown;
 use twilight_model::id::marker::{GuildMarker, RoleMarker};
 use twilight_model::id::Id;
 
-use crate::command::arguments::Word;
+use crate::assyst::ThreadSafeAssyst;
+use crate::command::arguments::{Word, WordAutocomplete};
 use crate::command::flags::{flags_from_str, FlagDecode, FlagType};
 use crate::command::{Availability, Category, CommandCtxt};
 use crate::{define_commandgroup, flag_parse_argument};
@@ -33,6 +35,18 @@ const DEFAULT_COLOURS: &[(&str, u32)] = &[
     ("green", 0x2ecc71),
     ("red", 0xe74c3c),
 ];
+
+pub async fn colour_role_autocomplete(assyst: ThreadSafeAssyst, guild_id: u64) -> Vec<String> {
+    let roles = match ColourRole::list_in_guild(&assyst.database_handler, guild_id as i64).await {
+        Ok(l) => l,
+        Err(e) => {
+            err!("Error fetching colour roles for autocompletion: {e:?}");
+            vec![]
+        },
+    };
+
+    roles.iter().map(|x| &x.name).cloned().collect::<Vec<_>>()
+}
 
 #[command(
     aliases = [],
@@ -168,7 +182,7 @@ pub async fn add_default(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
     usage = "[name]",
     examples = ["red"],
 )]
-pub async fn remove(ctxt: CommandCtxt<'_>, name: Word) -> anyhow::Result<()> {
+pub async fn remove(ctxt: CommandCtxt<'_>, name: WordAutocomplete) -> anyhow::Result<()> {
     if let Some(id) = ctxt.data.guild_id.map(|x| x.get()) {
         let colour = name.0.to_ascii_lowercase();
 
@@ -306,7 +320,7 @@ pub async fn reset(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
     usage = "",
     examples = [""],
 )]
-pub async fn default(ctxt: CommandCtxt<'_>, colour: Option<Word>) -> anyhow::Result<()> {
+pub async fn default(ctxt: CommandCtxt<'_>, colour: Option<WordAutocomplete>) -> anyhow::Result<()> {
     if let Some(id) = ctxt.data.guild_id.map(|x| x.get()) {
         if let Some(colour) = colour.map(|x| x.0.to_ascii_lowercase()) {
             let roles = ColourRole::list_in_guild(&ctxt.assyst().database_handler, id as i64)
@@ -377,6 +391,7 @@ define_commandgroup! {
     description: "Assyst colour roles",
     examples: ["red", "", "add red #ff0000", "add-default", "remove red", "reset", "remove-all"],
     usage: "[colour]",
+    guild_only: true,
     commands: [
         "add" => add,
         "add-default" => add_default,

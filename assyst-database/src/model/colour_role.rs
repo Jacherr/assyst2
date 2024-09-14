@@ -1,7 +1,7 @@
 use crate::DatabaseHandler;
 
 /// A colour role is a self-assignable role to grant a colour to a user.
-#[derive(sqlx::FromRow, Debug)]
+#[derive(sqlx::FromRow, Debug, Clone)]
 pub struct ColourRole {
     pub role_id: i64,
     pub name: String,
@@ -10,9 +10,16 @@ pub struct ColourRole {
 impl ColourRole {
     /// List all colour roles in a guild.
     pub async fn list_in_guild(handler: &DatabaseHandler, guild_id: i64) -> Result<Vec<Self>, sqlx::Error> {
+        if let Some(c) = handler.cache.get_guild_colour_roles(guild_id as u64) {
+            return Ok(c);
+        }
+
         let query = r#"SELECT * FROM colors WHERE guild_id = $1"#;
 
-        sqlx::query_as(query).bind(guild_id).fetch_all(&handler.pool).await
+        let roles: Vec<ColourRole> = sqlx::query_as(query).bind(guild_id).fetch_all(&handler.pool).await?;
+        handler.cache.insert_guild_colour_roles(guild_id as u64, roles.clone());
+
+        Ok(roles)
     }
 
     /// Inser a new colour role.

@@ -6,6 +6,7 @@ use std::time::Duration;
 
 use moka::sync::Cache;
 
+use crate::model::colour_role::ColourRole;
 use crate::model::prefix::Prefix;
 
 trait TCacheV = Send + Sync + Clone + 'static;
@@ -14,14 +15,14 @@ trait TCacheK = Hash + Send + Sync + Eq + Clone + 'static;
 fn default_cache<K: TCacheK, V: TCacheV>() -> Cache<K, V> {
     Cache::builder()
         .max_capacity(1000)
-        .time_to_idle(Duration::from_secs(60 * 5))
+        .time_to_idle(Duration::from_secs(60 * 3))
         .build()
 }
 
 fn default_cache_sized<K: TCacheK, V: TCacheV>(size: u64) -> Cache<K, V> {
     Cache::builder()
         .max_capacity(size)
-        .time_to_idle(Duration::from_secs(60 * 5))
+        .time_to_idle(Duration::from_secs(60 * 3))
         .build()
 }
 
@@ -31,7 +32,8 @@ pub struct DatabaseCache {
     global_blacklist: Cache<u64, bool>,
     disabled_commands: Cache<u64, Arc<Mutex<HashSet<String>>>>,
     copied_tags: Cache<u64 /* user id */, String /* content */>,
-    guild_tag_names: Cache<u64, Vec<(u64 /* auhtor id */, String)>>,
+    guild_tag_names: Cache<u64, Vec<(u64 /* author id */, String)>>,
+    guild_colour_roles: Cache<u64, Vec<ColourRole>>,
 }
 impl DatabaseCache {
     pub fn new() -> Self {
@@ -41,6 +43,7 @@ impl DatabaseCache {
             disabled_commands: default_cache(),
             copied_tags: default_cache_sized(u64::MAX),
             guild_tag_names: default_cache(),
+            guild_colour_roles: default_cache(),
         }
     }
 
@@ -149,6 +152,14 @@ impl DatabaseCache {
 
     pub fn get_guild_tag_names(&self, guild_id: u64) -> Option<Vec<(u64, String)>> {
         self.guild_tag_names.get(&guild_id)
+    }
+
+    pub fn insert_guild_colour_roles(&self, guild_id: u64, roles: Vec<ColourRole>) {
+        self.guild_colour_roles.insert(guild_id, roles);
+    }
+
+    pub fn get_guild_colour_roles(&self, guild_id: u64) -> Option<Vec<ColourRole>> {
+        self.guild_colour_roles.get(&guild_id)
     }
 }
 

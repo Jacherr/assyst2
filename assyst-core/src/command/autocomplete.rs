@@ -5,6 +5,7 @@ use twilight_model::id::marker::{GuildMarker, InteractionMarker, UserMarker};
 use twilight_model::id::Id;
 use twilight_util::builder::InteractionResponseDataBuilder;
 
+use super::fun::colour::colour_role_autocomplete;
 use super::misc::tag::{tag_names_autocomplete, tag_names_autocomplete_for_user};
 use super::services::cooltext::cooltext_options_autocomplete;
 use crate::assyst::ThreadSafeAssyst;
@@ -26,14 +27,17 @@ pub async fn handle_autocomplete(
     // FIXME: minimise hardcoding strings etc as much as possible
     // future improvement is to use callbacks, but quite a lot of work
     // considering this is only used in a small handful of places
+    // FIXME: guild id unwrap needs handling properly when tags come to dms etc
     let opts = match (command_full_name, option) {
         ("cooltext create", "style") => cooltext_options_autocomplete(),
-        // FIXME: this unwrap needs handling properly when tags come to dms etc
         ("tag run", "name") | ("tag raw", "name") | ("tag copy", "name") | ("tag info", "name") => {
             tag_names_autocomplete(assyst.clone(), guild_id.unwrap().get()).await
         },
         ("tag edit", "name") | ("tag delete", "name") => {
             tag_names_autocomplete_for_user(assyst.clone(), guild_id.unwrap().get(), user_id.get()).await
+        },
+        ("colour assign", "colour") | ("colour remove", "name") => {
+            colour_role_autocomplete(assyst.clone(), guild_id.unwrap().get()).await
         },
         _ => {
             err!("Trying to autocomplete for invalid command: {command_full_name} (arg {option})");
