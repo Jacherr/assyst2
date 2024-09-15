@@ -6,7 +6,7 @@ use proc_macro::TokenStream;
 use proc_macro2::Span;
 use quote::{quote, ToTokens};
 use syn::punctuated::Punctuated;
-use syn::token::Bracket;
+use syn::token::{Bracket, Comma};
 use syn::{
     parse_macro_input, parse_quote, Expr, ExprArray, ExprLit, FnArg, Ident, Item, Lit, LitBool, LitStr, Meta, Pat,
     PatType, Token, Type,
@@ -49,7 +49,7 @@ impl syn::parse::Parse for CommandAttributes {
 pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
     let CommandAttributes(attrs) = syn::parse_macro_input!(attrs as CommandAttributes);
 
-    let Item::Fn(item) = parse_macro_input!(func as syn::Item) else {
+    let Item::Fn(mut item) = parse_macro_input!(func as syn::Item) else {
         panic!("#[command] applied to non-function")
     };
 
@@ -82,7 +82,7 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
     // but this gives us a more useful error
     verify_input_is_ctxt(&item.sig.inputs);
 
-    for (index, input) in item.sig.inputs.iter().skip(1).enumerate() {
+    for (index, input) in item.sig.inputs.iter_mut().skip(1).enumerate() {
         match input {
             FnArg::Receiver(_) => panic!("#[command] cannot have `self` arguments"),
             FnArg::Typed(PatType { ty, pat, attrs, .. }) => {
@@ -92,9 +92,11 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
                     command_option_exprs.push(quote! {{
                             <#ty>::as_command_option(#ident_string)
                     }});
+
+                    parse_attrs.push((ident_string, attrs.clone(), ty.clone()));
                 }
 
-                parse_attrs.push((stringify!(#pat).to_string(), attrs.clone()));
+                attrs.clear();
                 parse_idents.push(Ident::new(&format!("p{index}"), Span::call_site()));
                 parse_exprs.push(quote!(<#ty>::parse_raw_message(&mut ctxt, Some((stringify!(#pat).to_string(), stringify!(#ty).to_string()))).await));
                 parse_usage.push(quote!(<#ty as crate::command::arguments::ParseArgument>::usage(stringify!(#pat))));
@@ -102,6 +104,71 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
             },
         }
     }
+
+    struct AutocompleteVisitable(bool);
+    impl<'ast> syn::visit::Visit<'ast> for AutocompleteVisitable {
+        fn visit_type(&mut self, i: &'ast syn::Type) {
+            if let Type::Path(p) = i
+                && let Some(seg) = p.path.segments.last()
+                && seg.ident == "WordAutocomplete"
+            {
+                self.0 = true;
+            } else {
+                syn::visit::visit_type(self, i);
+            }
+        }
+    }
+
+    // collect stuff from argument attributes
+    // add more here as required
+    // todo: support parameter descriptions later
+    let mut autocomplete_fns: Punctuated<proc_macro2::TokenStream, Comma> = Punctuated::new();
+
+    for param in parse_attrs {
+        use syn::visit::Visit;
+
+        if param.1.is_empty() {
+            let mut visitor = AutocompleteVisitable(false);
+            visitor.visit_type(param.2.as_ref());
+
+            if visitor.0 {
+                panic!("autocomplete attr must be defined on WordAutocomplete arg type");
+            }
+        }
+
+        for attr in param.1 {
+            if let Meta::NameValue(n) = attr.meta.clone()
+                && let Some(s) = n.path.segments.first()
+            {
+                if s.ident == "autocomplete" {
+                    if let Expr::Lit(ref l) = n.value
+                        && let Lit::Str(ref s) = l.lit
+                    {
+                        let mut visitor = AutocompleteVisitable(false);
+                        visitor.visit_type(param.2.as_ref());
+
+                        if visitor.0 {
+                            let path = s.parse::<syn::Path>().expect("autocomplete: invalid path");
+                            let arg = param.0.clone();
+                            autocomplete_fns.push(quote::quote!(#arg => #path(assyst, data).await));
+                        } else {
+                            panic!("autocomplete attr is only valid on WordAutocomplete arg type");
+                        }
+                    } else {
+                        panic!("autocomplete: invalid value ({:?})", n.value);
+                    }
+                } else {
+                    panic!("fn arg attr: invalid name ({:?})", s.ident.to_string());
+                }
+            } else if let Meta::Path(p) = attr.meta {
+                // add any value-less attrs here
+                panic!("fn arg attr: invalid attr ({:?})", p.get_ident().map(|x| x.to_string()));
+            }
+        }
+    }
+
+    autocomplete_fns
+        .push(quote::quote!(_ => panic!("unhandled autocomplete arg name {arg_name:?} for command {}", meta.name)));
 
     let name = fields.remove("name").unwrap_or_else(|| str_expr(&fn_name.to_string()));
     let aliases = fields.remove("aliases").unwrap_or_else(empty_array_expr);
@@ -251,13 +318,45 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
 
                 #fn_name(ctxt.cx, #(#parse_idents),*).await.map_err(crate::command::ExecutionError::Command)
             }
+
+            #[allow(unreachable_code)]
+            async fn arg_autocomplete(
+                &self,
+                assyst: crate::assyst::ThreadSafeAssyst,
+                arg_name: String,
+                user_input: String,
+                data: crate::command::autocomplete::AutocompleteData
+            ) -> Result<Vec<twilight_model::application::command::CommandOptionChoice>, crate::command::ExecutionError> {
+                let meta = self.metadata();
+
+                let options: Vec<String> = match arg_name.as_str() {
+                    #autocomplete_fns
+                };
+
+                let choices: Vec<twilight_model::application::command::CommandOptionChoice> = options
+                    .iter()
+                    .filter(|x| {
+                        x.to_ascii_lowercase()
+                            .starts_with(&user_input.to_ascii_lowercase())
+                    })
+                    .take(crate::command::autocomplete::SUGG_LIMIT)
+                    .map(|x| twilight_model::application::command::CommandOptionChoice {
+                        name: x.clone(),
+                        name_localizations: None,
+                        // FIXME: hardcoded string type
+                        value: twilight_model::application::command::CommandOptionChoiceValue::String(x.clone()),
+                    })
+                    .collect::<Vec<twilight_model::application::command::CommandOptionChoice>>();
+
+                Ok(choices)
+            }
         }
     };
 
     let mut output = item.into_token_stream();
     output.extend(following);
 
-    //panic!("{}", output);
+    //panic!("{output}");
 
     output.into()
 }

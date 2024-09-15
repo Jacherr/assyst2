@@ -11,6 +11,7 @@ use twilight_model::id::Id;
 
 use crate::assyst::ThreadSafeAssyst;
 use crate::command::arguments::{Word, WordAutocomplete};
+use crate::command::autocomplete::AutocompleteData;
 use crate::command::flags::{flags_from_str, FlagDecode, FlagType};
 use crate::command::{Availability, Category, CommandCtxt};
 use crate::{define_commandgroup, flag_parse_argument};
@@ -36,8 +37,13 @@ const DEFAULT_COLOURS: &[(&str, u32)] = &[
     ("red", 0xe74c3c),
 ];
 
-pub async fn colour_role_autocomplete(assyst: ThreadSafeAssyst, guild_id: u64) -> Vec<String> {
-    let roles = match ColourRole::list_in_guild(&assyst.database_handler, guild_id as i64).await {
+pub async fn colour_role_autocomplete(assyst: ThreadSafeAssyst, autocomplete_data: AutocompleteData) -> Vec<String> {
+    let roles = match ColourRole::list_in_guild(
+        &assyst.database_handler,
+        autocomplete_data.guild_id.unwrap().get() as i64,
+    )
+    .await
+    {
         Ok(l) => l,
         Err(e) => {
             err!("Error fetching colour roles for autocompletion: {e:?}");
@@ -182,7 +188,10 @@ pub async fn add_default(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
     usage = "[name]",
     examples = ["red"],
 )]
-pub async fn remove(ctxt: CommandCtxt<'_>, name: WordAutocomplete) -> anyhow::Result<()> {
+pub async fn remove(
+    ctxt: CommandCtxt<'_>,
+    #[autocomplete = "crate::command::fun::colour::colour_role_autocomplete"] name: WordAutocomplete,
+) -> anyhow::Result<()> {
     if let Some(id) = ctxt.data.guild_id.map(|x| x.get()) {
         let colour = name.0.to_ascii_lowercase();
 
@@ -320,7 +329,10 @@ pub async fn reset(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
     usage = "",
     examples = [""],
 )]
-pub async fn default(ctxt: CommandCtxt<'_>, colour: Option<WordAutocomplete>) -> anyhow::Result<()> {
+pub async fn default(
+    ctxt: CommandCtxt<'_>,
+    #[autocomplete = "crate::command::fun::colour::colour_role_autocomplete"] colour: Option<WordAutocomplete>,
+) -> anyhow::Result<()> {
     if let Some(id) = ctxt.data.guild_id.map(|x| x.get()) {
         if let Some(colour) = colour.map(|x| x.0.to_ascii_lowercase()) {
             let roles = ColourRole::list_in_guild(&ctxt.assyst().database_handler, id as i64)

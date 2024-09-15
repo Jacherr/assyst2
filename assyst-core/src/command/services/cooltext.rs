@@ -4,12 +4,14 @@ use assyst_proc_macro::command;
 use assyst_string_fmt::Markdown;
 use rand::{thread_rng, Rng};
 
+use crate::assyst::ThreadSafeAssyst;
 use crate::command::arguments::{Rest, WordAutocomplete};
+use crate::command::autocomplete::AutocompleteData;
 use crate::command::{Availability, Category, CommandCtxt};
 use crate::define_commandgroup;
 use crate::rest::cooltext::STYLES;
 
-pub fn cooltext_options_autocomplete() -> Vec<String> {
+pub async fn cooltext_options_autocomplete(_a: ThreadSafeAssyst, _d: AutocompleteData) -> Vec<String> {
     let options = STYLES.iter().map(|x| x.0.to_owned()).collect::<Vec<_>>();
     options
 }
@@ -22,7 +24,11 @@ pub fn cooltext_options_autocomplete() -> Vec<String> {
     examples = ["burning hello", "saint fancy", "random im random"],
     send_processing = true
 )]
-pub async fn default(ctxt: CommandCtxt<'_>, style: WordAutocomplete, text: Rest) -> anyhow::Result<()> {
+pub async fn default(
+    ctxt: CommandCtxt<'_>,
+    #[autocomplete = "crate::command::services::cooltext::cooltext_options_autocomplete"] style: WordAutocomplete,
+    text: Rest,
+) -> anyhow::Result<()> {
     let style = if &style.0 == "random" {
         let rand = thread_rng().gen_range(0..STYLES.len());
         STYLES[rand].0

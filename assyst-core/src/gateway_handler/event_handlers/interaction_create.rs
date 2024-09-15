@@ -12,10 +12,11 @@ use twilight_model::application::interaction::{InteractionContextType, Interacti
 use twilight_model::gateway::payload::incoming::InteractionCreate;
 use twilight_model::http::interaction::{InteractionResponse, InteractionResponseType};
 use twilight_model::util::Timestamp;
+use twilight_util::builder::InteractionResponseDataBuilder;
 
 use super::after_command_execution_success;
 use crate::assyst::ThreadSafeAssyst;
-use crate::command::autocomplete::handle_autocomplete;
+use crate::command::autocomplete::AutocompleteData;
 use crate::command::componentctxt::ComponentInteractionData;
 use crate::command::registry::find_command_by_name;
 use crate::command::source::Source;
@@ -303,27 +304,38 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
                 unreachable!()
             };
 
-            // full_name will use the interaction command replacement for any "default" subcommand (e.g., "tag
-            // run")
-            let full_name = if let Some(i) = interaction_subcommand {
-                format!("{} {}", command.metadata().name, i.0)
-            } else {
-                command.metadata().name.to_owned()
+            let data = AutocompleteData {
+                guild_id: interaction.guild_id,
+                user: interaction.author().unwrap().clone(),
+                subcommand: interaction_subcommand.map(|x| x.0),
             };
 
-            let author_id = interaction.author().unwrap().id;
+            let options = match command
+                .arg_autocomplete(assyst.clone(), focused_option.name.clone(), inner_option.0, data)
+                .await
+            {
+                Ok(o) => o,
+                Err(e) => {
+                    err!("Failed to generate options for option {}: {e:?}", focused_option.name);
+                    return;
+                },
+            };
 
-            handle_autocomplete(
-                assyst.clone(),
-                interaction.id,
-                interaction.token,
-                interaction.guild_id,
-                author_id,
-                &full_name,
-                &focused_option.name,
-                &inner_option.0,
-            )
-            .await;
+            let b = InteractionResponseDataBuilder::new();
+            let b = b.choices(options);
+            let r = b.build();
+            let r = InteractionResponse {
+                kind: InteractionResponseType::ApplicationCommandAutocompleteResult,
+                data: Some(r),
+            };
+
+            if let Err(e) = assyst
+                .interaction_client()
+                .create_response(interaction.id, &interaction.token, &r)
+                .await
+            {
+                err!("Failed to send autocomplete options: {e:?}");
+            };
         }
     }
 }

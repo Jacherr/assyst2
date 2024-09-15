@@ -79,7 +79,7 @@ impl BadTranslator {
         }
     }
 
-    pub async fn set_channel_language(&self, id: u64, language: impl Into<Box<str>>) {
+    pub async fn _set_channel_language(&self, id: u64, language: impl Into<Box<str>>) {
         let mut lock = self.channels.write().await;
         lock.entry(id).and_modify(|e| e.language = language.into());
     }
@@ -100,7 +100,7 @@ impl BadTranslator {
         *self.channels.write().await = channels;
     }
 
-    pub async fn should_fetch(&self) -> bool {
+    pub async fn _should_fetch(&self) -> bool {
         !self.is_disabled().await && self.channels.read().await.len() == 0
     }
 

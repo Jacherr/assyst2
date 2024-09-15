@@ -13,7 +13,7 @@ use crate::define_commandgroup;
     description = "get server prefix",
     access = Availability::Public,
     cooldown = Duration::from_secs(2),
-    category = Category::Services,
+    category = Category::Misc,
     examples = [""],
 )]
 pub async fn default(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
@@ -36,7 +36,7 @@ pub async fn default(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
     description = "set server prefix",
     access = Availability::ServerManagers,
     cooldown = Duration::from_secs(2),
-    category = Category::Services,
+    category = Category::Misc,
     examples = ["-", "%"],
 )]
 pub async fn set(ctxt: CommandCtxt<'_>, new: Word) -> anyhow::Result<()> {

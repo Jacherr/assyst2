@@ -178,6 +178,44 @@ macro_rules! define_commandgroup {
                         Err(err) => Err(err)
                     }
                 }
+
+                async fn arg_autocomplete(
+                    &self,
+                    assyst: crate::assyst::ThreadSafeAssyst,
+                    arg_name: String,
+                    user_input: String,
+                    data: crate::command::autocomplete::AutocompleteData
+                ) -> Result<Vec<twilight_model::application::command::CommandOptionChoice>, crate::command::ExecutionError> {
+                    #[allow(unused_mut, unused_assignments)]
+                    let mut default = "";
+                    $(
+                        default = $default_interaction_subcommand;
+                    )?
+
+                    // if subcommand is the default command, try and call default
+                    #[allow(unreachable_code)]
+                    if let Some(s) = data.subcommand.clone() && s == default {
+                        $(
+                            return [<$default _command>].arg_autocomplete(assyst, arg_name, user_input, data).await;
+                        )?
+                        return Err(crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::InvalidSubcommand("unknown".to_owned())));
+                    };
+
+                    let sub = data.subcommand.clone().map(|x| crate::command::group::find_subcommand_interaction_command(&x, Self::SUBCOMMANDS)).flatten();
+
+                    #[allow(unreachable_code)]
+                    match sub {
+                        Some(s) => {
+                            return s.arg_autocomplete(assyst, arg_name, user_input, data).await;
+                        },
+                        None => {
+                            $(
+                                return [<$default _command>].arg_autocomplete(assyst, arg_name, user_input, data).await;
+                            )?
+                            return Err(crate::command::ExecutionError::Parse(crate::command::errors::TagParseError::InvalidSubcommand("unknown".to_owned())));
+                        }
+                    }
+                }
             }
         }
     };

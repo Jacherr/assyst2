@@ -23,6 +23,7 @@ use zip::ZipWriter;
 use super::CommandCtxt;
 use crate::assyst::ThreadSafeAssyst;
 use crate::command::arguments::{Image, ImageUrl, RestNoFlags, User, Word, WordAutocomplete};
+use crate::command::autocomplete::AutocompleteData;
 use crate::command::componentctxt::{
     button_emoji_new, button_new, respond_modal, respond_update_text, ComponentCtxt, ComponentInteractionData,
     ComponentMetadata,
@@ -93,7 +94,11 @@ pub async fn create(ctxt: CommandCtxt<'_>, name: Word, contents: RestNoFlags) ->
     examples = ["test hello there", "script 2+2 is: {js:2+2}"],
     guild_only = true
 )]
-pub async fn edit(ctxt: CommandCtxt<'_>, name: WordAutocomplete, contents: RestNoFlags) -> anyhow::Result<()> {
+pub async fn edit(
+    ctxt: CommandCtxt<'_>,
+    #[autocomplete = "crate::command::misc::tag::tag_names_autocomplete_for_user"] name: WordAutocomplete,
+    contents: RestNoFlags,
+) -> anyhow::Result<()> {
     let author = ctxt.data.author.id.get();
     let Some(guild_id) = ctxt.data.guild_id else {
         bail!("Tags can only be edited in guilds.")
@@ -130,7 +135,10 @@ pub async fn edit(ctxt: CommandCtxt<'_>, name: WordAutocomplete, contents: RestN
     examples = ["test", "script"],
     guild_only = true
 )]
-pub async fn delete(ctxt: CommandCtxt<'_>, name: WordAutocomplete) -> anyhow::Result<()> {
+pub async fn delete(
+    ctxt: CommandCtxt<'_>,
+    #[autocomplete = "crate::command::misc::tag::tag_names_autocomplete"] name: WordAutocomplete,
+) -> anyhow::Result<()> {
     let author = ctxt.data.author.id.get();
     let Some(guild_id) = ctxt.data.guild_id else {
         bail!("Tags can only be deleted in guilds.")
@@ -541,7 +549,10 @@ pub async fn list(ctxt: CommandCtxt<'_>, user: Option<User>, flags: TagListFlags
     examples = ["test", "script"],
     guild_only = true
 )]
-pub async fn info(ctxt: CommandCtxt<'_>, name: WordAutocomplete) -> anyhow::Result<()> {
+pub async fn info(
+    ctxt: CommandCtxt<'_>,
+    #[autocomplete = "crate::command::misc::tag::tag_names_autocomplete"] name: WordAutocomplete,
+) -> anyhow::Result<()> {
     let Some(guild_id) = ctxt.data.guild_id else {
         bail!("Tag information can only be fetched in guilds.")
     };
@@ -576,7 +587,10 @@ pub async fn info(ctxt: CommandCtxt<'_>, name: WordAutocomplete) -> anyhow::Resu
     examples = ["test", "script"],
     guild_only = true
 )]
-pub async fn raw(ctxt: CommandCtxt<'_>, name: WordAutocomplete) -> anyhow::Result<()> {
+pub async fn raw(
+    ctxt: CommandCtxt<'_>,
+    #[autocomplete = "crate::command::misc::tag::tag_names_autocomplete"] name: WordAutocomplete,
+) -> anyhow::Result<()> {
     let Some(guild_id) = ctxt.data.guild_id else {
         bail!("Tag raw content can only be fetched in guilds.")
     };
@@ -806,7 +820,10 @@ pub async fn backup(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
     examples = ["test", "script"],
     guild_only = true
 )]
-pub async fn copy(ctxt: CommandCtxt<'_>, name: WordAutocomplete) -> anyhow::Result<()> {
+pub async fn copy(
+    ctxt: CommandCtxt<'_>,
+    #[autocomplete = "crate::command::misc::tag::tag_names_autocomplete"] name: WordAutocomplete,
+) -> anyhow::Result<()> {
     let Some(guild_id) = ctxt.data.guild_id else {
         bail!("Tags can only be copied from guilds.")
     };
@@ -877,8 +894,8 @@ pub async fn paste(ctxt: CommandCtxt<'_>, name: Word) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub async fn tag_names_autocomplete(assyst: ThreadSafeAssyst, guild_id: u64) -> Vec<String> {
-    Tag::get_names_in_guild(&assyst.database_handler, guild_id as i64)
+pub async fn tag_names_autocomplete(assyst: ThreadSafeAssyst, data: AutocompleteData) -> Vec<String> {
+    Tag::get_names_in_guild(&assyst.database_handler, data.guild_id.unwrap().get() as i64)
         .await
         .unwrap_or(vec![])
         .iter()
@@ -886,12 +903,18 @@ pub async fn tag_names_autocomplete(assyst: ThreadSafeAssyst, guild_id: u64) -> 
         .collect::<Vec<_>>()
 }
 
-pub async fn tag_names_autocomplete_for_user(assyst: ThreadSafeAssyst, guild_id: u64, user_id: u64) -> Vec<String> {
-    Tag::get_names_in_guild(&assyst.database_handler, guild_id as i64)
+pub async fn tag_names_autocomplete_for_user(assyst: ThreadSafeAssyst, data: AutocompleteData) -> Vec<String> {
+    Tag::get_names_in_guild(&assyst.database_handler, data.guild_id.unwrap().get() as i64)
         .await
         .unwrap_or(vec![])
         .iter()
-        .filter_map(|x| if x.0 == user_id { Some(x.1.clone()) } else { None })
+        .filter_map(|x| {
+            if x.0 == data.user.id.get() {
+                Some(x.1.clone())
+            } else {
+                None
+            }
+        })
         .collect::<Vec<_>>()
 }
 
@@ -907,7 +930,7 @@ pub async fn tag_names_autocomplete_for_user(assyst: ThreadSafeAssyst, guild_id:
 )]
 pub async fn default(
     ctxt: CommandCtxt<'_>,
-    tag_name: WordAutocomplete,
+    #[autocomplete = "crate::command::misc::tag::tag_names_autocomplete"] tag_name: WordAutocomplete,
     arguments: Option<Vec<Word>>,
 ) -> anyhow::Result<()> {
     let Some(guild_id) = ctxt.data.guild_id else {

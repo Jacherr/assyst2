@@ -35,8 +35,9 @@ use assyst_common::config::CONFIG;
 use assyst_database::model::guild_disabled_command::GuildDisabledCommand;
 use assyst_flux_iface::FluxHandler;
 use async_trait::async_trait;
+use autocomplete::AutocompleteData;
 use errors::TagParseError;
-use twilight_model::application::command::CommandOption;
+use twilight_model::application::command::{CommandOption, CommandOptionChoice};
 use twilight_model::application::interaction::application_command::{CommandDataOption, CommandOptionValue};
 use twilight_model::channel::{Attachment, Message};
 use twilight_model::http::interaction::InteractionResponse;
@@ -230,6 +231,15 @@ pub trait Command {
 
     /// Parses arguments and executes the command, when the source is an interaction command.
     async fn execute_interaction_command(&self, ctxt: InteractionCommandParseCtxt<'_>) -> Result<(), ExecutionError>;
+
+    /// Provides autocompletion data for autocomplete arguments
+    async fn arg_autocomplete(
+        &self,
+        assyst: ThreadSafeAssyst,
+        arg_name: String,
+        user_input: String,
+        data: AutocompleteData,
+    ) -> Result<Vec<CommandOptionChoice>, ExecutionError>;
 }
 
 /// A set of timings used to diagnose slow areas of parsing for commands.
