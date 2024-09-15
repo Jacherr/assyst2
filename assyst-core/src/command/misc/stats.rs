@@ -8,10 +8,22 @@ use assyst_string_fmt::{Ansi, Markdown};
 use human_bytes::human_bytes;
 use twilight_model::gateway::SessionStartLimit;
 
-use crate::command::arguments::Word;
+use crate::assyst::ThreadSafeAssyst;
+use crate::command::arguments::WordAutocomplete;
+use crate::command::autocomplete::AutocompleteData;
 use crate::command::misc::key_value;
 use crate::command::{Availability, Category, CommandCtxt};
 use crate::rest::filer::{get_filer_stats as filer_stats, FilerStats};
+
+async fn stats_autocomplete(_a: ThreadSafeAssyst, _d: AutocompleteData) -> Vec<String> {
+    vec![
+        "sessions".to_owned(),
+        "caches".to_owned(),
+        "processes".to_owned(),
+        "all".to_owned(),
+        "general".to_owned(),
+    ]
+}
 
 #[command(
     description = "get bot stats",
@@ -22,7 +34,10 @@ use crate::rest::filer::{get_filer_stats as filer_stats, FilerStats};
     examples = ["", "sessions", "storage", "processes", "all"],
     send_processing = true
 )]
-pub async fn stats(ctxt: CommandCtxt<'_>, option: Option<Word>) -> anyhow::Result<()> {
+pub async fn stats(
+    ctxt: CommandCtxt<'_>,
+    #[autocomplete = "crate::command::misc::stats::stats_autocomplete"] option: Option<WordAutocomplete>,
+) -> anyhow::Result<()> {
     fn get_process_stats() -> String {
         let mem_usages = get_processes_mem_usage();
         let mem_usages_fmt = mem_usages
@@ -146,25 +161,25 @@ pub async fn stats(ctxt: CommandCtxt<'_>, option: Option<Word>) -> anyhow::Resul
         stats_table.codeblock("ansi")
     }
 
-    if let Some(Word(ref x)) = option
+    if let Some(WordAutocomplete(ref x)) = option
         && x.to_lowercase() == "sessions"
     {
         let table = get_session_stats(&ctxt).await?;
 
         ctxt.reply(table).await?;
-    } else if let Some(Word(ref x)) = option
+    } else if let Some(WordAutocomplete(ref x)) = option
         && (x.to_lowercase() == "caches" || x.to_lowercase() == "storage")
     {
         let table = get_storage_stats(&ctxt).await?;
 
         ctxt.reply(table).await?;
-    } else if let Some(Word(ref x)) = option
+    } else if let Some(WordAutocomplete(ref x)) = option
         && x.to_lowercase() == "processes"
     {
         let table = get_process_stats();
 
         ctxt.reply(table).await?;
-    } else if let Some(Word(ref x)) = option
+    } else if let Some(WordAutocomplete(ref x)) = option
         && x.to_lowercase() == "all"
     {
         let stats_table = get_general_stats(&ctxt).await;

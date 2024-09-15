@@ -65,18 +65,6 @@ async fn main() {
 
     let assyst: ThreadSafeAssyst = Arc::new(Assyst::new().await.unwrap());
 
-    println!(
-        "{:?}",
-        assyst
-            .http_client
-            .entitlements(assyst.application_id)
-            .await
-            .unwrap()
-            .model()
-            .await
-            .unwrap()
-    );
-
     // Custom panic hook that will send errors to a discord channel
     {
         let handle = tokio::runtime::Handle::current();
