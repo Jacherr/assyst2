@@ -76,7 +76,7 @@ impl FluxHandler {
                 FluxStep::Input(i) => {
                     let hash = hash_buffer(&i);
                     let path = format!("/tmp/{hash}");
-                    fs::write(&path, &i).await?;
+                    fs::write(&path, &i).await.context("failed to write input file")?;
                     input_file_paths.push(path.clone());
 
                     args.push("-i".to_owned());
@@ -194,7 +194,7 @@ impl FluxHandler {
         let _defer = CompilingCompleteDefer {};
 
         let res = exec_sync(&format!(
-            "cd {} && rm {FLUX_PATH} && mold -run ~/.cargo/bin/cargo build -q --release",
+            "cd {} && rm -f {FLUX_PATH} && mold -run ~/.cargo/bin/cargo build -q --release",
             if CONFIG.dev.flux_workspace_root_path_override.is_empty() {
                 FLUX_DIR
             } else {

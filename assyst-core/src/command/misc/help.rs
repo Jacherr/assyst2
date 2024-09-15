@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 
 use anyhow::bail;
@@ -6,9 +6,34 @@ use assyst_common::config::CONFIG;
 use assyst_proc_macro::command;
 use assyst_string_fmt::{Ansi, Markdown};
 
-use crate::command::arguments::Word;
+use crate::assyst::ThreadSafeAssyst;
+use crate::command::arguments::WordAutocomplete;
+use crate::command::autocomplete::AutocompleteData;
 use crate::command::registry::{find_command_by_name, get_or_init_commands};
 use crate::command::{Availability, Category, Command, CommandCtxt};
+
+async fn help_autocomplete(_assyst: ThreadSafeAssyst, data: AutocompleteData) -> Vec<String> {
+    let commands = get_or_init_commands();
+    // remove all aliases
+    let mut deduped = HashMap::new();
+    for command in commands {
+        if command.1.metadata().access != Availability::Dev || CONFIG.dev.admin_users.contains(&data.user.id.get()) {
+            deduped.insert(command.1.metadata().name, *command.1);
+        }
+    }
+
+    let mut names = HashSet::<String>::new();
+    for command in deduped {
+        if let Some(s) = command.1.subcommands() {
+            for c in s {
+                names.insert(format!("{} {}", command.0, c.0));
+            }
+        }
+        names.insert(command.0.to_owned());
+    }
+
+    names.into_iter().collect()
+}
 
 #[command(
     description = "get command help",
@@ -19,7 +44,10 @@ use crate::command::{Availability, Category, Command, CommandCtxt};
     usage = "<category|command>",
     examples = ["", "misc", "ping", "tag create"]
 )]
-pub async fn help(ctxt: CommandCtxt<'_>, labels: Option<Vec<Word>>) -> anyhow::Result<()> {
+pub async fn help(
+    ctxt: CommandCtxt<'_>,
+    #[autocomplete = "crate::command::misc::help::help_autocomplete"] labels: Option<Vec<WordAutocomplete>>,
+) -> anyhow::Result<()> {
     let cmds = get_or_init_commands();
     let labels = labels.unwrap_or_default();
 
@@ -42,7 +70,7 @@ pub async fn help(ctxt: CommandCtxt<'_>, labels: Option<Vec<Word>>) -> anyhow::R
 
     let mut labels = labels.into_iter();
     // if we have some argument
-    if let Some(Word(base_command)) = labels.next() {
+    if let Some(WordAutocomplete(base_command)) = labels.next() {
         // if the base is a command
         if let Some(mut command) = find_command_by_name(&base_command) {
             let mut meta = command.metadata();
@@ -55,7 +83,7 @@ pub async fn help(ctxt: CommandCtxt<'_>, labels: Option<Vec<Word>>) -> anyhow::R
 
             // If there are more arguments, follow the chain of subcommands and build up the usage
             // along the way
-            for Word(mut label) in labels {
+            for WordAutocomplete(mut label) in labels {
                 let metadata = command.metadata();
                 usage += metadata.name;
                 usage += " ";

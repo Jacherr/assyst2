@@ -214,6 +214,45 @@ impl ParseArgument for Vec<Word> {
     }
 }
 
+impl ParseArgument for Vec<WordAutocomplete> {
+    async fn parse_raw_message(ctxt: &mut RawMessageParseCtxt<'_>, label: Label) -> Result<Self, TagParseError> {
+        let mut items = Vec::new();
+
+        // `Option<T>`'s parser takes care of recovering from low severity errors
+        // and any `Err`s returned are fatal, so we can just use `?`
+        while let Some(value) = <Option<WordAutocomplete>>::parse_raw_message(ctxt, label.clone()).await? {
+            items.push(value)
+        }
+
+        Ok(items)
+    }
+
+    async fn parse_command_option(
+        ctxt: &mut InteractionCommandParseCtxt<'_>,
+        label: Label,
+    ) -> Result<Self, TagParseError> {
+        let text = WordAutocomplete::parse_command_option(ctxt, label).await?;
+        let items = text
+            .0
+            .split_ascii_whitespace()
+            .map(|y| WordAutocomplete(y.to_owned()))
+            .collect::<Vec<_>>();
+
+        Ok(items)
+    }
+
+    fn as_command_option(name: &str) -> CommandOption {
+        StringBuilder::new(name, "text input")
+            .autocomplete(true)
+            .required(true)
+            .build()
+    }
+
+    fn usage(name: &str) -> String {
+        format!("<{name}[]>")
+    }
+}
+
 /// A time argument such as `1h20m30s`.
 #[derive(Debug)]
 pub struct Time {

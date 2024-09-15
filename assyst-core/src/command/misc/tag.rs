@@ -760,7 +760,7 @@ pub async fn search(ctxt: CommandCtxt<'_>, query: Word, user: Option<User>) -> a
     cooldown = Duration::from_secs(5),
     access = Availability::Public,
     category = Category::Misc,
-    usage = "[name]",
+    usage = "",
     examples = [""],
     guild_only = true
 )]
