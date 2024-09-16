@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use anyhow::Context;
+use anyhow::{bail, Context};
 use assyst_proc_macro::command;
 
 use super::arguments::ImageUrl;
@@ -23,6 +23,12 @@ pub mod translation;
     context_menu_command = "Find Song"
 )]
 pub async fn findsong(ctxt: CommandCtxt<'_>, audio: ImageUrl) -> anyhow::Result<()> {
+    const VALID_FILES: &[&str] = &["mp3", "mp4", "webm", "ogg", "wav"];
+
+    if VALID_FILES.iter().all(|x| !audio.0.ends_with(x)) {
+        bail!("Finding audio is only supported on audio and video files.");
+    }
+
     let result = identify_song_notsoidentify(&ctxt.assyst().reqwest_client, audio.0)
         .await
         .context("Failed to identify song")?;
