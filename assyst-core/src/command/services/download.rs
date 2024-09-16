@@ -11,15 +11,18 @@ use rand::{thread_rng, Rng};
 use tokio::sync::Mutex;
 use tokio::task::JoinSet;
 use tokio::time::{sleep, timeout};
+use twilight_util::builder::command::{BooleanBuilder, IntegerBuilder};
 use zip::write::SimpleFileOptions;
 use zip::ZipWriter;
 
-use crate::command::arguments::Word;
+use crate::command::arguments::{ParseArgument, Word};
+use crate::command::errors::TagParseError;
 use crate::command::flags::{flags_from_str, FlagDecode, FlagType};
 use crate::command::messagebuilder::Attachment;
 use crate::command::{Availability, Category, CommandCtxt};
-use crate::flag_parse_argument;
+//use crate::flag_parse_argument;
 use crate::rest::web_media_download::{download_web_media, get_youtube_playlist_entries, WebDownloadOpts};
+use crate::{int_arg_bool, int_arg_u64};
 
 #[derive(Default)]
 pub struct DownloadFlags {
@@ -50,7 +53,53 @@ impl FlagDecode for DownloadFlags {
         Ok(result)
     }
 }
-flag_parse_argument! { DownloadFlags }
+impl ParseArgument for DownloadFlags {
+    fn as_command_options(_: &str) -> Vec<twilight_model::application::command::CommandOption> {
+        vec![
+            IntegerBuilder::new("quality", "downloaded video quality")
+                .required(false)
+                .choices(vec![
+                    ("144", 144),
+                    ("240", 240),
+                    ("360", 360),
+                    ("480", 480),
+                    ("720", 720),
+                    ("1080", 1080),
+                ])
+                .build(),
+            BooleanBuilder::new("audio", "whether to download the media as an audio file")
+                .required(false)
+                .build(),
+            BooleanBuilder::new("verbose", "for playlist downloading, show detailed information")
+                .required(false)
+                .build(),
+        ]
+    }
+
+    async fn parse_raw_message(
+        ctxt: &mut crate::command::RawMessageParseCtxt<'_>,
+        label: crate::command::Label,
+    ) -> Result<Self, crate::command::errors::TagParseError> {
+        let args = ctxt.rest_all(label);
+        let parsed = Self::from_str(&args).map_err(TagParseError::FlagParseError)?;
+        Ok(parsed)
+    }
+
+    async fn parse_command_option(
+        ctxt: &mut crate::command::InteractionCommandParseCtxt<'_>,
+        _: crate::command::Label,
+    ) -> Result<Self, TagParseError> {
+        let quality = int_arg_u64!(ctxt, "quality", 720);
+        let audio = int_arg_bool!(ctxt, "audio", false);
+        let verbose = int_arg_bool!(ctxt, "verbose", false);
+
+        Ok(Self {
+            quality,
+            audio,
+            verbose,
+        })
+    }
+}
 
 #[command(
     name = "download",

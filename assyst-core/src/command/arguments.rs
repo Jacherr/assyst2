@@ -31,7 +31,7 @@ pub trait ParseArgument: Sized {
         ctxt: &mut InteractionCommandParseCtxt<'_>,
         label: Label,
     ) -> Result<Self, TagParseError>;
-    fn as_command_option(name: &str) -> CommandOption;
+    fn as_command_options(name: &str) -> Vec<CommandOption>;
     fn usage(name: &str) -> String {
         format!("<{name}>")
     }
@@ -59,8 +59,8 @@ impl ParseArgument for i64 {
         }
     }
 
-    fn as_command_option(name: &str) -> CommandOption {
-        IntegerBuilder::new(name, "integer option").required(true).build()
+    fn as_command_options(name: &str) -> Vec<CommandOption> {
+        vec![IntegerBuilder::new(name, "integer option").required(true).build()]
     }
 }
 
@@ -86,8 +86,8 @@ impl ParseArgument for u64 {
         }
     }
 
-    fn as_command_option(name: &str) -> CommandOption {
-        IntegerBuilder::new(name, "integer option").required(true).build()
+    fn as_command_options(name: &str) -> Vec<CommandOption> {
+        vec![IntegerBuilder::new(name, "integer option").required(true).build()]
     }
 }
 
@@ -112,8 +112,8 @@ impl ParseArgument for f64 {
         }
     }
 
-    fn as_command_option(name: &str) -> CommandOption {
-        NumberBuilder::new(name, "number option").required(true).build()
+    fn as_command_options(name: &str) -> Vec<CommandOption> {
+        vec![NumberBuilder::new(name, "number option").required(true).build()]
     }
 }
 
@@ -138,8 +138,8 @@ impl ParseArgument for f32 {
         }
     }
 
-    fn as_command_option(name: &str) -> CommandOption {
-        NumberBuilder::new(name, "number option").required(true).build()
+    fn as_command_options(name: &str) -> Vec<CommandOption> {
+        vec![NumberBuilder::new(name, "number option").required(true).build()]
     }
 }
 
@@ -165,10 +165,10 @@ impl<T: ParseArgument> ParseArgument for Option<T> {
         }
     }
 
-    fn as_command_option(name: &str) -> CommandOption {
-        let mut option = T::as_command_option(name);
-        option.required = Some(false);
-        option
+    fn as_command_options(name: &str) -> Vec<CommandOption> {
+        let mut options = T::as_command_options(name);
+        options.iter_mut().for_each(|o| o.required = Some(false));
+        options
     }
 
     fn usage(name: &str) -> String {
@@ -205,8 +205,8 @@ impl ParseArgument for Vec<Word> {
         Ok(items)
     }
 
-    fn as_command_option(name: &str) -> CommandOption {
-        StringBuilder::new(name, "text input").required(true).build()
+    fn as_command_options(name: &str) -> Vec<CommandOption> {
+        vec![StringBuilder::new(name, "text input").required(true).build()]
     }
 
     fn usage(name: &str) -> String {
@@ -241,11 +241,13 @@ impl ParseArgument for Vec<WordAutocomplete> {
         Ok(items)
     }
 
-    fn as_command_option(name: &str) -> CommandOption {
-        StringBuilder::new(name, "text input")
-            .autocomplete(true)
-            .required(true)
-            .build()
+    fn as_command_options(name: &str) -> Vec<CommandOption> {
+        vec![
+            StringBuilder::new(name, "text input")
+                .autocomplete(true)
+                .required(true)
+                .build(),
+        ]
     }
 
     fn usage(name: &str) -> String {
@@ -284,8 +286,8 @@ impl ParseArgument for Time {
         }
     }
 
-    fn as_command_option(name: &str) -> CommandOption {
-        StringBuilder::new(name, "time input").required(true).build()
+    fn as_command_options(name: &str) -> Vec<CommandOption> {
+        vec![StringBuilder::new(name, "time input").required(true).build()]
     }
 }
 
@@ -314,8 +316,8 @@ impl ParseArgument for Word {
         }
     }
 
-    fn as_command_option(name: &str) -> CommandOption {
-        StringBuilder::new(name, "word input").required(true).build()
+    fn as_command_options(name: &str) -> Vec<CommandOption> {
+        vec![StringBuilder::new(name, "word input").required(true).build()]
     }
 }
 
@@ -344,11 +346,13 @@ impl ParseArgument for WordAutocomplete {
         }
     }
 
-    fn as_command_option(name: &str) -> CommandOption {
-        StringBuilder::new(name, "word input")
-            .autocomplete(true)
-            .required(true)
-            .build()
+    fn as_command_options(name: &str) -> Vec<CommandOption> {
+        vec![
+            StringBuilder::new(name, "word input")
+                .autocomplete(true)
+                .required(true)
+                .build(),
+        ]
     }
 }
 
@@ -382,8 +386,8 @@ impl ParseArgument for Codeblock {
         }
     }
 
-    fn as_command_option(name: &str) -> CommandOption {
-        StringBuilder::new(name, "code argument").required(true).build()
+    fn as_command_options(name: &str) -> Vec<CommandOption> {
+        vec![StringBuilder::new(name, "code argument").required(true).build()]
     }
 }
 
@@ -436,8 +440,8 @@ impl ParseArgument for User {
         }
     }
 
-    fn as_command_option(name: &str) -> CommandOption {
-        UserBuilder::new(name, "user argument").required(true).build()
+    fn as_command_options(name: &str) -> Vec<CommandOption> {
+        vec![UserBuilder::new(name, "user argument").required(true).build()]
     }
 }
 
@@ -490,8 +494,8 @@ impl ParseArgument for Channel {
         }
     }
 
-    fn as_command_option(name: &str) -> CommandOption {
-        ChannelBuilder::new(name, "channel argument").required(true).build()
+    fn as_command_options(name: &str) -> Vec<CommandOption> {
+        vec![ChannelBuilder::new(name, "channel argument").required(true).build()]
     }
 }
 
@@ -532,8 +536,8 @@ impl ParseArgument for Rest {
         }
     }
 
-    fn as_command_option(name: &str) -> CommandOption {
-        StringBuilder::new(name, "text input").required(true).build()
+    fn as_command_options(name: &str) -> Vec<CommandOption> {
+        vec![StringBuilder::new(name, "text input").required(true).build()]
     }
 
     fn usage(name: &str) -> String {
@@ -578,8 +582,8 @@ impl ParseArgument for RestNoFlags {
         }
     }
 
-    fn as_command_option(name: &str) -> CommandOption {
-        StringBuilder::new(name, "text input").required(true).build()
+    fn as_command_options(name: &str) -> Vec<CommandOption> {
+        vec![StringBuilder::new(name, "text input").required(true).build()]
     }
 
     fn usage(name: &str) -> String {
@@ -697,6 +701,22 @@ impl ImageUrl {
         } else {
             Err(TagParseError::MismatchedCommandOptionType((
                 "Attachment".to_owned(),
+                word.clone(),
+            )))
+        }
+    }
+
+    async fn from_link_interaction_command(
+        ctxt: &mut InteractionCommandParseCtxt<'_>,
+        label: Label,
+    ) -> Result<Self, TagParseError> {
+        let word = &ctxt.option_by_name(&label.unwrap().0)?.value;
+
+        if let CommandOptionValue::String(option) = word {
+            Ok(Self(option.clone()))
+        } else {
+            Err(TagParseError::MismatchedCommandOptionType((
+                "Link".to_owned(),
                 word.clone(),
             )))
         }
@@ -927,11 +947,18 @@ impl ParseArgument for ImageUrl {
                 };
             }
 
+            let attachment_label = Some((
+                format!("{}-attachment", label.clone().unwrap().0),
+                label.clone().unwrap().1,
+            ));
+            let link_label = Some((format!("{}-link", label.clone().unwrap().0), label.clone().unwrap().1));
+
             handle!(commit_if_ok!(
                 ctxt,
                 ImageUrl::from_attachment_interaction_command,
-                label
+                attachment_label
             ));
+            handle!(commit_if_ok!(ctxt, ImageUrl::from_link_interaction_command, link_label));
             handle!(commit_if_ok!(ctxt, ImageUrl::from_mention_command_option, label));
             handle!(commit_if_ok!(ctxt, ImageUrl::from_url_argument_command_option, label));
             handle!(commit_if_ok!(ctxt, ImageUrl::from_emoji_command_option, label));
@@ -953,8 +980,16 @@ impl ParseArgument for ImageUrl {
         Ok(Self(url))
     }
 
-    fn as_command_option(name: &str) -> CommandOption {
-        AttachmentBuilder::new(name, "attachment input").required(false).build()
+    fn as_command_options(name: &str) -> Vec<CommandOption> {
+        let attachment_name = format!("{name}-attachment");
+        let link_name = format!("{name}-link");
+
+        vec![
+            AttachmentBuilder::new(attachment_name, "attachment input")
+                .required(false)
+                .build(),
+            StringBuilder::new(link_name, "link input").required(false).build(),
+        ]
     }
 }
 
@@ -990,7 +1025,15 @@ impl ParseArgument for Image {
         Ok(Image(data))
     }
 
-    fn as_command_option(name: &str) -> CommandOption {
-        AttachmentBuilder::new(name, "attachment input").required(false).build()
+    fn as_command_options(name: &str) -> Vec<CommandOption> {
+        let attachment_name = format!("{name}-attachment");
+        let link_name = format!("{name}-link");
+
+        vec![
+            AttachmentBuilder::new(attachment_name, "attachment input")
+                .required(false)
+                .build(),
+            StringBuilder::new(link_name, "link input").required(false).build(),
+        ]
     }
 }

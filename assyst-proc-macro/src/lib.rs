@@ -90,7 +90,7 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
                     let ident_string = ident.ident.to_string();
 
                     command_option_exprs.push(quote! {{
-                            <#ty>::as_command_option(#ident_string)
+                            <#ty>::as_command_options(#ident_string)
                     }});
 
                     parse_attrs.push((ident_string, attrs.clone(), ty.clone()));
@@ -280,7 +280,7 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
 
                 let mut command_options = Vec::new();
                 #(
-                  command_options.push(#command_option_exprs);
+                  command_options.extend(#command_option_exprs);
                 )*
 
                 let command_info = crate::command::CommandInteractionInfo { command_options };

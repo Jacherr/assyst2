@@ -17,23 +17,25 @@ use twilight_model::channel::message::{Component, EmojiReactionType};
 use twilight_model::channel::Message;
 use twilight_model::id::marker::{ChannelMarker, EmojiMarker, UserMarker};
 use twilight_model::id::Id;
+use twilight_util::builder::command::IntegerBuilder;
 use zip::write::SimpleFileOptions;
 use zip::ZipWriter;
 
 use super::CommandCtxt;
 use crate::assyst::ThreadSafeAssyst;
-use crate::command::arguments::{Image, ImageUrl, RestNoFlags, User, Word, WordAutocomplete};
+use crate::command::arguments::{Image, ImageUrl, ParseArgument, RestNoFlags, User, Word, WordAutocomplete};
 use crate::command::autocomplete::AutocompleteData;
 use crate::command::componentctxt::{
     button_emoji_new, button_new, respond_modal, respond_update_text, ComponentCtxt, ComponentInteractionData,
     ComponentMetadata,
 };
+use crate::command::errors::TagParseError;
 use crate::command::flags::{flags_from_str, FlagDecode, FlagType};
 use crate::command::messagebuilder::{Attachment, MessageBuilder};
 use crate::command::{Availability, Category};
 use crate::downloader::{download_content, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES};
 use crate::rest::eval::fake_eval;
-use crate::{define_commandgroup, flag_parse_argument};
+use crate::{define_commandgroup, int_arg_u64};
 
 const DEFAULT_LIST_COUNT: i64 = 15;
 const RESERVED_NAMES: &[&str] = &["create", "add", "edit", "raw", "remove", "delete", "list", "info"];
@@ -388,7 +390,29 @@ impl FlagDecode for TagListFlags {
         Ok(result)
     }
 }
-flag_parse_argument! { TagListFlags }
+impl ParseArgument for TagListFlags {
+    fn as_command_options(_: &str) -> Vec<twilight_model::application::command::CommandOption> {
+        vec![IntegerBuilder::new("page", "go to this page").required(false).build()]
+    }
+
+    async fn parse_raw_message(
+        ctxt: &mut crate::command::RawMessageParseCtxt<'_>,
+        label: crate::command::Label,
+    ) -> Result<Self, crate::command::errors::TagParseError> {
+        let args = ctxt.rest_all(label);
+        let parsed = Self::from_str(&args).map_err(TagParseError::FlagParseError)?;
+        Ok(parsed)
+    }
+
+    async fn parse_command_option(
+        ctxt: &mut crate::command::InteractionCommandParseCtxt<'_>,
+        _: crate::command::Label,
+    ) -> Result<Self, TagParseError> {
+        let page = int_arg_u64!(ctxt, "page", 1);
+
+        Ok(Self { page })
+    }
+}
 
 #[command(
     description = "list tags in the server (or owned by a certain user in the server)",

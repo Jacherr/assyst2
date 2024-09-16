@@ -3,11 +3,13 @@ use std::time::Duration;
 
 use anyhow::Context;
 use assyst_proc_macro::command;
+use twilight_util::builder::command::IntegerBuilder;
 
-use crate::command::arguments::Image;
+use crate::command::arguments::{Image, ParseArgument};
+use crate::command::errors::TagParseError;
 use crate::command::flags::{flags_from_str, FlagDecode, FlagType};
 use crate::command::{Availability, Category, CommandCtxt};
-use crate::flag_parse_argument;
+use crate::int_arg_u64_opt;
 
 #[derive(Default)]
 pub struct BloomFlags {
@@ -47,7 +49,43 @@ impl FlagDecode for BloomFlags {
         Ok(result)
     }
 }
-flag_parse_argument! { BloomFlags }
+impl ParseArgument for BloomFlags {
+    fn as_command_options(_: &str) -> Vec<twilight_model::application::command::CommandOption> {
+        vec![
+            IntegerBuilder::new("radius", "bloom radius").required(false).build(),
+            IntegerBuilder::new("sharpness", "bloom sharpness")
+                .required(false)
+                .build(),
+            IntegerBuilder::new("brightness", "bloom brightness")
+                .required(false)
+                .build(),
+        ]
+    }
+
+    async fn parse_raw_message(
+        ctxt: &mut crate::command::RawMessageParseCtxt<'_>,
+        label: crate::command::Label,
+    ) -> Result<Self, crate::command::errors::TagParseError> {
+        let args = ctxt.rest_all(label);
+        let parsed = Self::from_str(&args).map_err(TagParseError::FlagParseError)?;
+        Ok(parsed)
+    }
+
+    async fn parse_command_option(
+        ctxt: &mut crate::command::InteractionCommandParseCtxt<'_>,
+        _: crate::command::Label,
+    ) -> Result<Self, TagParseError> {
+        let radius = int_arg_u64_opt!(ctxt, "radius");
+        let sharpness = int_arg_u64_opt!(ctxt, "sharpness");
+        let brightness = int_arg_u64_opt!(ctxt, "brightness");
+
+        Ok(Self {
+            radius,
+            sharpness,
+            brightness,
+        })
+    }
+}
 
 #[command(
     description = "add bloom to an image",

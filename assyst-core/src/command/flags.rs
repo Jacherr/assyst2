@@ -3,49 +3,63 @@ use std::collections::HashMap;
 use anyhow::{bail, Context};
 
 #[macro_export]
-macro_rules! flag_parse_argument {
-    ($s:ty) => {
-        impl $crate::command::arguments::ParseArgument for $s {
-            fn as_command_option(name: &str) -> twilight_model::application::command::CommandOption {
-                twilight_util::builder::command::StringBuilder::new(name, "flags input")
-                    .required(false)
-                    .build()
-            }
+macro_rules! int_arg_u64 {
+    ($ctxt:expr, $s:expr, $d:expr) => {{
+        let inner = $ctxt
+            .option_by_name($s)
+            .map(|o| o.value.clone())
+            .unwrap_or(twilight_model::application::interaction::application_command::CommandOptionValue::Integer($d));
 
-            async fn parse_raw_message(
-                ctxt: &mut $crate::command::RawMessageParseCtxt<'_>,
-                label: $crate::command::Label,
-            ) -> Result<Self, $crate::command::TagParseError> {
-                let args = ctxt.rest_all(label);
-                let parsed = Self::from_str(&args).map_err(|x| $crate::command::TagParseError::FlagParseError(x))?;
-                Ok(parsed)
-            }
+        let inner =
+            if let twilight_model::application::interaction::application_command::CommandOptionValue::Integer(option) =
+                inner
+            {
+                option as u64
+            } else {
+                panic!("download {} wrong arg type", $s);
+            };
 
-            async fn parse_command_option(
-                ctxt: &mut $crate::command::InteractionCommandParseCtxt<'_>,
-                label: $crate::command::Label,
-            ) -> Result<Self, $crate::command::TagParseError> {
-                let word = &ctxt.option_by_name(&label.unwrap().0);
+        inner
+    }};
+}
 
-                if let Ok(option) = word {
-                    if let twilight_model::application::interaction::application_command::CommandOptionValue::String(
-                        ref option,
-                    ) = option.value
-                    {
-                        Ok(Self::from_str(&option[..])
-                            .map_err(|x| $crate::command::TagParseError::FlagParseError(x))?)
-                    } else {
-                        Err($crate::command::TagParseError::MismatchedCommandOptionType((
-                            "String (Flags)".to_owned(),
-                            option.value.clone(),
-                        )))
-                    }
-                } else {
-                    Ok(Self::default())
-                }
-            }
-        }
-    };
+#[macro_export]
+macro_rules! int_arg_u64_opt {
+    ($ctxt:expr, $s:expr) => {{
+        let inner = $ctxt.option_by_name($s).map(|o| o.value.clone());
+
+        let inner = if let Ok(
+            twilight_model::application::interaction::application_command::CommandOptionValue::Integer(option),
+        ) = inner
+        {
+            Some(option as u64)
+        } else {
+            None
+        };
+
+        inner
+    }};
+}
+
+#[macro_export]
+macro_rules! int_arg_bool {
+    ($ctxt:expr, $s:expr, $d:expr) => {{
+        let inner = $ctxt
+            .option_by_name($s)
+            .map(|o| o.value.clone())
+            .unwrap_or(twilight_model::application::interaction::application_command::CommandOptionValue::Boolean($d));
+
+        let inner =
+            if let twilight_model::application::interaction::application_command::CommandOptionValue::Boolean(option) =
+                inner
+            {
+                option
+            } else {
+                panic!("download {} wrong arg type", $s);
+            };
+
+        inner
+    }};
 }
 
 pub enum FlagType {

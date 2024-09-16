@@ -8,13 +8,15 @@ use assyst_proc_macro::command;
 use assyst_string_fmt::Markdown;
 use twilight_model::id::marker::{GuildMarker, RoleMarker};
 use twilight_model::id::Id;
+use twilight_util::builder::command::BooleanBuilder;
 
 use crate::assyst::ThreadSafeAssyst;
-use crate::command::arguments::{Word, WordAutocomplete};
+use crate::command::arguments::{ParseArgument, Word, WordAutocomplete};
 use crate::command::autocomplete::AutocompleteData;
+use crate::command::errors::TagParseError;
 use crate::command::flags::{flags_from_str, FlagDecode, FlagType};
 use crate::command::{Availability, Category, CommandCtxt};
-use crate::{define_commandgroup, flag_parse_argument};
+use crate::{define_commandgroup, int_arg_bool};
 
 const DEFAULT_COLOURS: &[(&str, u32)] = &[
     ("gold", 0xf1c40f),
@@ -435,4 +437,30 @@ impl FlagDecode for ColourRemoveAllFlags {
         Ok(result)
     }
 }
-flag_parse_argument! { ColourRemoveAllFlags }
+impl ParseArgument for ColourRemoveAllFlags {
+    fn as_command_options(_: &str) -> Vec<twilight_model::application::command::CommandOption> {
+        vec![
+            BooleanBuilder::new("i-am-sure", "confirm you are sure")
+                .required(false)
+                .build(),
+        ]
+    }
+
+    async fn parse_raw_message(
+        ctxt: &mut crate::command::RawMessageParseCtxt<'_>,
+        label: crate::command::Label,
+    ) -> Result<Self, crate::command::errors::TagParseError> {
+        let args = ctxt.rest_all(label);
+        let parsed = Self::from_str(&args).map_err(TagParseError::FlagParseError)?;
+        Ok(parsed)
+    }
+
+    async fn parse_command_option(
+        ctxt: &mut crate::command::InteractionCommandParseCtxt<'_>,
+        _: crate::command::Label,
+    ) -> Result<Self, TagParseError> {
+        let sure = int_arg_bool!(ctxt, "i-am-sure", false);
+
+        Ok(Self { i_am_sure: sure })
+    }
+}

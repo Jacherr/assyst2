@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
-use anyhow::{bail, Context};
+use anyhow::{anyhow, bail, Context};
 use assyst_common::util::process::{exec_sync, exec_sync_in_dir, CommandOutput};
 use assyst_proc_macro::command;
 use assyst_string_fmt::Markdown;
@@ -12,14 +12,16 @@ use dash_vm::Vm;
 use serde::Deserialize;
 use tokio::fs;
 use toml::from_str;
+use twilight_util::builder::command::{BooleanBuilder, IntegerBuilder};
 
-use crate::command::arguments::Codeblock;
+use crate::command::arguments::{Codeblock, ParseArgument};
+use crate::command::errors::TagParseError;
 use crate::command::flags::{flags_from_str, FlagDecode, FlagType};
 use crate::command::messagebuilder::{Attachment, MessageBuilder};
 use crate::command::{Availability, Category, CommandCtxt};
 use crate::downloader::download_content;
 use crate::rest::rust::{run_benchmark, run_binary, run_clippy, run_godbolt, run_miri, OptimizationLevel};
-use crate::{define_commandgroup, flag_parse_argument};
+use crate::{define_commandgroup, int_arg_bool, int_arg_u64};
 
 struct ExecutableDeletionDefer(String);
 impl Drop for ExecutableDeletionDefer {
@@ -68,7 +70,52 @@ impl FlagDecode for ChargeFlags {
         Ok(result)
     }
 }
-flag_parse_argument! { ChargeFlags }
+impl ParseArgument for ChargeFlags {
+    fn as_command_options(_: &str) -> Vec<twilight_model::application::command::CommandOption> {
+        vec![
+            IntegerBuilder::new("opt", "optimisation level").required(false).build(),
+            BooleanBuilder::new("verbose", "increase verbosity")
+                .required(false)
+                .build(),
+            BooleanBuilder::new("llir", "enable llir").required(false).build(),
+            BooleanBuilder::new("valgrind", "run valgrind on compiled executable")
+                .required(false)
+                .build(),
+        ]
+    }
+
+    async fn parse_raw_message(
+        ctxt: &mut crate::command::RawMessageParseCtxt<'_>,
+        label: crate::command::Label,
+    ) -> Result<Self, crate::command::errors::TagParseError> {
+        let args = ctxt.rest_all(label);
+        let parsed = Self::from_str(&args).map_err(TagParseError::FlagParseError)?;
+        Ok(parsed)
+    }
+
+    async fn parse_command_option(
+        ctxt: &mut crate::command::InteractionCommandParseCtxt<'_>,
+        _: crate::command::Label,
+    ) -> Result<Self, TagParseError> {
+        let opt = int_arg_u64!(ctxt, "opt", 0);
+        let llir = int_arg_bool!(ctxt, "llir", false);
+        let verbose = int_arg_bool!(ctxt, "verbose", false);
+        let valgrind = int_arg_bool!(ctxt, "valgrind", false);
+
+        if llir && valgrind {
+            return Err(TagParseError::FlagParseError(anyhow!(
+                "Cannot set both valgrind and llir flags at the same time"
+            )));
+        }
+
+        Ok(Self {
+            opt,
+            valgrind,
+            verbose,
+            llir,
+        })
+    }
+}
 
 #[command(
     description = "execute some charge",
@@ -215,7 +262,49 @@ impl FlagDecode for RustFlags {
         Ok(result)
     }
 }
-flag_parse_argument! { RustFlags }
+impl ParseArgument for RustFlags {
+    fn as_command_options(_: &str) -> Vec<twilight_model::application::command::CommandOption> {
+        vec![
+            BooleanBuilder::new("miri", "use miri debugger").required(false).build(),
+            BooleanBuilder::new("asm", "output asm").required(false).build(),
+            BooleanBuilder::new("release", "compile in release mode")
+                .required(false)
+                .build(),
+            BooleanBuilder::new("clippy", "check code with clippy")
+                .required(false)
+                .build(),
+            BooleanBuilder::new("bench", "benchmark code").required(false).build(),
+        ]
+    }
+
+    async fn parse_raw_message(
+        ctxt: &mut crate::command::RawMessageParseCtxt<'_>,
+        label: crate::command::Label,
+    ) -> Result<Self, crate::command::errors::TagParseError> {
+        let args = ctxt.rest_all(label);
+        let parsed = Self::from_str(&args).map_err(TagParseError::FlagParseError)?;
+        Ok(parsed)
+    }
+
+    async fn parse_command_option(
+        ctxt: &mut crate::command::InteractionCommandParseCtxt<'_>,
+        _: crate::command::Label,
+    ) -> Result<Self, TagParseError> {
+        let miri = int_arg_bool!(ctxt, "miri", false);
+        let asm = int_arg_bool!(ctxt, "asm", false);
+        let release = int_arg_bool!(ctxt, "release", false);
+        let clippy = int_arg_bool!(ctxt, "clippy", false);
+        let bench = int_arg_bool!(ctxt, "bench", false);
+
+        Ok(Self {
+            miri,
+            asm,
+            release,
+            clippy,
+            bench,
+        })
+    }
+}
 
 #[command(
     description = "execute some rust",

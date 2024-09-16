@@ -5,15 +5,17 @@ use anyhow::{bail, Context};
 use assyst_common::util::{normalize_emojis, normalize_mentions, table};
 use assyst_proc_macro::command;
 use assyst_string_fmt::Markdown;
+use twilight_util::builder::command::{BooleanBuilder, IntegerBuilder};
 
-use crate::command::arguments::{Rest, Word};
+use crate::command::arguments::{ParseArgument, Rest, Word};
+use crate::command::errors::TagParseError;
 use crate::command::flags::{flags_from_str, FlagDecode, FlagType};
 use crate::command::{Availability, Category, CommandCtxt};
-use crate::flag_parse_argument;
 use crate::rest::bad_translation::{
     bad_translate as bad_translate_default, bad_translate_with_count, get_languages, translate_single, TranslateResult,
     Translation,
 };
+use crate::{int_arg_bool, int_arg_u64_opt};
 
 #[derive(Default)]
 pub struct BadTranslateFlags {
@@ -49,7 +51,39 @@ impl FlagDecode for BadTranslateFlags {
         Ok(result)
     }
 }
-flag_parse_argument! { BadTranslateFlags }
+impl ParseArgument for BadTranslateFlags {
+    fn as_command_options(_: &str) -> Vec<twilight_model::application::command::CommandOption> {
+        vec![
+            IntegerBuilder::new("count", "amount of translations")
+                .required(false)
+                .min_value(1)
+                .max_value(10)
+                .build(),
+            BooleanBuilder::new("chain", "show language chain")
+                .required(false)
+                .build(),
+        ]
+    }
+
+    async fn parse_raw_message(
+        ctxt: &mut crate::command::RawMessageParseCtxt<'_>,
+        label: crate::command::Label,
+    ) -> Result<Self, crate::command::errors::TagParseError> {
+        let args = ctxt.rest_all(label);
+        let parsed = Self::from_str(&args).map_err(TagParseError::FlagParseError)?;
+        Ok(parsed)
+    }
+
+    async fn parse_command_option(
+        ctxt: &mut crate::command::InteractionCommandParseCtxt<'_>,
+        _: crate::command::Label,
+    ) -> Result<Self, TagParseError> {
+        let count = int_arg_u64_opt!(ctxt, "count");
+        let chain = int_arg_bool!(ctxt, "chain", false);
+
+        Ok(Self { count, chain })
+    }
+}
 
 #[command(
     name = "badtranslate",

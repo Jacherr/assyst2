@@ -2,11 +2,13 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use assyst_proc_macro::command;
+use twilight_util::builder::command::BooleanBuilder;
 
-use crate::command::arguments::{Image, Rest};
+use crate::command::arguments::{Image, ParseArgument, Rest};
+use crate::command::errors::TagParseError;
 use crate::command::flags::{flags_from_str, FlagDecode, FlagType};
 use crate::command::{Availability, Category, CommandCtxt};
-use crate::flag_parse_argument;
+use crate::int_arg_bool;
 
 #[command(
     description = "add a caption to an image",
@@ -63,4 +65,34 @@ impl FlagDecode for CaptionFlags {
         Ok(result)
     }
 }
-flag_parse_argument! { CaptionFlags }
+impl ParseArgument for CaptionFlags {
+    fn as_command_options(_: &str) -> Vec<twilight_model::application::command::CommandOption> {
+        vec![
+            BooleanBuilder::new("bottom", "put the caption on the bottom")
+                .required(false)
+                .build(),
+            BooleanBuilder::new("black", "invert the caption")
+                .required(false)
+                .build(),
+        ]
+    }
+
+    async fn parse_raw_message(
+        ctxt: &mut crate::command::RawMessageParseCtxt<'_>,
+        label: crate::command::Label,
+    ) -> Result<Self, crate::command::errors::TagParseError> {
+        let args = ctxt.rest_all(label);
+        let parsed = Self::from_str(&args).map_err(TagParseError::FlagParseError)?;
+        Ok(parsed)
+    }
+
+    async fn parse_command_option(
+        ctxt: &mut crate::command::InteractionCommandParseCtxt<'_>,
+        _: crate::command::Label,
+    ) -> Result<Self, TagParseError> {
+        let bottom = int_arg_bool!(ctxt, "bottom", false);
+        let black = int_arg_bool!(ctxt, "black", false);
+
+        Ok(Self { bottom, black })
+    }
+}
