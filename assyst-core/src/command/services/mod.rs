@@ -19,7 +19,8 @@ pub mod download;
     category = Category::Services,
     usage = "[text]",
     examples = ["yep im burning"],
-    send_processing = true
+    send_processing = true,
+    context_menu_command = "Burn Text"
 )]
 pub async fn burntext(ctxt: CommandCtxt<'_>, text: Rest) -> anyhow::Result<()> {
     let result = burn_text(&text.0).await?;

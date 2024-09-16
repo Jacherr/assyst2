@@ -329,7 +329,8 @@ pub async fn grayscale(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<(
     category = Category::Image,
     usage = "[image]",
     examples = ["https://link.to.my/image.png"],
-    send_processing = true
+    send_processing = true,
+    context_menu_command = "Image Information"
 )]
 pub async fn imageinfo(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()> {
     let result = ctxt.flux_handler().image_info(source.0).await?;
@@ -793,9 +794,14 @@ pub async fn scramble(ctxt: CommandCtxt<'_>, source: Image) -> anyhow::Result<()
 pub async fn setloop(ctxt: CommandCtxt<'_>, source: Image, loops: i64) -> anyhow::Result<()> {
     let result = ctxt
         .flux_handler()
-        .set_loop(source.0, ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()), loops)
+        .set_loop(
+            source.0,
+            ctxt.data.author.id.get(),
+            ctxt.data.guild_id.map(|x| x.get()),
+            loops,
+        )
         .await?;
-    
+
     ctxt.reply(result).await?;
 
     Ok(())

@@ -19,10 +19,11 @@ pub mod translation;
     category = Category::Fun,
     usage = "[video]",
     examples = ["https://link.to.my/video.mp4"],
-    send_processing = true
+    send_processing = true,
+    context_menu_command = "Find Song"
 )]
-pub async fn findsong(ctxt: CommandCtxt<'_>, input: ImageUrl) -> anyhow::Result<()> {
-    let result = identify_song_notsoidentify(&ctxt.assyst().reqwest_client, input.0)
+pub async fn findsong(ctxt: CommandCtxt<'_>, audio: ImageUrl) -> anyhow::Result<()> {
+    let result = identify_song_notsoidentify(&ctxt.assyst().reqwest_client, audio.0)
         .await
         .context("Failed to identify song")?;
 
@@ -56,7 +57,8 @@ pub async fn findsong(ctxt: CommandCtxt<'_>, input: ImageUrl) -> anyhow::Result<
     category = Category::Fun,
     usage = "[image]",
     examples = ["https://link.to.my/image.png"],
-    send_processing = true
+    send_processing = true,
+    context_menu_command = "Identify Image"
 )]
 pub async fn identify(ctxt: CommandCtxt<'_>, input: ImageUrl) -> anyhow::Result<()> {
     let result = identify_image(&ctxt.assyst().reqwest_client, &input.0)

@@ -106,7 +106,7 @@ pub struct CommandMetadata {
     pub send_processing: bool,
     pub age_restricted: bool,
     pub flag_descriptions: HashMap<&'static str, &'static str>,
-    pub context_menu_command: bool,
+    pub context_menu_command: &'static str,
     pub guild_only: bool,
 }
 
@@ -279,6 +279,8 @@ pub struct CommandData<'a> {
     pub interaction_id: Option<Id<InteractionMarker>>,
     pub interaction_attachments: HashMap<Id<AttachmentMarker>, Attachment>,
     pub command_from_install_context: bool,
+    /// None if not a context menu command.
+    pub resolved_messages: Option<Vec<Message>>,
 }
 
 pub type RawMessageArgsIter<'a> = SplitAsciiWhitespace<'a>;

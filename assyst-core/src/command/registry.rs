@@ -127,7 +127,16 @@ pub fn get_or_init_commands() -> &'static HashMap<&'static str, TCommand> {
 
 /// Finds a command by its name.
 pub fn find_command_by_name(name: &str) -> Option<TCommand> {
-    get_or_init_commands().get(name.to_lowercase().as_str()).copied()
+    get_or_init_commands()
+        .get(name.to_lowercase().as_str())
+        .copied()
+        // support context menu command names
+        .or_else(|| {
+            get_or_init_commands()
+                .iter()
+                .find(|x| x.1.metadata().context_menu_command == name)
+                .map(|c| *c.1)
+        })
 }
 
 pub async fn register_interaction_commands(assyst: ThreadSafeAssyst) -> anyhow::Result<Vec<InteractionCommand>> {
@@ -149,9 +158,12 @@ pub async fn register_interaction_commands(assyst: ThreadSafeAssyst) -> anyhow::
     let mut deduplicated_commands: Vec<InteractionCommand> = vec![];
     for command in interaction_commands {
         if !deduplicated_commands.iter().any(|x| x.name == command.0.name) {
-            if command.1 {
+            if !command.1.is_empty() {
                 let mut copy = command.0.clone();
+                copy.name = command.1.to_owned();
                 copy.kind = CommandType::Message;
+                copy.options = vec![];
+                copy.description = String::new();
                 deduplicated_commands.push(copy);
             }
             deduplicated_commands.push(command.0);

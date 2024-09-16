@@ -5,10 +5,12 @@ use assyst_common::config::CONFIG;
 use assyst_common::err;
 use assyst_database::model::active_guild_premium_entitlement::ActiveGuildPremiumEntitlement;
 use tracing::{debug, warn};
+use twilight_model::application::command::CommandType;
 use twilight_model::application::interaction::application_command::{
     CommandData as DiscordCommandData, CommandDataOption, CommandOptionValue,
 };
 use twilight_model::application::interaction::{InteractionContextType, InteractionData, InteractionType};
+use twilight_model::channel::Message;
 use twilight_model::gateway::payload::incoming::InteractionCreate;
 use twilight_model::http::interaction::{InteractionResponse, InteractionResponseType};
 use twilight_model::util::Timestamp;
@@ -115,7 +117,8 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
                 let incoming_match = incoming_options.iter().find(|x| x.name == option.name);
                 if let Some(op) = incoming_match {
                     sorted_incoming_options.push(op.clone());
-                } else {
+                // context menu commands have no options and are handled independently
+                } else if command_data.kind != CommandType::Message {
                     // default required: false
                     if option.required.unwrap_or(false) {
                         err!(
@@ -137,6 +140,20 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
                 None
             };
 
+            let interaction_attachments = command_data
+                .resolved
+                .clone()
+                .map(|x| x.attachments)
+                .unwrap_or(HashMap::new());
+
+            // resolve message attachments for context menu commands
+            let mut resolved_messages: Option<Vec<Message>> = None;
+            if let Some(ref ms) = command_data.resolved.map(|x| x.messages)
+                && command_data.kind == CommandType::Message
+            {
+                resolved_messages = Some(ms.values().cloned().collect());
+            }
+
             let data = CommandData {
                 source: Source::Interaction,
                 assyst: &assyst,
@@ -155,11 +172,12 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
                 author: interaction.member.and_then(|x| x.user).or(interaction.user).unwrap(),
                 interaction_token: Some(interaction.token),
                 interaction_id: Some(interaction.id),
-                interaction_attachments: command_data.resolved.map(|x| x.attachments).unwrap_or(HashMap::new()),
+                interaction_attachments,
                 command_from_install_context: match interaction.context {
                     Some(c) => c == InteractionContextType::PrivateChannel,
                     None => false,
                 },
+                resolved_messages,
             };
 
             let ctxt = InteractionCommandParseCtxt::new(CommandCtxt::new(&data), &sorted_incoming_options);

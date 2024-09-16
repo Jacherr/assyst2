@@ -522,6 +522,16 @@ impl ParseArgument for Rest {
         ctxt: &mut InteractionCommandParseCtxt<'_>,
         label: Label,
     ) -> Result<Self, TagParseError> {
+        // look for resolved messages: if so, it's a context menu command, and use that message
+        if let Some(ref ms) = ctxt.cx.data.resolved_messages
+            && let Some(m) = ms.first()
+        {
+            if m.content.is_empty() {
+                return Err(TagParseError::ArgsExhausted(ArgsExhausted(label)));
+            }
+            return Ok(Rest(m.content.clone()));
+        }
+
         // treat Rest as same as Word because there is no option type which is just one
         // whitespace-delimited word
         let word = &ctxt.option_by_name(&label.unwrap().0)?.value;
@@ -568,6 +578,16 @@ impl ParseArgument for RestNoFlags {
         ctxt: &mut InteractionCommandParseCtxt<'_>,
         label: Label,
     ) -> Result<Self, TagParseError> {
+        // look for resolved messages: if so, it's a context menu command, and use that message
+        if let Some(ref ms) = ctxt.cx.data.resolved_messages
+            && let Some(m) = ms.first()
+        {
+            if m.content.is_empty() {
+                return Err(TagParseError::ArgsExhausted(ArgsExhausted(label)));
+            }
+            return Ok(RestNoFlags(m.content.clone()));
+        }
+
         // treat Rest as same as Word because there is no option type which is just one
         // whitespace-delimited word
         let word = &ctxt.option_by_name(&label.unwrap().0)?.value;
@@ -945,6 +965,22 @@ impl ParseArgument for ImageUrl {
                         _ => {},
                     }
                 };
+            }
+
+            // if this is Some, this is a context menu command
+            // we must have our image defined here, instead of looking anywhere else
+            if let Some(ref r) = ctxt.cx.data.resolved_messages {
+                if let Some(m) = r.first()
+                    && let Some(i) = m.attachments.first()
+                {
+                    return ImageUrl::attachment(Some(i));
+                } else if let Some(m) = r.first()
+                    && let Some(e) = m.embeds.first()
+                {
+                    return ImageUrl::embed(Some(e));
+                } else {
+                    return Err(TagParseError::ArgsExhausted(ArgsExhausted(label)));
+                }
             }
 
             let attachment_label = Some((

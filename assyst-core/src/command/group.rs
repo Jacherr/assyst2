@@ -24,7 +24,7 @@ macro_rules! defaults {
     (send_processing) => { false };
     (guild_only $x:expr) => { $x };
     (guild_only) => { false };
-    (context_menu_command) => { false };
+    (context_menu_command) => { "" };
 }
 
 #[allow(clippy::crate_in_macro_def)]
