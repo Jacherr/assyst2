@@ -47,6 +47,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, MessageCreate(message): MessageCre
                 interaction_attachments: HashMap::new(),
                 command_from_install_context: false,
                 resolved_messages: None,
+                resolved_users: None,
             };
             let ctxt = RawMessageParseCtxt::new(CommandCtxt::new(&data), result.args);
 

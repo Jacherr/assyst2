@@ -422,7 +422,8 @@ impl ParseArgument for TagListFlags {
     usage = "<user id|mention>",
     examples = ["@jacher"],
     flag_descriptions = [("page <page>", "start at this page number")],
-    guild_only = true
+    guild_only = true,
+    context_menu_user_command = "List Owned Tags"
 )]
 pub async fn list(ctxt: CommandCtxt<'_>, user: Option<User>, flags: TagListFlags) -> anyhow::Result<()> {
     let Some(guild_id) = ctxt.data.guild_id else {

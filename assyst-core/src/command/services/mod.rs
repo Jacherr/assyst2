@@ -20,7 +20,7 @@ pub mod download;
     usage = "[text]",
     examples = ["yep im burning"],
     send_processing = true,
-    context_menu_command = "Burn Text"
+    context_menu_message_command = "Burn Text"
 )]
 pub async fn burntext(ctxt: CommandCtxt<'_>, text: Rest) -> anyhow::Result<()> {
     let result = burn_text(&text.0).await?;

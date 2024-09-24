@@ -99,7 +99,7 @@ impl ParseArgument for BadTranslateFlags {
         ("count", "Set the amount of translations to perform")
     ],
     send_processing = true,
-    context_menu_command = "Bad Translate"
+    context_menu_message_command = "Bad Translate"
 )]
 pub async fn bad_translate(ctxt: CommandCtxt<'_>, text: Rest, flags: BadTranslateFlags) -> anyhow::Result<()> {
     if text.0 == "languages" {

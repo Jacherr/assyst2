@@ -134,7 +134,10 @@ pub fn find_command_by_name(name: &str) -> Option<TCommand> {
         .or_else(|| {
             get_or_init_commands()
                 .iter()
-                .find(|x| x.1.metadata().context_menu_command == name)
+                .find(|x| {
+                    let m = x.1.metadata();
+                    m.context_menu_message_command == name || m.context_menu_user_command == name
+                })
                 .map(|c| *c.1)
         })
 }
@@ -147,7 +150,7 @@ pub async fn register_interaction_commands(assyst: ThreadSafeAssyst) -> anyhow::
             let i = x.1.as_interaction_command();
             let m = x.1.metadata();
             if !i.name.is_empty() {
-                Some((i, m.context_menu_command))
+                Some((i, m.context_menu_message_command, m.context_menu_user_command))
             } else {
                 None
             }
@@ -159,9 +162,18 @@ pub async fn register_interaction_commands(assyst: ThreadSafeAssyst) -> anyhow::
     for command in interaction_commands {
         if !deduplicated_commands.iter().any(|x| x.name == command.0.name) {
             if !command.1.is_empty() {
+                // context message command
                 let mut copy = command.0.clone();
                 copy.name = command.1.to_owned();
                 copy.kind = CommandType::Message;
+                copy.options = vec![];
+                copy.description = String::new();
+                deduplicated_commands.push(copy);
+            } else if !command.2.is_empty() {
+                // context user command
+                let mut copy = command.0.clone();
+                copy.name = command.1.to_owned();
+                copy.kind = CommandType::User;
                 copy.options = vec![];
                 copy.description = String::new();
                 deduplicated_commands.push(copy);

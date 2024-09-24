@@ -417,6 +417,12 @@ impl ParseArgument for User {
         ctxt: &mut InteractionCommandParseCtxt<'_>,
         label: Label,
     ) -> Result<Self, TagParseError> {
+        if let Some(ref us) = &ctxt.cx.data.resolved_users
+            && let Some(u) = us.first()
+        {
+            return Ok(User(u.clone()));
+        }
+
         let word = &ctxt.option_by_name(&label.unwrap().0)?.value;
 
         if let CommandOptionValue::User(id) = word {

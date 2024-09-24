@@ -20,7 +20,7 @@ pub mod translation;
     usage = "[video]",
     examples = ["https://link.to.my/video.mp4"],
     send_processing = true,
-    context_menu_command = "Find Song"
+    context_menu_message_command = "Find Song"
 )]
 pub async fn findsong(ctxt: CommandCtxt<'_>, audio: ImageUrl) -> anyhow::Result<()> {
     const VALID_FILES: &[&str] = &["mp3", "mp4", "webm", "ogg", "wav"];

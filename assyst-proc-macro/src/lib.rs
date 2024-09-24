@@ -188,7 +188,17 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
         });
     let send_processing = fields.remove("send_processing").unwrap_or_else(false_expr);
     let age_restricted = fields.remove("age_restricted").unwrap_or_else(false_expr);
-    let context_menu_command = fields.remove("context_menu_command").unwrap_or_else(|| str_expr(""));
+    let context_menu_message_command = fields
+        .remove("context_menu_message_command")
+        .unwrap_or_else(|| str_expr(""));
+    let context_menu_user_command = fields
+        .remove("context_menu_user_command")
+        .unwrap_or_else(|| str_expr(""));
+
+    if context_menu_message_command != str_expr("") && context_menu_user_command != str_expr("") {
+        panic!("command cannot be a context message and user command at the same time");
+    }
+
     let flag_descriptions = fields.remove("flag_descriptions").unwrap_or_else(empty_array_expr);
     let guild_only = fields.remove("guild_only").unwrap_or_else(false_expr);
 
@@ -218,7 +228,8 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
                     send_processing: #send_processing,
                     age_restricted: #age_restricted,
                     flag_descriptions: descriptions,
-                    context_menu_command: #context_menu_command,
+                    context_menu_message_command: #context_menu_message_command,
+                    context_menu_user_command: #context_menu_user_command,
                     guild_only: #guild_only
                 })
             }

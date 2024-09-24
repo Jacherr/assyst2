@@ -212,7 +212,7 @@ pub async fn patronstatus(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
     };
 
     ctxt.reply(format!(
-        "{}\n{}\n{}",
+        "{}\n{}\n{}\nIf something here doesn't look right, please ask in the {}.",
         match entitlement_status {
             Some(Some(e)) => format!("This server is an activated premium server. It was activated by <@{0}> ({0}).", e.user_id),
             Some(None) => format!(
@@ -231,7 +231,11 @@ pub async fn patronstatus(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
                 .to_owned()
         } else {
             format!("You have {free_tier_2_requests} free tier 2 requests.")
-        }
+        },
+        "official support server".codestring().url(
+            "<https://discord.gg/brmtnpxbtg>",
+            Some("Invite link for the Assyst Support Discord Server.")
+        )
     ))
     .await?;
 

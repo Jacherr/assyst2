@@ -24,7 +24,8 @@ macro_rules! defaults {
     (send_processing) => { false };
     (guild_only $x:expr) => { $x };
     (guild_only) => { false };
-    (context_menu_command) => { "" };
+    (context_menu_message_command) => { "" };
+    (context_menu_user_command) => { "" };
 }
 
 #[allow(clippy::crate_in_macro_def)]
@@ -79,7 +80,8 @@ macro_rules! define_commandgroup {
                         send_processing: $crate::defaults!(send_processing $($send_processing)?),
                         guild_only: $crate::defaults!(guild_only $($guild_only)?),
                         flag_descriptions: std::collections::HashMap::new(),
-                        context_menu_command: $crate::defaults!(context_menu_command)
+                        context_menu_message_command: $crate::defaults!(context_menu_message_command),
+                        context_menu_user_command: $crate::defaults!(context_menu_user_command)
                     })
                 }
 

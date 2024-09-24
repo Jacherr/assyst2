@@ -13,6 +13,7 @@ use twilight_model::application::interaction::{InteractionContextType, Interacti
 use twilight_model::channel::Message;
 use twilight_model::gateway::payload::incoming::InteractionCreate;
 use twilight_model::http::interaction::{InteractionResponse, InteractionResponseType};
+use twilight_model::user::User;
 use twilight_model::util::Timestamp;
 use twilight_util::builder::InteractionResponseDataBuilder;
 
@@ -146,12 +147,20 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
                 .map(|x| x.attachments)
                 .unwrap_or(HashMap::new());
 
-            // resolve message attachments for context menu commands
+            // resolve messages for context menu message commands
             let mut resolved_messages: Option<Vec<Message>> = None;
-            if let Some(ref ms) = command_data.resolved.map(|x| x.messages)
+            if let Some(ms) = command_data.resolved.as_ref().map(|x| &x.messages)
                 && command_data.kind == CommandType::Message
             {
                 resolved_messages = Some(ms.values().cloned().collect());
+            }
+
+            // resolve users for context menu user commands
+            let mut resolved_users: Option<Vec<User>> = None;
+            if let Some(ref us) = command_data.resolved.map(|x| x.users)
+                && command_data.kind == CommandType::User
+            {
+                resolved_users = Some(us.values().cloned().collect());
             }
 
             let data = CommandData {
@@ -178,6 +187,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
                     None => false,
                 },
                 resolved_messages,
+                resolved_users,
             };
 
             let ctxt = InteractionCommandParseCtxt::new(CommandCtxt::new(&data), &sorted_incoming_options);
