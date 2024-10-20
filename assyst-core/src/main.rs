@@ -61,6 +61,8 @@ async fn main() {
         panic!("Assyst is supported on Linux only.")
     }
 
+    rustls::crypto::aws_lc_rs::default_provider().install_default().unwrap();
+
     tracing_init();
 
     let assyst: ThreadSafeAssyst = Arc::new(Assyst::new().await.unwrap());

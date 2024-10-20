@@ -46,6 +46,8 @@ async fn main() -> anyhow::Result<()> {
         panic!("Assyst is supported on Linux only.")
     }
 
+    rustls::crypto::aws_lc_rs::default_provider().install_default().unwrap();
+
     tracing_init();
 
     let http_client = HttpClient::new(CONFIG.authentication.discord_token.clone());
