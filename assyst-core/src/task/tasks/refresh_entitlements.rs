@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use assyst_common::err;
 use assyst_common::macros::handle_log;
 use assyst_database::model::active_guild_premium_entitlement::ActiveGuildPremiumEntitlement;
@@ -6,9 +8,8 @@ use tracing::info;
 use crate::assyst::ThreadSafeAssyst;
 
 pub async fn refresh_entitlements(assyst: ThreadSafeAssyst) {
-    let clone = assyst.entitlements.lock().unwrap().clone();
-    let mut entitlements = clone.iter().collect::<Vec<_>>();
-    entitlements.sort_by(|x, y| y.1.entitlement_id.cmp(&x.1.entitlement_id));
+    let entitlements = assyst.entitlements.lock().unwrap().clone();
+
     let additional = match assyst.http_client.entitlements(assyst.application_id).await {
         Ok(x) => match x.model().await {
             Ok(e) => e,
@@ -49,19 +50,25 @@ pub async fn refresh_entitlements(assyst: ThreadSafeAssyst) {
         }
     }
 
-    for entitlement in entitlements {
-        if entitlement.1.expiry_unix_ms != 0 && entitlement.1.expired() {
-            assyst.entitlements.lock().unwrap().remove(entitlement.0);
+    let db_entitlements = ActiveGuildPremiumEntitlement::get_all(&assyst.database_handler)
+        .await
+        .ok()
+        .unwrap_or(HashMap::new());
+
+    // remove entitlements from the db that are not in the rest response
+    for entitlement in db_entitlements.values() {
+        if !entitlements.contains_key(&entitlement.guild_id) {
+            assyst.entitlements.lock().unwrap().remove(&entitlement.guild_id);
             info!(
                 "Removed expired entitlement {} (guild {})",
-                entitlement.1.entitlement_id, entitlement.1.guild_id
+                entitlement.entitlement_id, entitlement.guild_id
             );
             if let Err(e) =
-                ActiveGuildPremiumEntitlement::delete(&assyst.database_handler, entitlement.1.entitlement_id).await
+                ActiveGuildPremiumEntitlement::delete(&assyst.database_handler, entitlement.entitlement_id).await
             {
                 err!(
                     "Error deleting existing entitlement {}: {e:?}",
-                    entitlement.1.entitlement_id
+                    entitlement.entitlement_id
                 );
             }
         }
