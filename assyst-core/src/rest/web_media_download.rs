@@ -113,6 +113,7 @@ async fn test_route(client: &Client, url: &str) -> bool {
 /// URLs must be a score of at least 90 (i.e., most sites supported), must support YouTube,
 /// and must have a domain over https.
 pub async fn get_web_download_api_urls(client: &Client) -> anyhow::Result<Vec<String>> {
+    /*
     let res = client
         .get(INSTANCES_ROUTE)
         .header("accept", "application/json")
@@ -154,7 +155,9 @@ pub async fn get_web_download_api_urls(client: &Client) -> anyhow::Result<Vec<St
         .map(|res| res.0)
         .collect::<Vec<_>>();
 
-    Ok(valid_urls)
+    Ok(valid_urls)*/
+
+    Ok(vec!["https://api.cobalt.tools/api/json".to_owned()])
 }
 
 /// Attempts to download web media. Will try all APIs until one succeeds, unless
