@@ -238,7 +238,7 @@ async fn main() {
     });
 
     info!("Caching web download API URLs");
-    let web_download_urls = get_web_download_api_urls(&a.reqwest_client).await.unwrap();
+    let web_download_urls = get_web_download_api_urls(&a.reqwest_client).await.unwrap_or(vec![]);
     info!("Got {} URLs to cache", web_download_urls.len());
     debug!(?web_download_urls);
     a.rest_cache_handler.set_web_download_urls(web_download_urls);

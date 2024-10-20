@@ -1,8 +1,7 @@
 use assyst_common::err;
+use assyst_common::macros::handle_log;
 use assyst_database::model::active_guild_premium_entitlement::ActiveGuildPremiumEntitlement;
 use tracing::info;
-use twilight_model::id::marker::EntitlementMarker;
-use twilight_model::id::Id;
 
 use crate::assyst::ThreadSafeAssyst;
 
@@ -10,29 +9,18 @@ pub async fn refresh_entitlements(assyst: ThreadSafeAssyst) {
     let clone = assyst.entitlements.lock().unwrap().clone();
     let mut entitlements = clone.iter().collect::<Vec<_>>();
     entitlements.sort_by(|x, y| y.1.entitlement_id.cmp(&x.1.entitlement_id));
-    let latest = entitlements.first();
-    let additional = match latest {
-        Some(l) => {
-            match assyst
-                .http_client
-                .entitlements(assyst.application_id)
-                .after(Id::<EntitlementMarker>::new(l.1.entitlement_id as u64))
-                .await
-            {
-                Ok(x) => match x.model().await {
-                    Ok(e) => e,
-                    Err(e) => {
-                        err!("Failed to get potential new entitlements: {e:?}");
-                        vec![]
-                    },
-                },
-                Err(e) => {
-                    err!("Failed to get potential new entitlements: {e:?}");
-                    vec![]
-                },
-            }
+    let additional = match assyst.http_client.entitlements(assyst.application_id).await {
+        Ok(x) => match x.model().await {
+            Ok(e) => e,
+            Err(e) => {
+                err!("Failed to get potential new entitlements: {e:?}");
+                vec![]
+            },
         },
-        None => vec![],
+        Err(e) => {
+            err!("Failed to get potential new entitlements: {e:?}");
+            vec![]
+        },
     };
 
     for a in additional {
@@ -51,6 +39,7 @@ pub async fn refresh_entitlements(assyst: ThreadSafeAssyst) {
                     active.entitlement_id
                 );
             };
+            handle_log(format!("New entitlement! Guild: {}", active.guild_id));
             assyst.entitlements.lock().unwrap().insert(active.guild_id, active);
         }
     }
