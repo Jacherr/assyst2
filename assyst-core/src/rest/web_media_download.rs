@@ -165,7 +165,7 @@ pub async fn download_web_media(client: &Client, url: &str, opts: WebDownloadOpt
     let urls = {
         let mut urls = opts.urls;
         if urls.is_empty() {
-            bail!("Assyst has not yet cached web download URLs. Please try again in a few seconds.");
+            bail!("The download command is temporarily disabled due to abuse. Please try again later.");
         }
         urls.shuffle(&mut thread_rng());
         urls
