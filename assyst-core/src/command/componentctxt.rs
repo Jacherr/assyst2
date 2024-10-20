@@ -149,6 +149,7 @@ pub fn button_emoji_new(custom_id: &str, emoji: EmojiReactionType, style: Button
         label: None,
         style,
         url: None,
+        sku_id: None,
     }
 }
 
@@ -160,6 +161,7 @@ pub fn button_new(custom_id: &str, label: &str, style: ButtonStyle) -> Button {
         label: Some(label.to_owned()),
         style,
         url: None,
+        sku_id: None,
     }
 }
 
