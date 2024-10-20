@@ -24,7 +24,12 @@ pub async fn refresh_entitlements(assyst: ThreadSafeAssyst) {
     };
 
     for a in additional {
-        if !assyst.entitlements.lock().unwrap().contains_key(&(a.id.get() as i64)) {
+        if !assyst
+            .entitlements
+            .lock()
+            .unwrap()
+            .contains_key(&(a.guild_id.map(|x| x.get()).unwrap_or(0) as i64))
+        {
             let active = match ActiveGuildPremiumEntitlement::try_from(a) {
                 Ok(a) => a,
                 Err(e) => {
