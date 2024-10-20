@@ -183,6 +183,7 @@ pub async fn download_web_media(client: &Client, url: &str, opts: WebDownloadOpt
         let res = client
             .post((*route).clone())
             .header("accept", "application/json")
+            .header("content-type", "application/json")
             .header("User-Agent", "Assyst Discord Bot (https://github.com/jacherr/assyst2)")
             .json(&json!({
                 "url": encoded_url,
