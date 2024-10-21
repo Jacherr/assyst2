@@ -15,13 +15,6 @@ use tracing::debug;
 use crate::command::services::download::DownloadFlags;
 use crate::downloader::{download_content, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES};
 
-pub const INSTANCES_ROUTE: &str = "https://instances.hyper.lol/instances.json";
-
-pub const TEST_URL: &str = "https://www.youtube.com/watch?v=sbvp3kuU2ak";
-pub const TEST_SCORE_THRESHOLD: f32 = 90.0;
-
-pub static TEST_URL_TIMEOUT: Duration = Duration::from_secs(15);
-
 #[derive(Default, Clone)]
 pub struct WebDownloadOpts {
     pub audio_only: Option<bool>,
@@ -66,13 +59,6 @@ pub struct WebDownloadResult {
 #[derive(Deserialize)]
 pub struct WebDownloadError {
     pub text: String,
-}
-
-#[derive(Deserialize)]
-pub struct InstancesQueryResult {
-    pub score: f32,
-    pub api: String,
-    pub protocol: String,
 }
 
 /// Attempts to download web media. Will try all APIs until one succeeds, unless
