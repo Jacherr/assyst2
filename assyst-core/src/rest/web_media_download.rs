@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use std::time::Duration;
 
 use anyhow::{bail, Context};
@@ -58,7 +59,51 @@ pub struct WebDownloadResult {
 
 #[derive(Deserialize)]
 pub struct WebDownloadError {
-    pub text: String,
+    pub context: WebDownloadErrorContext,
+}
+impl Display for WebDownloadError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let inner = &self.context.code;
+        match &inner.to_ascii_lowercase()[..] {
+            "error.api.unreachable" => f.write_str("API unreachable (try again later)"),
+            "error.api.timed_out" => f.write_str("API timeout (try again later)"),
+            "error.api.rate_exceeded" => f.write_str("Rate limited (try again later)"),
+            "error.api.capacity" => f.write_str("API busy (try again later)"),
+            "error.api.generic" => f.write_str("General API error (try again later)"),
+            "error.api.unknown_response" => {
+                f.write_str("Download failure. Make sure the link is valid. (unknown response)")
+            },
+            "error.api.service.unsupported" => f.write_str("That service or website is not supported."),
+            "error.api.service.disabled" => {
+                f.write_str("Downloading from that service or website is temporarily disabled.")
+            },
+            "error.api.link.invalid" => f.write_str("That link is invalid. Make sure it is correct."),
+            "error.api.link.unsupported" => f.write_str("That link or format is unsupported."),
+            "error.api.content.too_long" => f.write_str("The requested content is too big."),
+            "error.api.video.unavailable" => f.write_str(
+                "That video is unavailable. Make sure it is not region or age restricted, and is not private.",
+            ),
+            "error.api.content.video.live" => f.write_str("Live videos are unsupported."),
+            "error.api.content.video.private" => f.write_str("That video is private."),
+            "error.api.content.video.age" => f.write_str("That video is age restricted."),
+            "error.api.content.video.region" => f.write_str("That video is region restricted."),
+            "error.api.content.post.unavailable" => f.write_str(
+                "That post is unavailable. Make sure it is not region or age restricted, and is not private.",
+            ),
+            "error.api.content.post.private" => f.write_str("That post is private."),
+            "error.api.content.post.age" => f.write_str("That post is age restricted."),
+            "error.api.youtube.codec" => f.write_str("Missing YouTube codec. This is a bug."),
+            "error.api.youtube.decipher" => f.write_str("Cannot decipher that video. Something probably broke."),
+            "error.api.youtube.login" => f.write_str("That video requires a logged in account, which we do not have."),
+            "error.api.youtube.token_expired" => f.write_str("Our YouTube token expired (try again later)"),
+            _ => f.write_str(inner),
+        }
+    }
+}
+
+#[derive(Deserialize)]
+pub struct WebDownloadErrorContext {
+    code: String,
 }
 
 /// Attempts to download web media. Will try all APIs until one succeeds, unless
@@ -116,18 +161,7 @@ pub async fn download_web_media(client: &Client, url: &str, opts: WebDownloadOpt
                             let try_json = from_str::<WebDownloadError>(&e);
                             match try_json {
                                 Ok(j) => {
-                                    let mut e = j.text;
-                                    if e.contains("i couldn't process your request :(") {
-                                        e = "The web downloader could not process your request. Please try again later."
-                                            .to_owned()
-                                    } else if e.contains("i couldn't connect to the service api.") {
-                                        e = "The web downloader could not connect to the service API. Please try again later.".to_owned()
-                                    } else if e.contains("couldn't get this youtube video because it requires sign in")
-                                    {
-                                        e = "YouTube has blocked video downloading. Please try again later.".to_owned()
-                                    }
-
-                                    err = format!("Download request failed: {e}");
+                                    err = format!("Download request failed: {j}");
                                 },
                                 Err(d_e) => err = format!("Download request failed: {d_e} (raw error: {e})"),
                             }
