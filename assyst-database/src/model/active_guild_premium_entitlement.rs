@@ -67,7 +67,7 @@ impl ActiveGuildPremiumEntitlement {
 
     pub fn expired(&self) -> bool {
         let current = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
-        current > self.expiry_unix_ms as u128
+        current > self.expiry_unix_ms as u128 && self.expiry_unix_ms != 0
     }
 }
 impl TryFrom<Entitlement> for ActiveGuildPremiumEntitlement {
