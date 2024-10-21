@@ -79,6 +79,11 @@ impl Display for WebDownloadError {
             },
             "error.api.link.invalid" => f.write_str("That link is invalid. Make sure it is correct."),
             "error.api.link.unsupported" => f.write_str("That link or format is unsupported."),
+            "error.api.fetch.fail" => f.write_str("Failed to fetch the media. Make sure the link is valid, or try again later."),
+            "error.api.fetch.critical" => f.write_str("Critical error fetching the media. Make sure the link is valid, or try again later."),
+            "error.api.fetch.empty" => f.write_str("The service or website returned no data. This may be caused by the site blocking the downloader (try again later)"),
+            "error.api.fetch.rate" => f.write_str("The service or website has rate limited the downloader (try again later)"),
+            "error.api.fetch.short_link" => f.write_str("Unable to resolve the shortlink. Try using the full link to the media."),
             "error.api.content.too_long" => f.write_str("The requested content is too big."),
             "error.api.content.video.unavailable" => f.write_str(
                 "That video is unavailable. Make sure it is not region or age restricted, and is not private.",
