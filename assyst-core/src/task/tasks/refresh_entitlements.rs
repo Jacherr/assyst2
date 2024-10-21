@@ -34,6 +34,10 @@ pub async fn refresh_entitlements(assyst: ThreadSafeAssyst) {
                 },
             };
 
+            if active.expired() {
+                break;
+            }
+
             if let Err(e) = active.set(&assyst.database_handler).await {
                 err!("Error adding new entitlement for ID {}: {e:?}", active.entitlement_id);
             };
@@ -57,6 +61,7 @@ pub async fn refresh_entitlements(assyst: ThreadSafeAssyst) {
         if !additional
             .iter()
             .any(|x| x.id.get() as i64 == entitlement.entitlement_id)
+            || entitlement.expired()
         {
             assyst.entitlements.lock().unwrap().remove(&entitlement.entitlement_id);
             info!(
