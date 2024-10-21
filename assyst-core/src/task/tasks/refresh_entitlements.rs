@@ -24,13 +24,10 @@ pub async fn refresh_entitlements(assyst: ThreadSafeAssyst) {
         },
     };
 
+    println!("{:?}", additional.iter().map(|x| x.id).collect::<Vec<_>>());
+
     for a in additional {
-        if !assyst
-            .entitlements
-            .lock()
-            .unwrap()
-            .contains_key(&(a.guild_id.map(|x| x.get()).unwrap_or(0) as i64))
-        {
+        if !assyst.entitlements.lock().unwrap().contains_key(&(a.id.get() as i64)) {
             let active = match ActiveGuildPremiumEntitlement::try_from(a) {
                 Ok(a) => a,
                 Err(e) => {
@@ -40,13 +37,15 @@ pub async fn refresh_entitlements(assyst: ThreadSafeAssyst) {
             };
 
             if let Err(e) = active.set(&assyst.database_handler).await {
-                err!(
-                    "Error adding new entitlement from later fetch for ID {}: {e:?}",
-                    active.entitlement_id
-                );
+                err!("Error adding new entitlement for ID {}: {e:?}", active.entitlement_id);
             };
             handle_log(format!("New entitlement! Guild: {}", active.guild_id));
-            assyst.entitlements.lock().unwrap().insert(active.guild_id, active);
+
+            assyst
+                .entitlements
+                .lock()
+                .unwrap()
+                .insert(active.entitlement_id, active);
         }
     }
 

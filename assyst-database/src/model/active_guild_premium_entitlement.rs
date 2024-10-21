@@ -59,7 +59,7 @@ impl ActiveGuildPremiumEntitlement {
         let rows = sqlx::query_as::<_, Self>(query).fetch_all(&handler.pool).await?;
         let mut out = HashMap::new();
         for r in rows {
-            out.insert(r.guild_id, r);
+            out.insert(r.entitlement_id, r);
         }
 
         Ok(out)
