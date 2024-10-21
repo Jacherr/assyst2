@@ -23,12 +23,10 @@ use command::registry::register_interaction_commands;
 use gateway_handler::handle_raw_event;
 use gateway_handler::incoming_event::IncomingEvent;
 use rest::patreon::init_patreon_refresh;
-use rest::web_media_download::get_web_download_api_urls;
 use task::tasks::refresh_entitlements::refresh_entitlements;
-use task::tasks::refresh_web_download_urls::refresh_web_download_urls;
 use task::tasks::reminders::handle_reminders;
 use tokio::spawn;
-use tracing::{debug, info /* trace */};
+use tracing::{info /* trace */};
 use twilight_gateway::EventTypeFlags;
 use twilight_model::id::marker::WebhookMarker;
 use twilight_model::id::Id;
@@ -143,14 +141,6 @@ async fn main() {
         info!("Reminder processing disabled in config.dev.disable_reminder_check: not registering task");
     }
 
-    assyst.register_task(Task::new_delayed(
-        assyst.clone(),
-        Duration::from_secs(60 * 10),
-        Duration::from_secs(60 * 10),
-        function_task_callback!(refresh_web_download_urls),
-    ));
-    info!("Registered web download url refreshing task");
-
     assyst.register_task(Task::new(
         assyst.clone(),
         Duration::from_secs(60 * 10),
@@ -238,12 +228,6 @@ async fn main() {
             err!("Connection to assyst-gateway lost, attempting reconnection");
         }
     });
-
-    info!("Caching web download API URLs");
-    let web_download_urls = get_web_download_api_urls(&a.reqwest_client).await.unwrap_or(vec![]);
-    info!("Got {} URLs to cache", web_download_urls.len());
-    debug!(?web_download_urls);
-    a.rest_cache_handler.set_web_download_urls(web_download_urls);
 
     loop {
         std::thread::sleep(Duration::from_secs(1));

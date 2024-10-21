@@ -13,6 +13,8 @@ proxy = []
 filer = ""
 # Bad translation URL.
 bad_translation = ""
+# Cobalt API instances
+cobalt_api = [{ url = "", key = "" }]
 
 [authentication]
 # Token to authenticate with Discord.

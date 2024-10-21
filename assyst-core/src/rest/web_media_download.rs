@@ -1,9 +1,8 @@
-use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use anyhow::{bail, Context};
-use assyst_common::util::{format_duration, string_from_likely_utf8};
-use futures_util::future::join_all;
+use assyst_common::config::config::CobaltApiInstance;
+use assyst_common::util::string_from_likely_utf8;
 use rand::seq::SliceRandom;
 use rand::thread_rng;
 use reqwest::{Client, StatusCode};
@@ -27,11 +26,11 @@ pub static TEST_URL_TIMEOUT: Duration = Duration::from_secs(15);
 pub struct WebDownloadOpts {
     pub audio_only: Option<bool>,
     pub quality: Option<String>,
-    pub urls: Vec<Arc<String>>,
+    pub urls: Vec<CobaltApiInstance>,
     pub verbose: bool,
 }
 impl WebDownloadOpts {
-    pub fn from_download_flags(flags: DownloadFlags, urls: Vec<Arc<String>>) -> Self {
+    pub fn from_download_flags(flags: DownloadFlags, urls: Vec<CobaltApiInstance>) -> Self {
         Self {
             audio_only: Some(flags.audio),
             quality: if flags.quality != 0 {
@@ -76,99 +75,13 @@ pub struct InstancesQueryResult {
     pub protocol: String,
 }
 
-/// Tests a web download route to see if it meets requirements.
-/// Requirement is that the entire request finishes in less than 15 seconds on this URL, with a
-/// successful download.
-/// Returns true if the route is valid, false otherwise.
-async fn test_route(client: &Client, url: &str) -> bool {
-    let start = Instant::now();
-    let opts = WebDownloadOpts {
-        audio_only: Some(false),
-        quality: Some("144".to_owned()),
-        urls: vec![Arc::new(url.to_owned())],
-        verbose: false,
-    };
-
-    let res = download_web_media(client, TEST_URL, opts).await;
-    let success = res.is_ok();
-
-    let elapsed = start.elapsed();
-
-    if success && elapsed < TEST_URL_TIMEOUT {
-        debug!(
-            "Web download URL {url} took {} to download test media",
-            format_duration(&elapsed)
-        );
-    } else if elapsed < TEST_URL_TIMEOUT {
-        let err = res.unwrap_err();
-        debug!(
-            "Web download URL {url} failed to download test media ({})",
-            err.to_string()
-        );
-    }
-
-    success && (elapsed < TEST_URL_TIMEOUT)
-}
-
-/// URLs must be a score of at least 90 (i.e., most sites supported), must support YouTube,
-/// and must have a domain over https.
-pub async fn get_web_download_api_urls(client: &Client) -> anyhow::Result<Vec<String>> {
-    /*
-    let res = client
-        .get(INSTANCES_ROUTE)
-        .header("accept", "application/json")
-        .header("User-Agent", "Assyst Discord Bot (https://github.com/jacherr/assyst2)")
-        .send()
-        .await?;
-
-    let json = res.json::<Vec<InstancesQueryResult>>().await?;
-
-    let test_urls = json
-        .iter()
-        .filter_map(|entry: &InstancesQueryResult| {
-            if entry.protocol == "https" && entry.score >= TEST_SCORE_THRESHOLD {
-                Some(format!("https://{}/api/json", entry.api))
-            } else {
-                None
-            }
-        })
-        .map(|url| {
-            debug!("Testing web download API URL {}", url);
-
-            let c = client.clone();
-            timeout(
-                TEST_URL_TIMEOUT,
-                tokio::spawn(async move {
-                    let res = test_route(&c, &url).await;
-                    (url, res)
-                }),
-            )
-        })
-        .collect::<Vec<_>>();
-
-    let valid_urls = join_all(test_urls)
-        .await
-        .into_iter()
-        .filter_map(|res| res.ok())
-        .map(|res| res.unwrap())
-        .filter(|res| res.1)
-        .map(|res| res.0)
-        .collect::<Vec<_>>();
-
-    Ok(valid_urls)*/
-
-    Ok(vec!["https://api.cobalt.tools/api/json".to_owned()])
-}
-
 /// Attempts to download web media. Will try all APIs until one succeeds, unless
 /// `opts.api_url_override` is set.
 pub async fn download_web_media(client: &Client, url: &str, opts: WebDownloadOpts) -> anyhow::Result<Vec<u8>> {
-    let encoded_url = urlencoding::encode(url).to_string();
-
     let urls = {
         let mut urls = opts.urls;
         if urls.is_empty() {
-            bail!("The download command is temporarily disabled due to abuse. Please try again later.");
+            bail!("No available instances are defined.");
         }
         urls.shuffle(&mut thread_rng());
         urls
@@ -178,19 +91,22 @@ pub async fn download_web_media(client: &Client, url: &str, opts: WebDownloadOpt
     let mut err: String = String::new();
 
     for route in urls {
+        let key = route.key.clone();
+        let route = route.url.clone();
+
         debug!("trying url: {route} for web media {url}");
 
         let res = client
-            .post((*route).clone())
+            .post(route)
             .header("accept", "application/json")
             .header("content-type", "application/json")
             .header("User-Agent", "Assyst Discord Bot (https://github.com/jacherr/assyst2)")
+            .header("Authorization", key)
             .json(&json!({
-                "url": encoded_url,
-                "isAudioOnly": opts.audio_only.unwrap_or(false),
-                "aFormat": "mp3",
-                "isNoTTWatermark": true,
-                "vQuality": opts.quality.clone().unwrap_or("720".to_owned())
+                "url": url,
+                "downloadMode": if opts.audio_only.unwrap_or(false) { "audio" } else { "auto" },
+                "audioFormat": "mp3",
+                "videoQuality": opts.quality.clone().unwrap_or("720".to_owned()),
             }))
             .timeout(Duration::from_secs(60))
             .send()

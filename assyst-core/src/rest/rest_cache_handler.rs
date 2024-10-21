@@ -33,8 +33,6 @@ pub struct RestCacheHandler {
     channel_nsfw_status: Cache<u64, bool>,
     /// Guild ID -> User ID
     guild_owners: Cache<u64, u64>,
-    /// List of all download URLs.
-    web_download_urls: Cache<String, ()>,
 }
 impl RestCacheHandler {
     pub fn new(client: Arc<HttpClient>) -> RestCacheHandler {
@@ -43,7 +41,6 @@ impl RestCacheHandler {
             guild_upload_limits: default_cache(),
             channel_nsfw_status: default_cache(),
             guild_owners: default_cache(),
-            web_download_urls: Cache::builder().build(),
         }
     }
 
@@ -56,10 +53,6 @@ impl RestCacheHandler {
         size += self.guild_upload_limits.entry_count() * size_of::<(u64, u64)>() as u64;
         size += self.channel_nsfw_status.entry_count() * size_of::<(u64, bool)>() as u64;
         size += self.guild_owners.entry_count() * size_of::<(u64, u64)>() as u64;
-        size += self
-            .web_download_urls
-            .iter()
-            .fold(0, |acc, x| acc + x.0.as_bytes().len()) as u64;
         size
     }
 
@@ -183,15 +176,5 @@ impl RestCacheHandler {
             || member_permissions & Permissions::MANAGE_GUILD.bits() == Permissions::MANAGE_GUILD.bits();
 
         Ok(owner == user_id || member_is_manager)
-    }
-
-    pub fn set_web_download_urls(&self, urls: Vec<String>) {
-        for url in urls {
-            self.web_download_urls.insert(url, ());
-        }
-    }
-
-    pub fn get_web_download_urls(&self) -> Vec<Arc<String>> {
-        self.web_download_urls.iter().map(|x| x.0).collect::<Vec<_>>()
     }
 }

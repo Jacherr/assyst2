@@ -19,12 +19,19 @@ pub struct Entitlements {
     pub premium_server_sku_id: u64,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
+pub struct CobaltApiInstance {
+    pub url: String,
+    pub key: String,
+}
+
+#[derive(Deserialize, Clone)]
 pub struct Urls {
     pub proxy: Vec<String>,
     pub filer: String,
     pub eval: String,
     pub bad_translation: String,
+    pub cobalt_api: Vec<CobaltApiInstance>,
 }
 
 #[derive(Deserialize)]

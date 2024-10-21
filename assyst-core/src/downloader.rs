@@ -51,6 +51,7 @@ async fn download_with_proxy(
 ) -> Result<impl Stream<Item = Result<Bytes, reqwest::Error>>, DownloadError> {
     let resp = client
         .get(format!("{}/proxy", get_next_proxy()))
+        .header("User-Agent", "Assyst Discord Bot (https://github.com/jacherr/assyst2)")
         .query(&[("url", url), ("limit", &limit.to_string())])
         .timeout(Duration::from_secs(10))
         .send()
@@ -70,6 +71,7 @@ async fn download_no_proxy(
 ) -> Result<impl Stream<Item = Result<Bytes, reqwest::Error>>, DownloadError> {
     Ok(client
         .get(url)
+        .header("User-Agent", "Assyst Discord Bot (https://github.com/jacherr/assyst2)")
         .send()
         .await
         .map_err(DownloadError::Reqwest)?

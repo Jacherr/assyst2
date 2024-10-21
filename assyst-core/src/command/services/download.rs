@@ -4,6 +4,7 @@ use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use anyhow::Context;
+use assyst_common::config::CONFIG;
 use assyst_common::util::{filetype, format_duration, sanitise_filename};
 use assyst_proc_macro::command;
 use assyst_string_fmt::Markdown;
@@ -117,8 +118,7 @@ impl ParseArgument for DownloadFlags {
     ]
 )]
 pub async fn download(ctxt: CommandCtxt<'_>, url: Word, options: DownloadFlags) -> anyhow::Result<()> {
-    let mut opts =
-        WebDownloadOpts::from_download_flags(options, ctxt.assyst().rest_cache_handler.get_web_download_urls());
+    let mut opts = WebDownloadOpts::from_download_flags(options, CONFIG.urls.clone().cobalt_api);
 
     if url.0.to_ascii_lowercase().contains("youtube.com/playlist") {
         let videos = get_youtube_playlist_entries(&url.0).await?;
