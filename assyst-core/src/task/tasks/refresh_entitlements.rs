@@ -56,8 +56,8 @@ pub async fn refresh_entitlements(assyst: ThreadSafeAssyst) {
 
     // remove entitlements from the db that are not in the rest response
     for entitlement in db_entitlements.values() {
-        if !entitlements.contains_key(&entitlement.guild_id) {
-            assyst.entitlements.lock().unwrap().remove(&entitlement.guild_id);
+        if !entitlements.contains_key(&entitlement.entitlement_id) {
+            assyst.entitlements.lock().unwrap().remove(&entitlement.entitlement_id);
             info!(
                 "Removed expired entitlement {} (guild {})",
                 entitlement.entitlement_id, entitlement.guild_id
