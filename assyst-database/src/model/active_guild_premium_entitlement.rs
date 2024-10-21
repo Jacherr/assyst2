@@ -7,7 +7,7 @@ use twilight_model::util::Timestamp;
 
 use crate::{is_unique_violation, DatabaseHandler};
 
-#[derive(sqlx::FromRow, Clone)]
+#[derive(sqlx::FromRow, Clone, Debug)]
 pub struct ActiveGuildPremiumEntitlement {
     pub entitlement_id: i64,
     pub guild_id: i64,

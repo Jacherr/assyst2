@@ -24,9 +24,7 @@ pub async fn refresh_entitlements(assyst: ThreadSafeAssyst) {
         },
     };
 
-    println!("{:?}", additional.iter().map(|x| x.id).collect::<Vec<_>>());
-
-    for a in additional {
+    for a in additional.clone() {
         if !assyst.entitlements.lock().unwrap().contains_key(&(a.id.get() as i64)) {
             let active = match ActiveGuildPremiumEntitlement::try_from(a) {
                 Ok(a) => a,
@@ -56,7 +54,10 @@ pub async fn refresh_entitlements(assyst: ThreadSafeAssyst) {
 
     // remove entitlements from the db that are not in the rest response
     for entitlement in db_entitlements.values() {
-        if !entitlements.contains_key(&entitlement.entitlement_id) {
+        if !additional
+            .iter()
+            .any(|x| x.id.get() as i64 == entitlement.entitlement_id)
+        {
             assyst.entitlements.lock().unwrap().remove(&entitlement.entitlement_id);
             info!(
                 "Removed expired entitlement {} (guild {})",
