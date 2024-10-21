@@ -278,8 +278,9 @@ pub async fn download(ctxt: CommandCtxt<'_>, url: Word, options: DownloadFlags) 
         ctxt.reply((
             result,
             &format!(
-                "Took {}",
-                format_duration(&ctxt.data.execution_timings.processing_time_start.elapsed())
+                "Took {}\n{}",
+                format_duration(&ctxt.data.execution_timings.processing_time_start.elapsed()),
+                "Downloaded with cobalt.tools".subtext()
             )[..],
         ))
         .await?;

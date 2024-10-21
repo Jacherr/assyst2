@@ -183,8 +183,6 @@ async fn main() {
         }
     });
 
-    let a = assyst.clone();
-
     spawn(async move {
         info!("Connecting to assyst-gateway pipe at {}", GATEWAY_PIPE_PATH);
         loop {

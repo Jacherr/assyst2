@@ -22,6 +22,7 @@ pub trait Markdown {
     fn timestamp(seconds: usize, style: TimestampStyle) -> String {
         format!("<t:{seconds}:{style}>")
     }
+    fn subtext(&self) -> String;
 }
 
 pub enum TimestampStyle {
@@ -143,6 +144,10 @@ where
                 None => "".to_string(),
             }
         )
+    }
+
+    fn subtext(&self) -> String {
+        format!("-# {self}")
     }
 }
 
