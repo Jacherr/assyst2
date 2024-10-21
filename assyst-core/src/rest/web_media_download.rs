@@ -80,7 +80,7 @@ impl Display for WebDownloadError {
             "error.api.link.invalid" => f.write_str("That link is invalid. Make sure it is correct."),
             "error.api.link.unsupported" => f.write_str("That link or format is unsupported."),
             "error.api.content.too_long" => f.write_str("The requested content is too big."),
-            "error.api.video.unavailable" => f.write_str(
+            "error.api.content.video.unavailable" => f.write_str(
                 "That video is unavailable. Make sure it is not region or age restricted, and is not private.",
             ),
             "error.api.content.video.live" => f.write_str("Live videos are unsupported."),
