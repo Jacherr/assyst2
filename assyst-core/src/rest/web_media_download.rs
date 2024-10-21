@@ -59,11 +59,11 @@ pub struct WebDownloadResult {
 
 #[derive(Deserialize)]
 pub struct WebDownloadError {
-    pub context: WebDownloadErrorContext,
+    pub error: WebDownloadErrorContext,
 }
 impl Display for WebDownloadError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let inner = &self.context.code;
+        let inner = &self.error.code;
         match &inner.to_ascii_lowercase()[..] {
             "error.api.unreachable" => f.write_str("API unreachable (try again later)"),
             "error.api.timed_out" => f.write_str("API timeout (try again later)"),
