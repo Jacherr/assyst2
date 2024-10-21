@@ -202,7 +202,7 @@ pub async fn patronstatus(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
 
     let l = ctxt.assyst().entitlements.lock().unwrap().clone();
     let entitlement_status = if let Some(g) = ctxt.data.guild_id {
-        let entitlement = l.get(&(g.get() as i64));
+        let entitlement = l.iter().find(|(_, ent)| ent.guild_id as u64 == g).map(|x| x.1);
         match entitlement {
             Some(e) => Some(Some(e)),
             None => Some(None),
@@ -216,8 +216,9 @@ pub async fn patronstatus(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
         match entitlement_status {
             Some(Some(e)) => format!("This server is an activated premium server. It was activated by <@{0}> ({0}).", e.user_id),
             Some(None) => format!(
-                "This server is not activated a premium server. You can activate it [here](https://discord.com/application-directory/571661221854707713/store/{}).",
-                CONFIG.entitlements.premium_server_sku_id
+                "This server is not activated a premium server. You can activate it [here](<https://discord.com/application-directory/{}/store/{}>).",
+                CONFIG.bot_id,
+                CONFIG.entitlements.premium_server_sku_id,
             ),
             None => "This is not a server, so it cannot have premium server benefits.".to_owned()
         },

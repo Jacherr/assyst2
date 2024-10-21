@@ -221,7 +221,12 @@ impl FluxHandler {
         }
 
         if let Some(guild_id) = guild_id
-            && self.premium_guilds.lock().unwrap().get(&(guild_id as i64)).is_some()
+            && self
+                .premium_guilds
+                .lock()
+                .unwrap()
+                .iter()
+                .any(|(_, ent)| ent.guild_id as u64 == guild_id)
         {
             return Ok(LIMITS_GUILD_TIER_1);
         }

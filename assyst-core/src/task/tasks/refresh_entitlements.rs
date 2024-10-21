@@ -8,8 +8,6 @@ use tracing::info;
 use crate::assyst::ThreadSafeAssyst;
 
 pub async fn refresh_entitlements(assyst: ThreadSafeAssyst) {
-    let entitlements = assyst.entitlements.lock().unwrap().clone();
-
     let additional = match assyst.http_client.entitlements(assyst.application_id).await {
         Ok(x) => match x.model().await {
             Ok(e) => e,
