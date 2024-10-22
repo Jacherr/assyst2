@@ -375,7 +375,7 @@ impl<'a> ParseCtxt<'a, RawMessageArgsIter<'a>> {
     }
 
     pub fn rest_all(&self, _: Label) -> String {
-        self.args.remainder().map(|x| x.to_owned()).unwrap_or_default()
+        self.args.remainder().map(std::borrow::ToOwned::to_owned).unwrap_or_default()
     }
 }
 
@@ -497,7 +497,7 @@ pub async fn check_metadata(
         let id = ctxt
             .data
             .guild_id
-            .map_or_else(|| ctxt.data.author.id.get(), |id| id.get());
+            .map_or_else(|| ctxt.data.author.id.get(), twilight_model::id::Id::get);
         let last_command_invoked = ctxt.assyst().command_ratelimits.get(id, metadata.name);
         if let Some(invocation_time) = last_command_invoked {
             let elapsed = invocation_time.elapsed();

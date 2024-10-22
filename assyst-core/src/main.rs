@@ -55,9 +55,7 @@ static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
 
 #[tokio::main]
 async fn main() {
-    if std::env::consts::OS != "linux" {
-        panic!("Assyst is supported on Linux only.")
-    }
+    assert!(std::env::consts::OS == "linux", "Assyst is supported on Linux only.");
 
     rustls::crypto::aws_lc_rs::default_provider().install_default().unwrap();
 
@@ -141,12 +139,16 @@ async fn main() {
         info!("Reminder processing disabled in config.dev.disable_reminder_check: not registering task");
     }
 
-    assyst.register_task(Task::new(
-        assyst.clone(),
-        Duration::from_secs(60 * 10),
-        function_task_callback!(refresh_entitlements),
-    ));
-    info!("Registered entitlement refreshing task");
+    if !CONFIG.dev.disable_entitlement_fetching {
+        assyst.register_task(Task::new(
+            assyst.clone(),
+            Duration::from_secs(60 * 10),
+            function_task_callback!(refresh_entitlements),
+        ));
+        info!("Registered entitlement refreshing task");
+    } else {
+        info!("Entitlement refreshing disabled in config.dev.disable_entitlement_fetching: not registering task");
+    }
 
     info!("Starting assyst-webserver");
     assyst_webserver::run(

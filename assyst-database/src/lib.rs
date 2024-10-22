@@ -45,7 +45,7 @@ impl DatabaseHandler {
     }
 
     pub async fn database_size(&self) -> anyhow::Result<DatabaseSize> {
-        let query = r#"SELECT pg_size_pretty(pg_database_size('assyst')) as size"#;
+        let query = r"SELECT pg_size_pretty(pg_database_size('assyst')) as size";
 
         Ok(sqlx::query_as::<_, DatabaseSize>(query).fetch_one(&self.pool).await?)
     }
@@ -53,5 +53,5 @@ impl DatabaseHandler {
 
 pub(crate) fn is_unique_violation(error: &sqlx::Error) -> bool {
     const UNIQUE_CONSTRAINT_VIOLATION_CODE: Cow<'_, str> = Cow::Borrowed("23505");
-    error.as_database_error().and_then(|e| e.code()) == Some(UNIQUE_CONSTRAINT_VIOLATION_CODE)
+    error.as_database_error().and_then(sqlx::error::DatabaseError::code) == Some(UNIQUE_CONSTRAINT_VIOLATION_CODE)
 }

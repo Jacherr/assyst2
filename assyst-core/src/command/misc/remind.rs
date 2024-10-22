@@ -31,7 +31,7 @@ pub async fn default(ctxt: CommandCtxt<'_>, when: Time, text: Option<Rest>) -> a
 
     let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as u64 + when.millis;
 
-    let text = text.map(|x| x.0).unwrap_or("...".to_owned());
+    let text = text.map_or("...".to_owned(), |x| x.0);
 
     if text.len() > 250 {
         bail!("Reminder message cannot exceed 250 characters.");
@@ -41,9 +41,9 @@ pub async fn default(ctxt: CommandCtxt<'_>, when: Time, text: Option<Rest>) -> a
         id: 0, // unused
         user_id: ctxt.data.author.id.get() as i64,
         timestamp: timestamp as i64,
-        guild_id: ctxt.data.guild_id.map(|x| x.get()).unwrap_or(0) as i64,
+        guild_id: ctxt.data.guild_id.map_or(0, twilight_model::id::Id::get) as i64,
         channel_id: ctxt.data.channel_id.get() as i64,
-        message_id: ctxt.data.message.map(|x| x.id.get()).unwrap_or(0) as i64,
+        message_id: ctxt.data.message.map_or(0, |x| x.id.get()) as i64,
         message: text,
     };
 

@@ -14,7 +14,7 @@ impl ColourRole {
             return Ok(c);
         }
 
-        let query = r#"SELECT * FROM colors WHERE guild_id = $1"#;
+        let query = r"SELECT * FROM colors WHERE guild_id = $1";
 
         let roles: Vec<ColourRole> = sqlx::query_as(query).bind(guild_id).fetch_all(&handler.pool).await?;
         handler.cache.insert_guild_colour_roles(guild_id as u64, roles.clone());
@@ -24,7 +24,7 @@ impl ColourRole {
 
     /// Inser a new colour role.
     pub async fn insert(&self, handler: &DatabaseHandler) -> Result<(), sqlx::Error> {
-        let query = r#"INSERT INTO colors VALUES ($1, $2, $3)"#;
+        let query = r"INSERT INTO colors VALUES ($1, $2, $3)";
 
         sqlx::query(query)
             .bind(self.role_id)
@@ -37,7 +37,7 @@ impl ColourRole {
 
     /// Remove a colour role. Returns true on successful removal, false if the role did not exist.
     pub async fn remove(&self, handler: &DatabaseHandler) -> Result<bool, sqlx::Error> {
-        let query = r#"DELETE FROM colors WHERE guild_id = $1 AND name = $2 RETURNING *"#;
+        let query = r"DELETE FROM colors WHERE guild_id = $1 AND name = $2 RETURNING *";
 
         let result = sqlx::query_as::<_, ColourRole>(query)
             .bind(self.guild_id)

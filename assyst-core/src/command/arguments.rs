@@ -185,7 +185,7 @@ impl ParseArgument for Vec<Word> {
         // `Option<T>`'s parser takes care of recovering from low severity errors
         // and any `Err`s returned are fatal, so we can just use `?`
         while let Some(value) = <Option<Word>>::parse_raw_message(ctxt, label.clone()).await? {
-            items.push(value)
+            items.push(value);
         }
 
         Ok(items)
@@ -221,7 +221,7 @@ impl ParseArgument for Vec<WordAutocomplete> {
         // `Option<T>`'s parser takes care of recovering from low severity errors
         // and any `Err`s returned are fatal, so we can just use `?`
         while let Some(value) = <Option<WordAutocomplete>>::parse_raw_message(ctxt, label.clone()).await? {
-            items.push(value)
+            items.push(value);
         }
 
         Ok(items)
@@ -934,7 +934,7 @@ impl ParseArgument for ImageUrl {
             handle!(commit_if_ok!(ctxt, ImageUrl::from_emoji_raw_message, label));
             handle!(commit_if_ok!(ctxt, ImageUrl::from_sticker, label));
             if !ctxt.cx.data.command_from_install_context {
-                handle!(ImageUrl::from_channel_history(ctxt.cx.assyst(), ctxt.cx.data.channel_id).await)
+                handle!(ImageUrl::from_channel_history(ctxt.cx.assyst(), ctxt.cx.data.channel_id).await);
             } else {
                 return Err(TagParseError::MessageHistoryUnavailableInContext);
             };

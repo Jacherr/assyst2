@@ -10,9 +10,9 @@ pub type CacheJobSend = (Sender<CacheResponseSend>, CacheJob);
 /// The different jobs that the cache needs to handle.
 #[derive(Serialize, Deserialize, Debug)]
 pub enum CacheJob {
-    /// Storing data from a GUILD_CREATE event.
+    /// Storing data from a `GUILD_CREATE` event.
     HandleGuildCreate(GuildCreateData),
-    /// Storing data from a GUILD_DELETE event.
+    /// Storing data from a `GUILD_DELETE` event.
     HandleGuildDelete(GuildDeleteData),
     /// Storing data from a READY event.
     HandleReady(ReadyData),
@@ -80,14 +80,14 @@ impl From<GuildDelete> for GuildDeleteData {
 
 pub type CacheResponseSend = anyhow::Result<CacheResponse>;
 
-/// All the responses the cache can send back. Usually it is a 1-1 relation between a CacheJob
-/// variant and CacheResponse variant.
+/// All the responses the cache can send back. Usually it is a 1-1 relation between a `CacheJob`
+/// variant and `CacheResponse` variant.
 #[derive(Serialize, Deserialize, Debug)]
 pub enum CacheResponse {
-    /// Whether Assyst should handle a GUILD_CREATE event. False if this guild is coming back from
+    /// Whether Assyst should handle a `GUILD_CREATE` event. False if this guild is coming back from
     /// unavailable, or if this guild has already been cached.
     ShouldHandleGuildCreate(bool),
-    /// Whether Assyst should handle a GUILD_DELETE event. False if this guild went unavailable, or
+    /// Whether Assyst should handle a `GUILD_DELETE` event. False if this guild went unavailable, or
     /// if it was not in the cache.
     ShouldHandleGuildDelete(bool),
     /// The amount of new guilds Assyst receives when a shard enters a READY state. Some guilds may

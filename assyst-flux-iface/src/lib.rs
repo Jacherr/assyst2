@@ -87,10 +87,10 @@ impl FluxHandler {
 
                     if !options.is_empty() {
                         op_full += "[";
-                        for op in options.iter() {
+                        for op in &options {
                             op_full += op.0;
                             op_full += "=";
-                            op_full += &op.1.replace(";", "\\;");
+                            op_full += &op.1.replace(';', "\\;");
                             op_full += ";";
                         }
                         // remove trailing ";"
@@ -114,7 +114,7 @@ impl FluxHandler {
                 },
                 FluxStep::ImagePageLimit(l) => {
                     args.push("--page-limit".to_owned());
-                    args.push(l.to_string())
+                    args.push(l.to_string());
                 },
                 FluxStep::ResolutionLimit((w, h)) => {
                     args.push("--res-limit".to_owned());
@@ -157,16 +157,13 @@ impl FluxHandler {
         let id = spawn.id();
         let output = timeout(time_limit, spawn.wait_with_output()).await;
 
-        let output = (match output {
-            Ok(o) => o,
-            Err(_) => {
-                // send SIGTERM to flux to clean up child processes
-                if let Some(id) = id {
-                    unsafe { libc::kill(id as pid_t, libc::SIGTERM) };
-                };
-                bail!("The operation timed out");
-            },
-        })
+        let output = if let Ok(o) = output { o } else {
+            // send SIGTERM to flux to clean up child processes
+            if let Some(id) = id {
+                unsafe { libc::kill(id as pid_t, libc::SIGTERM) };
+            };
+            bail!("The operation timed out");
+        }
         .context("Failed to execute flux")?;
 
         if !output.status.success() {

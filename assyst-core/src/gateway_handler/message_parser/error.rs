@@ -17,7 +17,7 @@ pub enum PreParseError {
     UserIsBotOrWebhook(Option<u64>),
     /// The kind of message is not supported, e.g., a user join system message.
     UnsupportedMessageKind(MessageType),
-    /// A MESSAGE_UPDATE was received, but it had no edited timestamp.
+    /// A `MESSAGE_UPDATE` was received, but it had no edited timestamp.
     EditedMessageWithNoTimestamp,
     /// Other unknown failure. Unexpected error with high severity.
     Failure(String),

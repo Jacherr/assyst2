@@ -18,7 +18,7 @@ pub static CACHE_PIPE_PATH: &str = "/tmp/assyst2-cache-com";
 
 static POLL_FREQUENCY: Duration = Duration::from_secs(10);
 
-/// Pipe is a utility class that wraps a [UnixStream], providing helper functions for easy reading
+/// Pipe is a utility class that wraps a [`UnixStream`], providing helper functions for easy reading
 /// and writing of serde-Serializable types via Bincode.
 pub struct Pipe {
     pub stream: UnixStream,
@@ -93,7 +93,7 @@ impl Pipe {
     /// able to serialize the data to the specified type.
     pub async fn write_object<T: Serialize>(&mut self, obj: T) -> anyhow::Result<()> {
         let buffer = serialize(&obj)?;
-        debug_assert!(buffer.len() <= u32::MAX as usize, "attempted to write more than 4 GB");
+        debug_assert!(u32::try_from(buffer.len()).is_ok(), "attempted to write more than 4 GB");
         self.stream.write_u32(buffer.len() as u32).await?;
         self.stream.write_all(&buffer).await?;
         Ok(())
@@ -104,7 +104,7 @@ impl Pipe {
     /// This function will return an Err if the stream is prematurely closed.
     pub async fn write_string<T: AsRef<str>>(&mut self, obj: T) -> anyhow::Result<()> {
         let obj = obj.as_ref();
-        debug_assert!(obj.len() <= u32::MAX as usize, "attempted to write more than 4 GB");
+        debug_assert!(u32::try_from(obj.len()).is_ok(), "attempted to write more than 4 GB");
         self.stream.write_u32(obj.len() as u32).await?;
         self.stream.write_all(obj.as_bytes()).await?;
         Ok(())

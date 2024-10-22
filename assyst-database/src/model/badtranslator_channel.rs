@@ -13,7 +13,7 @@ impl BadTranslatorChannel {
     }
 
     pub async fn delete(handler: &DatabaseHandler, id: i64) -> anyhow::Result<bool> {
-        let query = r#"DELETE FROM bt_channels WHERE id = $1 RETURNING *"#;
+        let query = r"DELETE FROM bt_channels WHERE id = $1 RETURNING *";
 
         Ok(sqlx::query(query)
             .bind(id)
@@ -23,7 +23,7 @@ impl BadTranslatorChannel {
     }
 
     pub async fn update_language(&self, handler: &DatabaseHandler, new_language: &str) -> anyhow::Result<bool> {
-        let query = r#"UPDATE bt_channels SET target_language = $1 WHERE id = $2 RETURNING *"#;
+        let query = r"UPDATE bt_channels SET target_language = $1 WHERE id = $2 RETURNING *";
 
         Ok(sqlx::query(query)
             .bind(new_language)
@@ -34,7 +34,7 @@ impl BadTranslatorChannel {
     }
 
     pub async fn set(&self, handler: &DatabaseHandler) -> anyhow::Result<bool> {
-        let query = r#"INSERT INTO bt_channels VALUES ($1, $2)"#;
+        let query = r"INSERT INTO bt_channels VALUES ($1, $2)";
 
         sqlx::query(query)
             .bind(self.id)

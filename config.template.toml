@@ -81,10 +81,13 @@ disable_bot_list_posting = false
 # Disables loading patrons from Patreon.
 disable_patreon_synchronisation = false
 
+# Whether to disable entitlement fetching.
+disable_entitlement_fetching = false
+
 # Whether to send the 'dev message' (see below)
 dev_message = false
 
-# For development instances, send a message when this guild is present in a READY packet.
+# For development instances, send a message when this guild is present in a READY event.
 dev_guild = 0
 
 # The channel to send the dev message in.

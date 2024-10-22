@@ -7,7 +7,7 @@ static PROCESSES: &[&str] = &["assyst-core", "assyst-cache", "assyst-gateway", "
 static HOST_PROCESS: &str = "host machine";
 
 /// Attempts to extract memory usage in bytes for a process by PID
-pub fn get_memory_usage_for(pid: &str) -> Option<usize> {
+#[must_use] pub fn get_memory_usage_for(pid: &str) -> Option<usize> {
     let field = 1;
     let contents = std::fs::read(format!("/proc/{pid}/statm")).ok()?;
     let contents = String::from_utf8(contents).ok()?;
@@ -16,13 +16,13 @@ pub fn get_memory_usage_for(pid: &str) -> Option<usize> {
     Some(npages * 4096)
 }
 
-pub fn get_host_memory_usage() -> Option<usize> {
+#[must_use] pub fn get_host_memory_usage() -> Option<usize> {
     let output = exec_sync("free -b | head -2 | tail -1 | awk {{'print $3'}}");
     output.ok().and_then(|x| x.stdout.trim().parse::<usize>().ok())
 }
 
 /// Gets the memory usage in bytes of all 'relevant' processes.
-pub fn get_processes_mem_usage() -> Vec<(&'static str, usize)> {
+#[must_use] pub fn get_processes_mem_usage() -> Vec<(&'static str, usize)> {
     let mut memory_usages: Vec<(&str, usize)> = vec![];
 
     for process in PROCESSES {
@@ -37,7 +37,7 @@ pub fn get_processes_mem_usage() -> Vec<(&'static str, usize)> {
 }
 
 /// Attempts to get CPU usage for a PID
-pub fn cpu_usage_percentage_of(pid: usize) -> Option<f64> {
+#[must_use] pub fn cpu_usage_percentage_of(pid: usize) -> Option<f64> {
     let output = exec_sync(&format!("top -b -n 2 -d 1.5 -p {pid} | tail -1 | awk '{{print $9}}'"));
     output
         .ok()
@@ -46,18 +46,18 @@ pub fn cpu_usage_percentage_of(pid: usize) -> Option<f64> {
 }
 
 /// Gets the CPU usage of the host machine
-pub fn get_host_cpu_usage() -> Option<f64> {
+#[must_use] pub fn get_host_cpu_usage() -> Option<f64> {
     let output = exec_sync("top -bn2 -d 1.5 | grep '%Cpu' | tail -1");
 
     output
         .ok()
-        .and_then(|x| x.stdout.trim().split(',').nth(3).map(|y| y.to_owned()))
+        .and_then(|x| x.stdout.trim().split(',').nth(3).map(std::borrow::ToOwned::to_owned))
         .and_then(|x| x.trim().split(' ').next().map(|y| y.trim().to_owned()))
         .and_then(|x| x.trim().parse::<f64>().ok().map(|x| 100.0 - x))
 }
 
 /// Gets the CPU usage of all 'relevant' processes
-pub fn get_processes_cpu_usage() -> Vec<(&'static str, f64)> {
+#[must_use] pub fn get_processes_cpu_usage() -> Vec<(&'static str, f64)> {
     let mut cpu_usages: Vec<(&str, f64)> = PROCESSES.iter().map(|x| (*x, 0.0)).collect::<Vec<_>>();
     cpu_usages.push((HOST_PROCESS, 0.0));
 
@@ -75,21 +75,21 @@ pub fn get_processes_cpu_usage() -> Vec<(&'static str, f64)> {
 }
 
 /// Gets the uptime of a process based on its PID
-pub fn get_uptime_of(pid: usize) -> Option<String> {
+#[must_use] pub fn get_uptime_of(pid: usize) -> Option<String> {
     exec_sync(&format!("ps -p {pid} -o etime="))
         .ok()
         .map(|x| x.stdout.trim().to_owned())
 }
 
 /// Gets the uptimes of all 'relevant' processes
-pub fn get_processes_uptimes() -> Vec<(&'static str, String)> {
+#[must_use] pub fn get_processes_uptimes() -> Vec<(&'static str, String)> {
     let mut uptimes: Vec<(&str, String)> = vec![];
 
     for process in PROCESSES {
         let pid = pid_of(process).unwrap_or(0);
         let uptime = get_uptime_of(pid).unwrap_or("unknown".to_owned());
         let uptime = if uptime.is_empty() {
-            "offline".fg_red().to_owned()
+            "offline".fg_red().clone()
         } else {
             uptime
         };
@@ -100,7 +100,7 @@ pub fn get_processes_uptimes() -> Vec<(&'static str, String)> {
     uptimes.push((HOST_PROCESS, host_uptime));
 
     // format uptimes to be xd xh xm xs
-    for (_, ref mut uptime) in uptimes.iter_mut() {
+    for (_, ref mut uptime) in &mut uptimes {
         if *uptime != "offline".fg_red() {
             let split = uptime
                 .replace('-', ":")
@@ -123,7 +123,7 @@ pub fn get_processes_uptimes() -> Vec<(&'static str, String)> {
 }
 
 /// Attempts to get the PID of a process by its name
-pub fn pid_of(name: &str) -> Option<usize> {
+#[must_use] pub fn pid_of(name: &str) -> Option<usize> {
     let result = exec_sync(&format!("pidof {name}")).ok()?.stdout;
     result.trim().parse().ok()
 }

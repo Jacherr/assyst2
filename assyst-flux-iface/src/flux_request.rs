@@ -25,14 +25,14 @@ pub enum FluxStep {
 #[derive(Default)]
 pub struct FluxRequest(pub Vec<FluxStep>);
 impl FluxRequest {
-    pub fn new_with_input_and_limits(input: Vec<u8>, limits: &LimitData) -> Self {
+    #[must_use] pub fn new_with_input_and_limits(input: Vec<u8>, limits: &LimitData) -> Self {
         let mut new = Self(vec![]);
         new.input(input);
         new.limits(limits);
         new
     }
 
-    pub fn new_basic(input: Vec<u8>, limits: &LimitData, operation: &str) -> Self {
+    #[must_use] pub fn new_basic(input: Vec<u8>, limits: &LimitData, operation: &str) -> Self {
         let mut new = Self(vec![]);
         new.input(input);
         new.limits(limits);
@@ -57,7 +57,7 @@ impl FluxRequest {
         self.0.push(FluxStep::ImagePageLimit(limits.frames));
         self.0.push(FluxStep::ResolutionLimit((limits.size, limits.size)));
         if !limits.video_decode_enabled {
-            self.0.push(FluxStep::VideoDecodeDisabled)
+            self.0.push(FluxStep::VideoDecodeDisabled);
         }
     }
 

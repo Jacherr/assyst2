@@ -11,7 +11,7 @@ pub struct RateTracker {
     samples: Vec<Instant>,
 }
 impl RateTracker {
-    pub fn new(tracking_length: Duration) -> RateTracker {
+    #[must_use] pub fn new(tracking_length: Duration) -> RateTracker {
         RateTracker {
             tracking_length,
             samples: vec![],

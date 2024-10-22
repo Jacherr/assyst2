@@ -62,7 +62,7 @@ async fn translate_retry(
     }
 
     if let Some(data) = additional_data {
-        for (k, v) in data.iter() {
+        for (k, v) in data {
             query_args.push((k, v.to_string()));
         }
     }

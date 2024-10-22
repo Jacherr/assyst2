@@ -55,7 +55,7 @@ pub async fn parse_prefix(
     } else if let Some(mention_prefix) = message_mention_prefix(&message.content) {
         mention_prefix
     } else if is_in_dm {
-        "".to_owned()
+        String::new()
     } else {
         let guild_id = message.guild_id.unwrap().get();
         let guild_prefix = Prefix::get(&assyst.database_handler, guild_id).await;

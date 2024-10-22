@@ -34,7 +34,7 @@ async fn process_single_reminder(assyst: ThreadSafeAssyst, reminder: &Reminder) 
             } else if reminder.guild_id == 0 && reminder.message_id != 0 {
                 dm_message_link(reminder.channel_id as u64, reminder.message_id as u64)
             } else {
-                "".to_owned()
+                String::new()
             }
         ))
         .await?;

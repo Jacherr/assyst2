@@ -246,7 +246,7 @@ impl BadTranslator {
             status,
             body: _,
             error: _,
-        }) = delete_state.as_ref().map_err(|e| e.kind())
+        }) = delete_state.as_ref().map_err(twilight_http::Error::kind)
         {
             if status.get() == 404 {
                 return Ok(());

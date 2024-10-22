@@ -52,8 +52,7 @@ impl FlagDecode for ChargeFlags {
         let opt = raw_decode
             .get("opt")
             .and_then(|x| x.as_deref())
-            .map(|x| x.parse::<u64>())
-            .unwrap_or(Ok(0))
+            .map_or(Ok(0), str::parse)
             .context("Failed to parse optimisation level")?;
 
         let result = Self {
@@ -108,12 +107,7 @@ impl ParseArgument for ChargeFlags {
             )));
         }
 
-        Ok(Self {
-            opt,
-            valgrind,
-            verbose,
-            llir,
-        })
+        Ok(Self { verbose, llir, opt, valgrind })
     }
 }
 
@@ -149,11 +143,11 @@ pub async fn charge(ctxt: CommandCtxt<'_>, script: Codeblock, flags: ChargeFlags
 
     let mut flags_string = String::new();
     if flags.verbose {
-        flags_string += "--verbose"
+        flags_string += "--verbose";
     };
 
     if flags.llir {
-        flags_string += " --print-llir-only"
+        flags_string += " --print-llir-only";
     }
 
     flags_string += &format!(" -O{}", flags.opt);
@@ -184,7 +178,7 @@ pub async fn charge(ctxt: CommandCtxt<'_>, script: Codeblock, flags: ChargeFlags
         let stdout = result.stdout + "\n" + &bin_result.clone().unwrap_or(CommandOutput::default()).stdout;
         let stderr = result.stderr + "\n" + &bin_result.clone().unwrap_or(CommandOutput::default()).stderr;
 
-        let mut output = "".to_owned();
+        let mut output = String::new();
         if !stdout.trim().is_empty() {
             output = format!("`stdout`: {}\n", stdout.codeblock("ansi"));
         }
@@ -211,7 +205,7 @@ pub async fn charge(ctxt: CommandCtxt<'_>, script: Codeblock, flags: ChargeFlags
         if result.exit_code.code() != Some(0) {
             ctxt.reply(format!("Compilation failed: {}", stderr.codeblock("")))
                 .await?;
-        } else if stdout.split("\n").count() < 100 {
+        } else if stdout.split('\n').count() < 100 {
             ctxt.reply(stdout.codeblock("llvm").to_string()).await?;
         } else {
             ctxt.reply(MessageBuilder {
@@ -296,13 +290,7 @@ impl ParseArgument for RustFlags {
         let clippy = int_arg_bool!(ctxt, "clippy", false);
         let bench = int_arg_bool!(ctxt, "bench", false);
 
-        Ok(Self {
-            miri,
-            asm,
-            release,
-            clippy,
-            bench,
-        })
+        Ok(Self { miri, asm, clippy, bench, release })
     }
 }
 
@@ -385,7 +373,7 @@ pub async fn dash(ctxt: CommandCtxt<'_>, script: Codeblock) -> anyhow::Result<()
     Ok(())
 }
 
-const RUSTC_BOILERPLATE: &str = r##"#![feature(rustc_private)]
+const RUSTC_BOILERPLATE: &str = r#"#![feature(rustc_private)]
 
 extern crate rustc_ast_pretty;
 extern crate rustc_driver;
@@ -446,7 +434,7 @@ let out = process::Command::new("rustc")
 
 fn main() {
     {{code}}
-}"##;
+}"#;
 
 #[command(
     description = "execute some rustc",
@@ -559,7 +547,7 @@ pub async fn rustc(ctxt: CommandCtxt<'_>, script: Codeblock) -> anyhow::Result<(
         return Ok(());
     }
 
-    let mut output = "".to_owned();
+    let mut output = String::new();
     if !result.stdout.is_empty() {
         output = format!("`stdout`: ```{}```\n", result.stdout);
     }

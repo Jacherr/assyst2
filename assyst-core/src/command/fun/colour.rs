@@ -66,8 +66,8 @@ pub async fn colour_role_autocomplete(assyst: ThreadSafeAssyst, autocomplete_dat
     examples = ["red #ff0000"],
 )]
 pub async fn add(ctxt: CommandCtxt<'_>, name: Word, code: Word) -> anyhow::Result<()> {
-    if let Some(id) = ctxt.data.guild_id.map(|x| x.get()) {
-        if name.0.contains(" ") {
+    if let Some(id) = ctxt.data.guild_id.map(twilight_model::id::Id::get) {
+        if name.0.contains(' ') {
             bail!("Colour role names cannot contain spaces");
         };
 
@@ -136,7 +136,7 @@ pub async fn add(ctxt: CommandCtxt<'_>, name: Word, code: Word) -> anyhow::Resul
     examples = [""],
 )]
 pub async fn add_default(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
-    if let Some(id) = ctxt.data.guild_id.map(|x| x.get()) {
+    if let Some(id) = ctxt.data.guild_id.map(twilight_model::id::Id::get) {
         let current = ColourRole::list_in_guild(&ctxt.assyst().database_handler, id as i64)
             .await
             .context("Failed to fetch existing colour roles")?;
@@ -194,7 +194,7 @@ pub async fn remove(
     ctxt: CommandCtxt<'_>,
     #[autocomplete = "crate::command::fun::colour::colour_role_autocomplete"] name: WordAutocomplete,
 ) -> anyhow::Result<()> {
-    if let Some(id) = ctxt.data.guild_id.map(|x| x.get()) {
+    if let Some(id) = ctxt.data.guild_id.map(twilight_model::id::Id::get) {
         let colour = name.0.to_ascii_lowercase();
 
         let roles = ColourRole::list_in_guild(&ctxt.assyst().database_handler, id as i64)
@@ -242,7 +242,7 @@ pub async fn remove(
     ]
 )]
 pub async fn remove_all(ctxt: CommandCtxt<'_>, flags: ColourRemoveAllFlags) -> anyhow::Result<()> {
-    if let Some(id) = ctxt.data.guild_id.map(|x| x.get()) {
+    if let Some(id) = ctxt.data.guild_id.map(twilight_model::id::Id::get) {
         if flags.i_am_sure {
             let roles = ColourRole::list_in_guild(&ctxt.assyst().database_handler, id as i64)
                 .await
@@ -285,7 +285,7 @@ pub async fn remove_all(ctxt: CommandCtxt<'_>, flags: ColourRemoveAllFlags) -> a
     examples = [""],
 )]
 pub async fn reset(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
-    if let Some(id) = ctxt.data.guild_id.map(|x| x.get()) {
+    if let Some(id) = ctxt.data.guild_id.map(twilight_model::id::Id::get) {
         let colour_roles = ColourRole::list_in_guild(&ctxt.assyst().database_handler, id as i64)
             .await
             .context("Failed to fetch existing colour roles")?;
@@ -335,7 +335,7 @@ pub async fn default(
     ctxt: CommandCtxt<'_>,
     #[autocomplete = "crate::command::fun::colour::colour_role_autocomplete"] colour: Option<WordAutocomplete>,
 ) -> anyhow::Result<()> {
-    if let Some(id) = ctxt.data.guild_id.map(|x| x.get()) {
+    if let Some(id) = ctxt.data.guild_id.map(twilight_model::id::Id::get) {
         if let Some(colour) = colour.map(|x| x.0.to_ascii_lowercase()) {
             let roles = ColourRole::list_in_guild(&ctxt.assyst().database_handler, id as i64)
                 .await

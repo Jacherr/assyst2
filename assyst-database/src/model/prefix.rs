@@ -11,7 +11,7 @@ pub struct Prefix {
 }
 impl Prefix {
     pub async fn set(&self, handler: &DatabaseHandler, guild_id: u64) -> anyhow::Result<()> {
-        let query = r#"INSERT INTO prefixes(guild, prefix) VALUES($1, $2) ON CONFLICT (guild) DO UPDATE SET prefix = $2 WHERE prefixes.guild = $1"#;
+        let query = r"INSERT INTO prefixes(guild, prefix) VALUES($1, $2) ON CONFLICT (guild) DO UPDATE SET prefix = $2 WHERE prefixes.guild = $1";
 
         sqlx::query(query)
             .bind(guild_id as i64)
@@ -46,7 +46,7 @@ impl Prefix {
         }
     }
 
-    pub fn size_of(&self) -> u64 {
+    #[must_use] pub fn size_of(&self) -> u64 {
         self.prefix.as_bytes().len() as u64
     }
 }

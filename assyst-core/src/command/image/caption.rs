@@ -32,7 +32,7 @@ pub async fn caption(ctxt: CommandCtxt<'_>, source: Image, text: Rest, flags: Ca
             flags.bottom,
             flags.black,
             ctxt.data.author.id.get(),
-            ctxt.data.guild_id.map(|x| x.get()),
+            ctxt.data.guild_id.map(twilight_model::id::Id::get),
         )
         .await?;
 

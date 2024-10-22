@@ -61,7 +61,7 @@ pub async fn create(ctxt: CommandCtxt<'_>, name: Word, contents: RestNoFlags) ->
         !RESERVED_NAMES.contains(&&name.0[..]),
         "Tag names cannot be a reserved word."
     );
-    ensure!(!name.0.contains(" "), "Tag names cannot contain spaces.");
+    ensure!(!name.0.contains(' '), "Tag names cannot contain spaces.");
 
     let tag = Tag {
         name: name.0.to_ascii_lowercase(),
@@ -319,13 +319,13 @@ impl TagPaginatorComponentMetadata {
             {
                 match self.search_criteria {
                     Some(ref s) => format!(" with search criteria {}", s.codestring()),
-                    None => "".to_owned(),
+                    None => String::new(),
                 }
             },
             {
                 match self.target_user_id {
                     Some(u) => format!(" for user <@{u}>"),
-                    None => "".to_owned(),
+                    None => String::new(),
                 }
             },
             self.calling_prefix,
@@ -339,7 +339,7 @@ impl TagPaginatorComponentMetadata {
                 offset,
                 tag.name.to_ascii_lowercase(),
                 match self.target_user_id {
-                    Some(_) => "".to_owned(),
+                    Some(_) => String::new(),
                     None => format!("(<@{}>)", tag.author),
                 }
             )?;
@@ -381,8 +381,7 @@ impl FlagDecode for TagListFlags {
         let page = raw_decode
             .get("page")
             .and_then(|x| x.as_deref())
-            .map(|x| x.parse::<u64>())
-            .unwrap_or(Ok(1))
+            .map_or(Ok(1), str::parse)
             .context("Failed to parse page number")?;
 
         let result = Self { page };
@@ -478,7 +477,7 @@ pub async fn list(ctxt: CommandCtxt<'_>, user: Option<User>, flags: TagListFlags
         {
             match user_id {
                 Some(u) => format!(" for user <@{u}>"),
-                None => "".to_owned(),
+                None => String::new(),
             }
         },
         ctxt.data.calling_prefix,
@@ -492,7 +491,7 @@ pub async fn list(ctxt: CommandCtxt<'_>, user: Option<User>, flags: TagListFlags
             offset,
             tag.name.to_ascii_lowercase(),
             match user_id {
-                Some(_) => "".to_owned(),
+                Some(_) => String::new(),
                 None => format!("(<@{}>)", tag.author),
             }
         )?;
@@ -692,7 +691,7 @@ pub async fn search(ctxt: CommandCtxt<'_>, query: Word, user: Option<User>) -> a
         {
             match user_id {
                 Some(u) => format!(" for user <@{u}>"),
-                None => "".to_owned(),
+                None => String::new(),
             }
         },
         ctxt.data.calling_prefix,
@@ -707,7 +706,7 @@ pub async fn search(ctxt: CommandCtxt<'_>, query: Word, user: Option<User>) -> a
             offset,
             tag.name.to_ascii_lowercase(),
             match user_id {
-                Some(_) => "".to_owned(),
+                Some(_) => String::new(),
                 None => format!("(<@{}>)", tag.author),
             }
         )?;
@@ -808,7 +807,7 @@ pub async fn backup(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
     let mut zip = ZipWriter::new(&mut buf);
 
     fn sanitise_filename(n: &str) -> String {
-        let mut sanitise_round1 = n.replace("/", "?").replace(std::ptr::null::<char>() as u8 as char, "?");
+        let mut sanitise_round1 = n.replace(['/', std::ptr::null::<char>() as u8 as char], "?");
         if sanitise_round1 == ".." {
             sanitise_round1 = "__..??".to_owned();
         } else if sanitise_round1 == "." {
@@ -890,7 +889,7 @@ pub async fn paste(ctxt: CommandCtxt<'_>, name: Word) -> anyhow::Result<()> {
         !RESERVED_NAMES.contains(&&name.0[..]),
         "Tag names cannot be a reserved word."
     );
-    ensure!(!name.0.contains(" "), "Tag names cannot contain spaces.");
+    ensure!(!name.0.contains(' '), "Tag names cannot contain spaces.");
 
     let content = ctxt
         .assyst()
@@ -1010,7 +1009,7 @@ pub async fn default(
         },
         Err(err) => {
             ctxt.reply(assyst_tag::errors::format_error(&tag.data, err).codeblock("ansi"))
-                .await?
+                .await?;
         },
     }
 

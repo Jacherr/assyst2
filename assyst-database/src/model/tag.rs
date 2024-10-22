@@ -10,7 +10,7 @@ pub struct Tag {
 }
 impl Tag {
     pub async fn get(handler: &DatabaseHandler, guild_id: i64, name: &str) -> anyhow::Result<Option<Self>> {
-        let query = r#"SELECT * FROM tags WHERE name = $1 AND guild_id = $2"#;
+        let query = r"SELECT * FROM tags WHERE name = $1 AND guild_id = $2";
 
         let result = sqlx::query_as(query)
             .bind(name)
@@ -26,7 +26,7 @@ impl Tag {
     }
 
     pub async fn set(&self, handler: &DatabaseHandler) -> Result<bool, sqlx::Error> {
-        let query = r#"INSERT INTO tags VALUES ($1, $2, $3, $4, $5)"#;
+        let query = r"INSERT INTO tags VALUES ($1, $2, $3, $4, $5)";
 
         sqlx::query(query)
             .bind(&self.name)
@@ -41,7 +41,7 @@ impl Tag {
     }
 
     pub async fn delete_force(handler: &DatabaseHandler, name: &str, guild_id: i64) -> Result<bool, sqlx::Error> {
-        let query = r#"DELETE FROM tags WHERE name = $1 AND guild_id = $2"#;
+        let query = r"DELETE FROM tags WHERE name = $1 AND guild_id = $2";
 
         sqlx::query(query)
             .bind(name)
@@ -58,7 +58,7 @@ impl Tag {
         guild_id: i64,
         author: i64,
     ) -> Result<bool, sqlx::Error> {
-        let query = r#"DELETE FROM tags WHERE name = $1 AND author = $2 AND guild_id = $3"#;
+        let query = r"DELETE FROM tags WHERE name = $1 AND author = $2 AND guild_id = $3";
 
         sqlx::query(query)
             .bind(name)
@@ -77,7 +77,7 @@ impl Tag {
         name: &str,
         new_content: &str,
     ) -> Result<bool, sqlx::Error> {
-        let query = r#"UPDATE tags SET data = $1 WHERE name = $2 AND author = $3 AND guild_id = $4"#;
+        let query = r"UPDATE tags SET data = $1 WHERE name = $2 AND author = $3 AND guild_id = $4";
 
         sqlx::query(query)
             .bind(new_content)
@@ -95,7 +95,7 @@ impl Tag {
         offset: i64,
         limit: i64,
     ) -> Result<Vec<Tag>, sqlx::Error> {
-        let query = r#"SELECT * FROM tags WHERE guild_id = $1 ORDER BY created_at DESC OFFSET $2 LIMIT $3"#;
+        let query = r"SELECT * FROM tags WHERE guild_id = $1 ORDER BY created_at DESC OFFSET $2 LIMIT $3";
 
         sqlx::query_as(query)
             .bind(guild_id)
@@ -113,7 +113,7 @@ impl Tag {
             return Ok(g);
         }
 
-        let query = r#"SELECT * FROM tags WHERE guild_id = $1"#;
+        let query = r"SELECT * FROM tags WHERE guild_id = $1";
 
         let result: Vec<Tag> = sqlx::query_as(query).bind(guild_id).fetch_all(&handler.pool).await?;
         let names = result
@@ -134,7 +134,7 @@ impl Tag {
         limit: i64,
     ) -> Result<Vec<Tag>, sqlx::Error> {
         let query =
-            r#"SELECT * FROM tags WHERE guild_id = $1 AND author = $2 ORDER BY created_at DESC OFFSET $3 LIMIT $4"#;
+            r"SELECT * FROM tags WHERE guild_id = $1 AND author = $2 ORDER BY created_at DESC OFFSET $3 LIMIT $4";
 
         sqlx::query_as(query)
             .bind(guild_id)
@@ -146,7 +146,7 @@ impl Tag {
     }
 
     pub async fn get_for_user(handler: &DatabaseHandler, guild_id: i64, user_id: i64) -> Result<Vec<Tag>, sqlx::Error> {
-        let query = r#"SELECT * FROM tags WHERE guild_id = $1 AND author = $2 ORDER BY created_at DESC"#;
+        let query = r"SELECT * FROM tags WHERE guild_id = $1 AND author = $2 ORDER BY created_at DESC";
 
         sqlx::query_as(query)
             .bind(guild_id)
@@ -156,7 +156,7 @@ impl Tag {
     }
 
     pub async fn get_count_in_guild(handler: &DatabaseHandler, guild_id: i64) -> Result<i64, sqlx::Error> {
-        let query = r#"SELECT count(*) FROM tags WHERE guild_id = $1"#;
+        let query = r"SELECT count(*) FROM tags WHERE guild_id = $1";
 
         let result: Result<Count, sqlx::Error> = sqlx::query_as(query).bind(guild_id).fetch_one(&handler.pool).await;
 
@@ -168,7 +168,7 @@ impl Tag {
         guild_id: i64,
         user_id: i64,
     ) -> Result<i64, sqlx::Error> {
-        let query = r#"SELECT count(*) FROM tags WHERE guild_id = $1 AND author = $2"#;
+        let query = r"SELECT count(*) FROM tags WHERE guild_id = $1 AND author = $2";
 
         let result: Result<Count, sqlx::Error> = sqlx::query_as(query)
             .bind(guild_id)
@@ -180,7 +180,7 @@ impl Tag {
     }
 
     pub async fn search_in_guild(handler: &DatabaseHandler, guild_id: i64, search: &str) -> anyhow::Result<Vec<Self>> {
-        let query = r#"SELECT * FROM tags WHERE guild_id = $1 AND position($2 in name)>0 ORDER BY created_at DESC"#;
+        let query = r"SELECT * FROM tags WHERE guild_id = $1 AND position($2 in name)>0 ORDER BY created_at DESC";
 
         let result = sqlx::query_as(query)
             .bind(guild_id)
@@ -197,7 +197,7 @@ impl Tag {
         author: i64,
         search: &str,
     ) -> anyhow::Result<Vec<Self>> {
-        let query = r#"SELECT * FROM tags WHERE guild_id = $1 AND author = $2 AND position($3 in name)>0 ORDER BY created_at DESC"#;
+        let query = r"SELECT * FROM tags WHERE guild_id = $1 AND author = $2 AND position($3 in name)>0 ORDER BY created_at DESC";
 
         let result = sqlx::query_as(query)
             .bind(guild_id)

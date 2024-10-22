@@ -20,7 +20,7 @@ pub struct ParseResult<'a> {
 /// This function takes all steps necessary to split a message into critical command components,
 /// and if at any point the parse fails, then return with no action.
 ///
-/// After parsing, a CoreEvent is fired to assyst-core signaling that the command should be
+/// After parsing, a `CoreEvent` is fired to assyst-core signaling that the command should be
 /// executed. Parsing a message has several steps.<br>
 /// **Step 1**: Check if the invocating user is blacklisted. If so, prematurely return.
 ///

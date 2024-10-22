@@ -19,7 +19,7 @@ pub trait Markdown {
     fn strikethrough(&self) -> String;
     fn underline(&self) -> String;
     fn url(&self, url: impl Display, comment: Option<impl Display>) -> String;
-    fn timestamp(seconds: usize, style: TimestampStyle) -> String {
+    #[must_use] fn timestamp(seconds: usize, style: TimestampStyle) -> String {
         format!("<t:{seconds}:{style}>")
     }
     fn subtext(&self) -> String;
@@ -141,7 +141,7 @@ where
             "[{self}]({url}{})",
             match comment {
                 Some(c) => format!(" '{c}'"),
-                None => "".to_string(),
+                None => String::new(),
             }
         )
     }
@@ -151,13 +151,13 @@ where
     }
 }
 
-pub fn parse_codeblock(input: String) -> String {
+#[must_use] pub fn parse_codeblock(input: String) -> String {
     if input.trim().starts_with("```") && input.trim().ends_with("```") {
-        let r = input.trim().replace("\n", "\n ");
-        let new = r.split(" ").skip(1).collect::<Vec<_>>();
+        let r = input.trim().replace('\n', "\n ");
+        let new = r.split(' ').skip(1).collect::<Vec<_>>();
         let joined = new.join(" ");
         joined[..joined.len() - 3].to_owned()
-    } else if input.trim().starts_with("`") && input.trim().ends_with("`") {
+    } else if input.trim().starts_with('`') && input.trim().ends_with('`') {
         input[1..input.len() - 1].to_owned()
     } else {
         input

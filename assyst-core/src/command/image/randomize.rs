@@ -54,12 +54,12 @@ pub async fn randomize(ctxt: CommandCtxt<'_>, source: Image, count: Option<u64>)
     let limits = ctxt
         .assyst()
         .flux_handler
-        .get_request_limits(ctxt.data.author.id.get(), ctxt.data.guild_id.map(|x| x.get()))
+        .get_request_limits(ctxt.data.author.id.get(), ctxt.data.guild_id.map(twilight_model::id::Id::get))
         .await?;
 
     let mut request = FluxRequest::new_with_input_and_limits(source.0, &limits);
     for e in &effects {
-        request.operation(e.to_string(), HashMap::new());
+        request.operation((*e).to_string(), HashMap::new());
     }
 
     request.output();

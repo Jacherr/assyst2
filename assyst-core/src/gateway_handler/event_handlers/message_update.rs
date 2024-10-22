@@ -18,7 +18,7 @@ use crate::gateway_handler::message_parser::parser::parse_message_into_command;
 use crate::replies::ReplyState;
 use crate::ThreadSafeAssyst;
 
-/// Handle a [MessageUpdate] event sent from the Discord gateway.
+/// Handle a [`MessageUpdate`] event sent from the Discord gateway.
 ///
 /// Message updates are used to check the following:
 /// 1. A message was edited into a command, in which case execute that command,

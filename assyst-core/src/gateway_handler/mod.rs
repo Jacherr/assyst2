@@ -7,7 +7,7 @@ pub mod incoming_event;
 pub mod message_parser;
 pub mod reply;
 
-/// Checks the enum variant of this IncomingEvent and calls the appropriate handler function
+/// Checks the enum variant of this `IncomingEvent` and calls the appropriate handler function
 /// for further processing.
 pub async fn handle_raw_event(context: ThreadSafeAssyst, event: IncomingEvent) {
     match event {

@@ -147,7 +147,7 @@ pub async fn help(
             };
             let examples = "Examples: ".fg_cyan() + &examples_format;
 
-            name_fmt = (name_fmt.to_owned() + ":").fg_green();
+            name_fmt = (name_fmt.clone() + ":").fg_green();
             let description = meta.description;
             let aliases = "Aliases: ".fg_yellow()
                 + &(if !meta.aliases.is_empty() {
@@ -196,10 +196,10 @@ pub async fn help(
 
                     for i in list {
                         let name = (i.metadata().name.to_owned() + ":").fg_yellow();
-                        txt += &format!("\n\t{name} {}", i.metadata().description)
+                        txt += &format!("\n\t{name} {}", i.metadata().description);
                     }
                 } else {
-                    txt += &"\n\t[no commands]".fg_black()
+                    txt += &"\n\t[no commands]".fg_black();
                 }
 
                 ctxt.reply(txt.codeblock("ansi")).await?;
@@ -212,7 +212,7 @@ pub async fn help(
 
         for (group, list) in sorted {
             let mut commands = list.iter().map(|x| x.metadata().name).collect::<Vec<_>>();
-            commands.sort();
+            commands.sort_unstable();
 
             msg += &format!(
                 "{}{} {}\n\n",

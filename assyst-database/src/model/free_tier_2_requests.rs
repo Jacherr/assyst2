@@ -6,7 +6,7 @@ pub struct FreeTier2Requests {
     pub count: i32,
 }
 impl FreeTier2Requests {
-    pub fn new(user_id: u64) -> FreeTier2Requests {
+    #[must_use] pub fn new(user_id: u64) -> FreeTier2Requests {
         FreeTier2Requests {
             user_id: user_id as i64,
             count: 0,

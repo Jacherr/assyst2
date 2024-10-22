@@ -42,9 +42,7 @@ lazy_static::lazy_static! {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    if std::env::consts::OS != "linux" {
-        panic!("Assyst is supported on Linux only.")
-    }
+    assert!(std::env::consts::OS == "linux", "Assyst is supported on Linux only.");
 
     rustls::crypto::aws_lc_rs::default_provider().install_default().unwrap();
 

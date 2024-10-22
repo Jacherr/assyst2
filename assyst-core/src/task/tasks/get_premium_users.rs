@@ -28,12 +28,12 @@ pub async fn get_premium_users(assyst: ThreadSafeAssyst) {
 
     // todo: load premium users via entitlements once twilight supports this
 
-    for i in CONFIG.dev.admin_users.iter() {
+    for i in &CONFIG.dev.admin_users {
         premium_users.push(Patron {
             user_id: *i,
             tier: PatronTier::Tier4,
             _admin: true,
-        })
+        });
     }
 
     assyst.update_premium_user_list(premium_users.clone());

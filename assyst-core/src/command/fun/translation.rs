@@ -81,7 +81,7 @@ impl ParseArgument for BadTranslateFlags {
         let count = int_arg_u64_opt!(ctxt, "count");
         let chain = int_arg_bool!(ctxt, "chain", false);
 
-        Ok(Self { count, chain })
+        Ok(Self { chain, count })
     }
 }
 

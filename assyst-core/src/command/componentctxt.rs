@@ -32,7 +32,7 @@ pub struct ComponentInteractionData {
 
 /// A component context is a context in which a component interaction is handled under.\
 /// It contains basic information required to action on the button.\
-/// Because components are responded to via interactions, minimal metadata (e.g., from CommandData)
+/// Because components are responded to via interactions, minimal metadata (e.g., from `CommandData`)
 /// is required.
 #[derive(Clone)]
 pub struct ComponentCtxt {

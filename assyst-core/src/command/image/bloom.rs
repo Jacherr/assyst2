@@ -79,11 +79,7 @@ impl ParseArgument for BloomFlags {
         let sharpness = int_arg_u64_opt!(ctxt, "sharpness");
         let brightness = int_arg_u64_opt!(ctxt, "brightness");
 
-        Ok(Self {
-            radius,
-            sharpness,
-            brightness,
-        })
+        Ok(Self { radius, brightness, sharpness })
     }
 }
 
@@ -110,7 +106,7 @@ pub async fn bloom(ctxt: CommandCtxt<'_>, source: Image, flags: BloomFlags) -> a
             flags.sharpness,
             flags.brightness,
             ctxt.data.author.id.get(),
-            ctxt.data.guild_id.map(|x| x.get()),
+            ctxt.data.guild_id.map(twilight_model::id::Id::get),
         )
         .await?;
 

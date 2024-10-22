@@ -29,7 +29,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: EntitlementUpdate) {
     };
 
     let g: anyhow::Result<Guild> = match assyst.http_client.guild(guild_id).await {
-        Ok(g) => g.model().await.map_err(|e| e.into()),
+        Ok(g) => g.model().await.map_err(std::convert::Into::into),
         Err(e) => Err(e.into()),
     };
 

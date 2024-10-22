@@ -36,7 +36,7 @@ impl Reminder {
         user: u64,
         count: u64,
     ) -> Result<Vec<Self>, sqlx::Error> {
-        let query = r#"SELECT * FROM reminders WHERE user_id = $1 ORDER BY timestamp ASC LIMIT $2"#;
+        let query = r"SELECT * FROM reminders WHERE user_id = $1 ORDER BY timestamp ASC LIMIT $2";
 
         sqlx::query_as::<_, Self>(query)
             .bind(user as i64)
@@ -47,7 +47,7 @@ impl Reminder {
 
     /// True on successful remove, false otherwise
     pub async fn remove(&self, handler: &DatabaseHandler) -> Result<bool, sqlx::Error> {
-        let query = r#"DELETE FROM reminders WHERE user_id = $1 AND id = $2 RETURNING *"#;
+        let query = r"DELETE FROM reminders WHERE user_id = $1 AND id = $2 RETURNING *";
 
         sqlx::query(query)
             .bind(self.user_id)
@@ -59,7 +59,7 @@ impl Reminder {
 
     /// Add a new reminder
     pub async fn insert(&self, handler: &DatabaseHandler) -> Result<(), sqlx::Error> {
-        let query = r#"INSERT INTO reminders VALUES ($1, $2, $3, $4, $5, $6)"#;
+        let query = r"INSERT INTO reminders VALUES ($1, $2, $3, $4, $5, $6)";
 
         sqlx::query(query)
             .bind(self.user_id)

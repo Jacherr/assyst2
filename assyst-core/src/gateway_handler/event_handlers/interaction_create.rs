@@ -144,8 +144,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
             let interaction_attachments = command_data
                 .resolved
                 .clone()
-                .map(|x| x.attachments)
-                .unwrap_or(HashMap::new());
+                .map_or(HashMap::new(), |x| x.attachments);
 
             // resolve messages for context menu message commands
             let mut resolved_messages: Option<Vec<Message>> = None;
@@ -227,30 +226,27 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
             interaction_token: interaction.token.clone(),
         };
 
-        match ctxt {
-            Some(cx) => match cx.lock().await.handle_component_interaction(&component_data).await {
+        if let Some(cx) = ctxt { match cx.lock().await.handle_component_interaction(&component_data).await {
+            Err(e) => {
+                err!("Failed to handle component interaction: {e:?}");
+            },
+            _ => {},
+        } } else {
+            let response = InteractionResponse {
+                kind: InteractionResponseType::DeferredUpdateMessage,
+                data: None,
+            };
+
+            match assyst
+                .interaction_client()
+                .create_response(interaction.id, &interaction.token, &response)
+                .await
+            {
                 Err(e) => {
-                    err!("Failed to handle component interaction: {e:?}");
+                    err!("Failed to send deferred update message: {e:?}");
                 },
                 _ => {},
-            },
-            None => {
-                let response = InteractionResponse {
-                    kind: InteractionResponseType::DeferredUpdateMessage,
-                    data: None,
-                };
-
-                match assyst
-                    .interaction_client()
-                    .create_response(interaction.id, &interaction.token, &response)
-                    .await
-                {
-                    Err(e) => {
-                        err!("Failed to send deferred update message: {e:?}");
-                    },
-                    _ => {},
-                };
-            },
+            };
         }
     } else if let Some(InteractionData::ModalSubmit(component)) = interaction.data {
         let ctxt = assyst.component_contexts.get(&component.custom_id);
@@ -269,30 +265,27 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
             interaction_token: interaction.token.clone(),
         };
 
-        match ctxt {
-            Some(cx) => match cx.lock().await.handle_component_interaction(&component_data).await {
+        if let Some(cx) = ctxt { match cx.lock().await.handle_component_interaction(&component_data).await {
+            Err(e) => {
+                err!("Failed to handle component interaction: {e:?}");
+            },
+            _ => {},
+        } } else {
+            let response = InteractionResponse {
+                kind: InteractionResponseType::DeferredUpdateMessage,
+                data: None,
+            };
+
+            match assyst
+                .interaction_client()
+                .create_response(interaction.id, &interaction.token, &response)
+                .await
+            {
                 Err(e) => {
-                    err!("Failed to handle component interaction: {e:?}");
+                    err!("Failed to send deferred update message: {e:?}");
                 },
                 _ => {},
-            },
-            None => {
-                let response = InteractionResponse {
-                    kind: InteractionResponseType::DeferredUpdateMessage,
-                    data: None,
-                };
-
-                match assyst
-                    .interaction_client()
-                    .create_response(interaction.id, &interaction.token, &response)
-                    .await
-                {
-                    Err(e) => {
-                        err!("Failed to send deferred update message: {e:?}");
-                    },
-                    _ => {},
-                };
-            },
+            };
         }
     } else if interaction.kind == InteractionType::ApplicationCommandAutocomplete
         && let Some(InteractionData::ApplicationCommand(command_data)) = interaction.data.clone()

@@ -13,7 +13,7 @@ pub enum Type {
     ZIP,
 }
 impl Type {
-    pub fn as_str(&self) -> &'static str {
+    #[must_use] pub fn as_str(&self) -> &'static str {
         match self {
             Type::GIF => "gif",
             Type::JPEG => "jpeg",
@@ -25,7 +25,7 @@ impl Type {
             Type::ZIP => "zip",
         }
     }
-    pub fn as_mime(&self) -> &'static str {
+    #[must_use] pub fn as_mime(&self) -> &'static str {
         match self {
             Type::GIF => "image/gif",
             Type::JPEG => "image/jpeg",
@@ -37,7 +37,7 @@ impl Type {
             Type::ZIP => "application/x-zip",
         }
     }
-    pub fn is_video(&self) -> bool {
+    #[must_use] pub fn is_video(&self) -> bool {
         matches!(self, Type::MP4 | Type::WEBM)
     }
 }
@@ -63,7 +63,7 @@ fn check_mp4(that: &[u8]) -> bool {
     sig(bytes_offset_removed, &MP4)
 }
 
-pub fn get_sig(buf: &[u8]) -> Option<Type> {
+#[must_use] pub fn get_sig(buf: &[u8]) -> Option<Type> {
     match buf {
         [71, 73, 70, ..] => Some(Type::GIF),
         [255, 216, 255, ..] => Some(Type::JPEG),

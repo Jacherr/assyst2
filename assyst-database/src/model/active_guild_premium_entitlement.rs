@@ -17,7 +17,7 @@ pub struct ActiveGuildPremiumEntitlement {
 }
 impl ActiveGuildPremiumEntitlement {
     pub async fn set(&self, handler: &DatabaseHandler) -> anyhow::Result<bool> {
-        let query = r#"INSERT INTO active_guild_premium_entitlements VALUES ($1, $2, $3, $4, $5)"#;
+        let query = r"INSERT INTO active_guild_premium_entitlements VALUES ($1, $2, $3, $4, $5)";
 
         Ok(sqlx::query(query)
             .bind(self.entitlement_id)
@@ -32,15 +32,15 @@ impl ActiveGuildPremiumEntitlement {
     }
 
     pub async fn delete(handler: &DatabaseHandler, entitlement_id: i64) -> anyhow::Result<()> {
-        let query = r#"DELETE FROM active_guild_premium_entitlements WHERE entitlement_id = $1"#;
+        let query = r"DELETE FROM active_guild_premium_entitlements WHERE entitlement_id = $1";
         sqlx::query(query).bind(entitlement_id).execute(&handler.pool).await?;
 
         Ok(())
     }
 
-    /// Useful on ENTITLEMENT_UPDATE where the user got billed and the expiry changes
+    /// Useful on `ENTITLEMENT_UPDATE` where the user got billed and the expiry changes
     pub async fn update(&self, handler: &DatabaseHandler) -> anyhow::Result<bool> {
-        let query = r#"UPDATE active_guild_premium_entitlements SET guild_id = $2, user_id = $3, started_unix_ms = $4, expiry_unix_ms = $5 WHERE entitlement_id = $1"#;
+        let query = r"UPDATE active_guild_premium_entitlements SET guild_id = $2, user_id = $3, started_unix_ms = $4, expiry_unix_ms = $5 WHERE entitlement_id = $1";
 
         Ok(sqlx::query(query)
             .bind(self.entitlement_id)
@@ -65,7 +65,7 @@ impl ActiveGuildPremiumEntitlement {
         Ok(out)
     }
 
-    pub fn expired(&self) -> bool {
+    #[must_use] pub fn expired(&self) -> bool {
         let current = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
         current > self.expiry_unix_ms as u128 && self.expiry_unix_ms != 0
     }
@@ -76,7 +76,7 @@ impl TryFrom<Entitlement> for ActiveGuildPremiumEntitlement {
     fn try_from(value: Entitlement) -> Result<Self, Self::Error> {
         let Some(guild_id) = value.guild_id else {
             bail!(
-                "Entitlement ID {} (guild {:?} user {:?}) has no assiated guild!",
+                "Entitlement ID {} (guild {:?} user {:?}) has no associated guild!",
                 value.id,
                 value.guild_id,
                 value.user_id
@@ -85,7 +85,7 @@ impl TryFrom<Entitlement> for ActiveGuildPremiumEntitlement {
 
         let Some(user_id) = value.user_id else {
             bail!(
-                "Entitlement ID {} (guild {:?} user {:?}) has no assiated user!",
+                "Entitlement ID {} (guild {:?} user {:?}) has no associated user!",
                 value.id,
                 value.guild_id,
                 value.user_id

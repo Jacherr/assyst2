@@ -13,7 +13,7 @@ use crate::gateway_handler::message_parser::error::{ErrorSeverity, GetErrorSever
 use crate::gateway_handler::message_parser::parser::parse_message_into_command;
 use crate::ThreadSafeAssyst;
 
-/// Handle a [MessageCreate] event received from the Discord gateway.
+/// Handle a [`MessageCreate`] event received from the Discord gateway.
 ///
 /// This function passes the message to the command parser, which then attempts to convert the
 /// message to a command for further processing.

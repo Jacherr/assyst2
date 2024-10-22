@@ -21,7 +21,7 @@ pub async fn get_guild_owner(http: &Client, guild_id: u64) -> anyhow::Result<u64
         .get())
 }
 
-pub fn get_default_avatar_url(user: &User) -> String {
+#[must_use] pub fn get_default_avatar_url(user: &User) -> String {
     // Unwrapping discrim parsing is ok, it should never be out of range or non-numeric
     let suffix = if user.discriminator == 0 {
         // Pomelo users
@@ -33,7 +33,7 @@ pub fn get_default_avatar_url(user: &User) -> String {
     format!("https://cdn.discordapp.com/embed/avatars/{suffix}.png?size=1024")
 }
 
-pub fn get_avatar_url(user: &User) -> String {
+#[must_use] pub fn get_avatar_url(user: &User) -> String {
     let avatar = match &user.avatar {
         Some(av) => av,
         None => return get_default_avatar_url(user),
@@ -51,7 +51,7 @@ pub fn get_avatar_url(user: &User) -> String {
     )
 }
 
-pub fn id_from_mention(word: &str) -> Option<u64> {
+#[must_use] pub fn id_from_mention(word: &str) -> Option<u64> {
     USER_MENTION
         .captures(word)
         .and_then(|user_id_capture| user_id_capture.get(1))
@@ -59,23 +59,23 @@ pub fn id_from_mention(word: &str) -> Option<u64> {
         .and_then(|id| id.parse::<u64>().ok())
 }
 
-pub fn format_tag(user: &User) -> String {
+#[must_use] pub fn format_tag(user: &User) -> String {
     format!("{}#{}", user.name, user.discriminator)
 }
 
 /// Generates a message link
-pub fn message_link(guild_id: u64, channel_id: u64, message_id: u64) -> String {
+#[must_use] pub fn message_link(guild_id: u64, channel_id: u64, message_id: u64) -> String {
     format!("https://discord.com/channels/{guild_id}/{channel_id}/{message_id}")
 }
 
 /// Generates a DM message link
-pub fn dm_message_link(channel_id: u64, message_id: u64) -> String {
+#[must_use] pub fn dm_message_link(channel_id: u64, message_id: u64) -> String {
     format!("https://discord.com/channels/@me/{channel_id}/{message_id}")
 }
 
 /// Attempts to return the timestamp as a Discord timestamp,
 /// and falls back to [`format_time`] if Discord were to render it as "Invalid Date"
-pub fn format_discord_timestamp(input: u64) -> String {
+#[must_use] pub fn format_discord_timestamp(input: u64) -> String {
     if input <= MAX_TIMESTAMP {
         format!("<t:{}:R>", input / 1000)
     } else {
@@ -83,7 +83,7 @@ pub fn format_discord_timestamp(input: u64) -> String {
     }
 }
 
-pub fn user_mention_to_id(s: &str) -> Option<u64> {
+#[must_use] pub fn user_mention_to_id(s: &str) -> Option<u64> {
     let mention: Regex = Regex::new(r"(?:<@!?)?(\d{16,20})>?").unwrap();
 
     mention
@@ -93,7 +93,7 @@ pub fn user_mention_to_id(s: &str) -> Option<u64> {
         .and_then(|id| id.parse::<u64>().ok())
 }
 
-pub fn channel_mention_to_id(s: &str) -> Option<u64> {
+#[must_use] pub fn channel_mention_to_id(s: &str) -> Option<u64> {
     let mention: Regex = Regex::new(r"(?:<#)?(\d{16,20})>?").unwrap();
 
     mention
@@ -111,7 +111,7 @@ pub async fn is_same_guild(client: &Client, channel_id: u64, guild_id: u64) -> R
         .await
         .unwrap();
 
-    let real_guild_id = ch.guild_id.map_or(0, |z| z.get());
+    let real_guild_id = ch.guild_id.map_or(0, twilight_model::id::Id::get);
 
     Ok(real_guild_id == guild_id)
 }

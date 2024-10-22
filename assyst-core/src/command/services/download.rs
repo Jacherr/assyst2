@@ -94,11 +94,7 @@ impl ParseArgument for DownloadFlags {
         let audio = int_arg_bool!(ctxt, "audio", false);
         let verbose = int_arg_bool!(ctxt, "verbose", false);
 
-        Ok(Self {
-            quality,
-            audio,
-            verbose,
-        })
+        Ok(Self { audio, quality, verbose })
     }
 }
 
@@ -134,7 +130,7 @@ pub async fn download(ctxt: CommandCtxt<'_>, url: Word, options: DownloadFlags) 
             if videos_len > 100 {
                 format!(":warning: Playlist has {videos_len} videos, but the download limit is 100\n")
             } else {
-                "".to_owned()
+                String::new()
             },
             videos.len()
         );
@@ -165,12 +161,9 @@ pub async fn download(ctxt: CommandCtxt<'_>, url: Word, options: DownloadFlags) 
             video_tasks.spawn(async move {
                 let _lock = loop {
                     let r#try = l.iter().find(|x| x.try_lock().is_ok());
-                    match r#try {
-                        Some(l) => break l.lock().await,
-                        None => {
-                            let time = thread_rng().gen_range(10..1500);
-                            sleep(Duration::from_millis(time)).await;
-                        },
+                    if let Some(l) = r#try { break l.lock().await } else {
+                        let time = thread_rng().gen_range(10..1500);
+                        sleep(Duration::from_millis(time)).await;
                     }
                 };
 
@@ -182,12 +175,9 @@ pub async fn download(ctxt: CommandCtxt<'_>, url: Word, options: DownloadFlags) 
                 match media {
                     Ok(Ok(m)) => {
                         let mut z_lock = z.lock().await;
-                        let r#type = match filetype::get_sig(&m) {
-                            Some(t) => t,
-                            None => {
-                                failed.lock().unwrap().push(format!("{url}: Unknown signature"));
-                                return;
-                            },
+                        let r#type = if let Some(t) = filetype::get_sig(&m) { t } else {
+                            failed.lock().unwrap().push(format!("{url}: Unknown signature"));
+                            return;
                         };
 
                         let _ = z_lock
@@ -204,14 +194,14 @@ pub async fn download(ctxt: CommandCtxt<'_>, url: Word, options: DownloadFlags) 
                                 failed
                                     .lock()
                                     .unwrap()
-                                    .push(format!("{url}: failed to start file ({e:?})"))
+                                    .push(format!("{url}: failed to start file ({e:?})"));
                             });
 
                         let _ = z_lock.write_all(&m).map_err(|e| {
                             failed
                                 .lock()
                                 .unwrap()
-                                .push(format!("{url}: failed to write file ({e:?})"))
+                                .push(format!("{url}: failed to write file ({e:?})"));
                         });
                     },
                     Ok(Err(e)) => {
@@ -263,7 +253,7 @@ pub async fn download(ctxt: CommandCtxt<'_>, url: Word, options: DownloadFlags) 
                             let j = failed.join("\n");
                             format!("\nThe errors were: {}", (&j[0..1500.min(j.len())]).codeblock(""))
                         } else {
-                            "".to_owned()
+                            String::new()
                         }
                     )
                 } else {

@@ -30,7 +30,7 @@ pub async fn speechbubble(ctxt: CommandCtxt<'_>, source: Image, flags: SpeechBub
             source.0,
             flags.solid,
             ctxt.data.author.id.get(),
-            ctxt.data.guild_id.map(|x| x.get()),
+            ctxt.data.guild_id.map(twilight_model::id::Id::get),
         )
         .await?;
 

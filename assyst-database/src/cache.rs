@@ -111,14 +111,14 @@ impl DatabaseCache {
 
         let mut size = 0;
 
-        for prefix in self.prefixes.iter() {
+        for prefix in &self.prefixes {
             // add key size
             size += size_of::<u64>() as u64;
             // add value size
             size += prefix.1.size_of();
         }
 
-        for command in self.disabled_commands.iter() {
+        for command in &self.disabled_commands {
             // add key size
             size += size_of::<u64>() as u64;
             // add value size - approximate
@@ -128,8 +128,7 @@ impl DatabaseCache {
                 .unwrap()
                 .iter()
                 .cloned()
-                .collect::<Vec<String>>()
-                .join("")
+                .collect::<String>()
                 .len() as u64;
         }
 

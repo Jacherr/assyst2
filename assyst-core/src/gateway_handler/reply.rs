@@ -84,7 +84,7 @@ pub async fn edit(ctxt: &CommandCtxt<'_>, builder: MessageBuilder, reply: ReplyI
 
     let mut content_clone = builder.content.clone();
 
-    if builder.attachment.is_none() && builder.content.as_ref().map(|x| x.trim().is_empty()).unwrap_or(true) {
+    if builder.attachment.is_none() && builder.content.as_ref().map_or(true, |x| x.trim().is_empty()) {
         message = message.content(Some("[Empty Response]"));
     } else if let Some(content) = &mut content_clone {
         trim_content_fits(content);
@@ -138,7 +138,7 @@ async fn create_message(ctxt: &CommandCtxt<'_>, builder: MessageBuilder) -> anyh
 
     let mut content_clone = builder.content.clone();
 
-    if builder.attachment.is_none() && builder.content.as_ref().map(|x| x.trim().is_empty()).unwrap_or(true) {
+    if builder.attachment.is_none() && builder.content.as_ref().map_or(true, |x| x.trim().is_empty()) {
         message = message.content("[Empty Response]");
     } else if let Some(content) = &mut content_clone {
         trim_content_fits(content);

@@ -84,7 +84,7 @@ pub fn tracing_init() {
     info!("Initialised logging");
 }
 
-pub fn format_duration(duration: &Duration) -> String {
+#[must_use] pub fn format_duration(duration: &Duration) -> String {
     if *duration > Duration::SECOND {
         let seconds = duration.as_millis() as f64 / 1000.0;
         format!("{seconds:.2}s")
@@ -105,7 +105,7 @@ mod units {
 }
 
 /// Pluralizes a string
-pub fn pluralize<'a>(s: &'a str, adder: &str, count: u64) -> Cow<'a, str> {
+#[must_use] pub fn pluralize<'a>(s: &'a str, adder: &str, count: u64) -> Cow<'a, str> {
     if count == 1 {
         Cow::Borrowed(s)
     } else {
@@ -114,7 +114,7 @@ pub fn pluralize<'a>(s: &'a str, adder: &str, count: u64) -> Cow<'a, str> {
 }
 
 /// Converts a timestamp to a humanly readable string
-pub fn format_time(input: u64) -> String {
+#[must_use] pub fn format_time(input: u64) -> String {
     if input >= units::DAY {
         let amount = input / units::DAY;
         format!("{} {}", amount, pluralize("day", "s", amount))
@@ -136,7 +136,7 @@ pub fn format_time(input: u64) -> String {
 /// It is much more efficient for valid UTF-8, but will be
 /// much worse than `String::from_utf8` for invalid UTF-8, so
 /// only use it if valid UTF-8 is likely!
-pub fn string_from_likely_utf8(bytes: Vec<u8>) -> String {
+#[must_use] pub fn string_from_likely_utf8(bytes: Vec<u8>) -> String {
     String::from_utf8(bytes).unwrap_or_else(|err| {
         // Unlucky, data was invalid UTF-8, so try again but use lossy decoding this time.
         String::from_utf8_lossy(err.as_bytes()).into_owned()
@@ -144,44 +144,34 @@ pub fn string_from_likely_utf8(bytes: Vec<u8>) -> String {
 }
 
 /// Hashes a buffer. Appends a random string.
-pub fn hash_buffer(buf: &[u8]) -> String {
+#[must_use] pub fn hash_buffer(buf: &[u8]) -> String {
     let mut body_hasher = DefaultHasher::new();
     buf.hash(&mut body_hasher);
     let rand = rand::thread_rng().gen::<usize>();
     format!("{:x}{:x}", body_hasher.finish(), rand)
 }
 
-pub fn sanitise_filename(name: &str) -> String {
-    name.replace("/", "_")
-        .replace("<", "_")
-        .replace(">", "_")
-        .replace(":", "_")
-        .replace("\"", "_")
-        .replace("|", "_")
-        .replace("\\", "_")
-        .replace("?", "_")
-        .replace("*", "_")
+#[must_use] pub fn sanitise_filename(name: &str) -> String {
+    name.replace(['/', '<', '>', ':', '"', '|', '\\', '?', '*'], "_")
 }
 
 #[inline(always)]
-pub fn unix_timestamp() -> u64 {
+#[must_use] pub fn unix_timestamp() -> u64 {
     SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis() as u64
 }
 
 /// Normalizes custom emojis by replacing them with their names
-pub fn normalize_emojis(input: &str) -> Cow<'_, str> {
+#[must_use] pub fn normalize_emojis(input: &str) -> Cow<'_, str> {
     CUSTOM_EMOJI.replace_all(input, |c: &Captures| c.get(1).unwrap().as_str().to_string())
 }
 
 /// Normalizes mentions by replacing them with their names
-pub fn normalize_mentions<'a>(input: &'a str, mentions: &[Mention]) -> Cow<'a, str> {
+#[must_use] pub fn normalize_mentions<'a>(input: &'a str, mentions: &[Mention]) -> Cow<'a, str> {
     USER_MENTION.replace_all(input, |c: &Captures| {
         let id = c.get(1).unwrap().as_str();
         let name = mentions
             .iter()
-            .find(|m| m.id.to_string().eq(id))
-            .map(|m| m.name.clone())
-            .unwrap_or_else(String::new);
+            .find(|m| m.id.to_string().eq(id)).map_or_else(String::new, |m| m.name.clone());
         name
     })
 }

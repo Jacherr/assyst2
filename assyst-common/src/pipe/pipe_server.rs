@@ -5,7 +5,7 @@ use tracing::info;
 
 use super::Pipe;
 
-/// PipeServer is a utility class wrapping [UnixListener] that provides utility functions
+/// `PipeServer` is a utility class wrapping [`UnixListener`] that provides utility functions
 /// for listening on a specific file descriptor ("pipe") and accepting a connection from it.
 pub struct PipeServer {
     listener: UnixListener,

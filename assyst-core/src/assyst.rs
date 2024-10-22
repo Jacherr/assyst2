@@ -29,11 +29,11 @@ pub type ThreadSafeAssyst = Arc<Assyst>;
 ///
 /// Stores stateful information and connections.
 pub struct Assyst {
-    /// Handler for BadTranslator channels.
+    /// Handler for `BadTranslator` channels.
     pub bad_translator: BadTranslator,
     /// Handler for the persistent assyst-cache.
     pub persistent_cache_handler: PersistentCacheHandler,
-    /// Handler for the Assyst database. RwLocked to allow concurrent reads.
+    /// Handler for the Assyst database. `RwLocked` to allow concurrent reads.
     pub database_handler: Arc<DatabaseHandler>,
     /// Handler for WSI.
     pub flux_handler: FluxHandler,
@@ -68,7 +68,7 @@ pub struct Assyst {
 impl Assyst {
     pub async fn new() -> anyhow::Result<Assyst> {
         let http_client = Arc::new(HttpClient::new(CONFIG.authentication.discord_token.clone()));
-        let shard_count = http_client.gateway().authed().await?.model().await?.shards as u64;
+        let shard_count = u64::from(http_client.gateway().authed().await?.model().await?.shards);
         let database_handler =
             Arc::new(DatabaseHandler::new(CONFIG.database.to_url(), CONFIG.database.to_url_safe()).await?);
         let premium_users = Arc::new(Mutex::new(vec![]));

@@ -100,7 +100,7 @@ pub async fn ping(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
 pub async fn exec(ctxt: CommandCtxt<'_>, script: RestNoFlags) -> anyhow::Result<()> {
     let result = exec_sync(&script.0)?;
 
-    let mut output = "".to_owned();
+    let mut output = String::new();
     if !result.stdout.is_empty() {
         output = format!("`stdout`: ```{}```\n", result.stdout);
     }
@@ -197,8 +197,7 @@ pub async fn patronstatus(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
         .unwrap()
         .iter()
         .find(|p| p.user_id == ctxt.data.author.id.get())
-        .map(|p| p.tier)
-        .unwrap_or(PatronTier::Tier0);
+        .map_or(PatronTier::Tier0, |p| p.tier);
 
     let l = ctxt.assyst().entitlements.lock().unwrap().clone();
     let entitlement_status = if let Some(g) = ctxt.data.guild_id {
@@ -308,7 +307,7 @@ pub async fn topcommands(ctxt: CommandCtxt<'_>, command: Option<Word>) -> anyhow
         .await
         .context("Failed to get command usage stats")?;
 
-        let rate = diff_lock.get_mut(command_name).map(|r| r.get_rate()).unwrap_or(0);
+        let rate = diff_lock.get_mut(command_name).map_or(0, assyst_common::util::rate_tracker::RateTracker::get_rate);
 
         ctxt.reply(format!(
             "Command `{command_name}` has been used **{}** times. ({rate}/hr)",
@@ -326,8 +325,7 @@ pub async fn topcommands(ctxt: CommandCtxt<'_>, command: Option<Word>) -> anyhow
             .map(|t| {
                 let rate = diff_lock
                     .get_mut(&t.command_name[..])
-                    .map(|r| r.get_rate())
-                    .unwrap_or(0);
+                    .map_or(0, assyst_common::util::rate_tracker::RateTracker::get_rate);
                 (
                     &t.command_name[..],
                     format!("{} {}", t.uses, format!("({rate}/hr)").fg_green()),

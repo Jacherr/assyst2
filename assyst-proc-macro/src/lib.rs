@@ -131,9 +131,7 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
             let mut visitor = AutocompleteVisitable(false);
             visitor.visit_type(param.2.as_ref());
 
-            if visitor.0 {
-                panic!("autocomplete attr must be defined on WordAutocomplete arg type");
-            }
+            assert!(!visitor.0, "autocomplete attr must be defined on WordAutocomplete arg type");
         }
 
         for attr in param.1 {
@@ -162,7 +160,7 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
                 }
             } else if let Meta::Path(p) = attr.meta {
                 // add any value-less attrs here
-                panic!("fn arg attr: invalid attr ({:?})", p.get_ident().map(|x| x.to_string()));
+                panic!("fn arg attr: invalid attr ({:?})", p.get_ident().map(std::string::ToString::to_string));
             }
         }
     }
@@ -195,9 +193,7 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
         .remove("context_menu_user_command")
         .unwrap_or_else(|| str_expr(""));
 
-    if context_menu_message_command != str_expr("") && context_menu_user_command != str_expr("") {
-        panic!("command cannot be a context message and user command at the same time");
-    }
+    assert!(!(context_menu_message_command != str_expr("") && context_menu_user_command != str_expr("")), "command cannot be a context message and user command at the same time");
 
     let flag_descriptions = fields.remove("flag_descriptions").unwrap_or_else(empty_array_expr);
     let guild_only = fields.remove("guild_only").unwrap_or_else(false_expr);

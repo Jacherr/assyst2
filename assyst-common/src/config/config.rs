@@ -56,6 +56,7 @@ pub struct Database {
     pub port: u16,
 }
 impl Database {
+    #[must_use]
     pub fn to_url(&self) -> String {
         format!(
             "postgres://{}:{}@{}:{}/{}",
@@ -63,6 +64,7 @@ impl Database {
         )
     }
 
+    #[must_use]
     pub fn to_url_safe(&self) -> String {
         let mut host = self.host.split('.').take(2).collect::<Vec<_>>();
         host.push("###");
@@ -108,6 +110,7 @@ pub struct DevAttributes {
     pub disable_reminder_check: bool,
     pub disable_bot_list_posting: bool,
     pub disable_patreon_synchronisation: bool,
+    pub disable_entitlement_fetching: bool,
     pub dev_guild: u64,
     pub dev_channel: u64,
     pub dev_message: bool,
