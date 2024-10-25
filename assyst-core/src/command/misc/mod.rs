@@ -215,7 +215,7 @@ pub async fn patronstatus(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
         match entitlement_status {
             Some(Some(e)) => format!("This server is an activated premium server. It was activated by <@{0}> ({0}).", e.user_id),
             Some(None) => format!(
-                "This server is not activated a premium server. You can activate it [here](<https://discord.com/application-directory/{}/store/{}>).",
+                "This server is not an activated premium server. You can activate it [here](<https://discord.com/application-directory/{}/store/{}>).",
                 CONFIG.bot_id,
                 CONFIG.entitlements.premium_server_sku_id,
             ),
@@ -307,7 +307,9 @@ pub async fn topcommands(ctxt: CommandCtxt<'_>, command: Option<Word>) -> anyhow
         .await
         .context("Failed to get command usage stats")?;
 
-        let rate = diff_lock.get_mut(command_name).map_or(0, assyst_common::util::rate_tracker::RateTracker::get_rate);
+        let rate = diff_lock
+            .get_mut(command_name)
+            .map_or(0, assyst_common::util::rate_tracker::RateTracker::get_rate);
 
         ctxt.reply(format!(
             "Command `{command_name}` has been used **{}** times. ({rate}/hr)",
