@@ -23,9 +23,9 @@ pub mod translation;
     context_menu_message_command = "Find Song"
 )]
 pub async fn findsong(ctxt: CommandCtxt<'_>, audio: ImageUrl) -> anyhow::Result<()> {
-    const VALID_FILES: &[&str] = &["mp3", "mp4", "webm", "ogg", "wav"];
+    const VALID_FILES: &[&str] = &[".mp3", ".mp4", ".webm", ".ogg", ".wav", ".mov", ".mkv"];
 
-    if VALID_FILES.iter().all(|x| !audio.0.ends_with(x)) {
+    if VALID_FILES.iter().all(|x| !audio.0.contains(x)) {
         bail!("Finding audio is only supported on audio and video files.");
     }
 
