@@ -94,7 +94,11 @@ impl ParseArgument for DownloadFlags {
         let audio = int_arg_bool!(ctxt, "audio", false);
         let verbose = int_arg_bool!(ctxt, "verbose", false);
 
-        Ok(Self { audio, quality, verbose })
+        Ok(Self {
+            audio,
+            quality,
+            verbose,
+        })
     }
 }
 
@@ -161,7 +165,9 @@ pub async fn download(ctxt: CommandCtxt<'_>, url: Word, options: DownloadFlags) 
             video_tasks.spawn(async move {
                 let _lock = loop {
                     let r#try = l.iter().find(|x| x.try_lock().is_ok());
-                    if let Some(l) = r#try { break l.lock().await } else {
+                    if let Some(l) = r#try {
+                        break l.lock().await;
+                    } else {
                         let time = thread_rng().gen_range(10..1500);
                         sleep(Duration::from_millis(time)).await;
                     }
@@ -175,7 +181,9 @@ pub async fn download(ctxt: CommandCtxt<'_>, url: Word, options: DownloadFlags) 
                 match media {
                     Ok(Ok(m)) => {
                         let mut z_lock = z.lock().await;
-                        let r#type = if let Some(t) = filetype::get_sig(&m) { t } else {
+                        let r#type = if let Some(t) = filetype::get_sig(&m) {
+                            t
+                        } else {
                             failed.lock().unwrap().push(format!("{url}: Unknown signature"));
                             return;
                         };
@@ -268,7 +276,7 @@ pub async fn download(ctxt: CommandCtxt<'_>, url: Word, options: DownloadFlags) 
         ctxt.reply((
             result,
             &format!(
-                "Took {}\n{}",
+                "Took {}\n{}\n",
                 format_duration(&ctxt.data.execution_timings.processing_time_start.elapsed()),
                 format!(
                     "Downloaded with {}",

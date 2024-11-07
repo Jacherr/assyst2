@@ -120,6 +120,8 @@ pub async fn download_web_media(client: &Client, url: &str, opts: WebDownloadOpt
             bail!("No available instances are defined.");
         }
         urls.shuffle(&mut thread_rng());
+        // put primary ones first
+        urls.sort_by(|a, b| b.primary.unwrap_or(false).cmp(&a.primary.unwrap_or(false)));
         urls
     };
 

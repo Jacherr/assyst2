@@ -23,6 +23,7 @@ pub struct Entitlements {
 pub struct CobaltApiInstance {
     pub url: String,
     pub key: String,
+    pub primary: Option<bool>,
 }
 
 #[derive(Deserialize, Clone)]

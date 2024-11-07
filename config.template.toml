@@ -13,8 +13,10 @@ proxy = []
 filer = ""
 # Bad translation URL.
 bad_translation = ""
-# Cobalt API instances
-cobalt_api = [{ url = "", key = "" }]
+# Cobalt API instances - "primary" is optional and default false
+# "primary" is always the first instance that is tried, if multiple are primary it selects the lowest index primary and rest are ignored
+# "primary" can also be excluded for no primary instance
+cobalt_api = [{ url = "", key = "", primary = true }]
 
 [authentication]
 # Token to authenticate with Discord.
