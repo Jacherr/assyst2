@@ -14,7 +14,7 @@ use assyst_proc_macro::command;
 use assyst_string_fmt::{Ansi, Markdown};
 
 use super::arguments::{Codeblock, Image, ImageUrl, RestNoFlags, Word};
-use super::registry::get_or_init_commands;
+use super::registry::{find_command_by_name, get_or_init_commands};
 use super::{Category, CommandCtxt};
 use crate::command::Availability;
 use crate::rest::charinfo::{extract_page_title, get_char_info};
@@ -362,9 +362,12 @@ pub async fn command(ctxt: CommandCtxt<'_>, command: Word) -> anyhow::Result<()>
     let Some(guild_id) = ctxt.data.guild_id else {
         bail!("Enabling or disabling commands is only supported in servers.")
     };
+
+    let cmd = find_command_by_name(&command.0).context("That command doesn't exist.")?;
+
     let command_obj = GuildDisabledCommand {
         guild_id: guild_id.get() as _,
-        command_name: command.0,
+        command_name: cmd.metadata().name.to_owned(),
     };
 
     let is_disabled = command_obj
