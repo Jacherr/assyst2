@@ -86,7 +86,7 @@ declare_commands!(
     misc::command_command,
     misc::enlarge_command,
     misc::eval_command,
-    misc::exec_command,
+//    misc::exec_command,
     misc::help::help_command,
     misc::info_command,
     misc::invite_command,

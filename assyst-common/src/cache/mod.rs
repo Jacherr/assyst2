@@ -73,7 +73,7 @@ impl From<GuildDelete> for GuildDeleteData {
     fn from(value: GuildDelete) -> Self {
         GuildDeleteData {
             id: value.id.get(),
-            unavailable: value.unavailable,
+            unavailable: value.unavailable.unwrap_or(false),
         }
     }
 }

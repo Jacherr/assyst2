@@ -104,17 +104,16 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: MessageUpdate) {
 
 // yuck
 fn convert_message_update_to_message(event: MessageUpdate) -> Option<Message> {
-    let attachments = event.attachments.unwrap_or_default();
-    let author = event.author?;
-    let content = event.content.unwrap_or_default();
-    let embeds = event.embeds.unwrap_or_default();
-    let kind = event.kind.unwrap_or(MessageType::Regular);
-    let mention_everyone = event.mention_everyone.unwrap_or_default();
-    let mention_roles = event.mention_roles.unwrap_or_default();
-    let pinned = event.pinned.unwrap_or_default();
+    let attachments = event.attachments.clone();
+    let author = event.author.clone();
+    let content = event.content.clone();
+    let embeds = event.embeds.clone();
+    let kind = event.kind;
+    let mention_everyone = event.mention_everyone;
+    let mention_roles = event.mention_roles.clone();
+    let pinned = event.pinned;
     let timestamp = event
-        .timestamp
-        .unwrap_or_else(|| Timestamp::parse("1970-01-01T01:01:01+00:00").unwrap());
+        .timestamp;
     Some(Message {
         application_id: None,
         interaction: None,
