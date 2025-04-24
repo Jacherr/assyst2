@@ -25,7 +25,7 @@ pub async fn default(ctxt: CommandCtxt<'_>, when: Time, text: Option<Rest>) -> a
             "Invalid time provided (see {}help remind for examples)",
             ctxt.data.calling_prefix
         );
-    } else if when.millis / 1000 / 60 / 24 / 365 /* years */ >= 100 {
+    } else if when.millis / 1000 / 60 / 60 / 24 / 365 /* years */ >= 100 {
         bail!("Cannot set a reminder further than 100 years in the future :-(");
     }
 
