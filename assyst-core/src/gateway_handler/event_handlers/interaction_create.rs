@@ -4,7 +4,7 @@ use std::time::{Duration, Instant};
 use assyst_common::config::CONFIG;
 use assyst_common::err;
 use assyst_database::model::active_guild_premium_entitlement::ActiveGuildPremiumEntitlement;
-use tracing::{debug, warn};
+use tracing::{debug, info, warn};
 use twilight_model::application::command::CommandType;
 use twilight_model::application::interaction::application_command::{
     CommandData as DiscordCommandData, CommandDataOption, CommandOptionValue,
@@ -21,10 +21,12 @@ use super::after_command_execution_success;
 use crate::assyst::ThreadSafeAssyst;
 use crate::command::autocomplete::AutocompleteData;
 use crate::command::componentctxt::ComponentInteractionData;
+use crate::command::errors::ExecutionError;
 use crate::command::registry::find_command_by_name;
 use crate::command::source::Source;
 use crate::command::{
     CommandCtxt, CommandData, CommandGroupingInteractionInfo, ExecutionTimings, InteractionCommandParseCtxt,
+    check_metadata,
 };
 use crate::gateway_handler::message_parser::error::{ErrorSeverity, GetErrorSeverity};
 
@@ -141,10 +143,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
                 None
             };
 
-            let interaction_attachments = command_data
-                .resolved
-                .clone()
-                .map_or(HashMap::new(), |x| x.attachments);
+            let interaction_attachments = command_data.resolved.clone().map_or(HashMap::new(), |x| x.attachments);
 
             // resolve messages for context menu message commands
             let mut resolved_messages: Option<Vec<Message>> = None;
@@ -190,10 +189,23 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
             };
 
             let ctxt = InteractionCommandParseCtxt::new(CommandCtxt::new(&data), &sorted_incoming_options);
+            /*
+            let ctxt_clone = ctxt.cx.clone();
+
+            let meta_check = check_metadata(command.metadata(), &ctxt_clone).await;
+            if let Err(e) = meta_check {
+                let _ = ctxt.cx.reply(format!(":warning: ``{e}``")).await;
+            }*/
 
             if let Err(err) = command.execute_interaction_command(ctxt.clone()).await {
                 match err.get_severity() {
-                    ErrorSeverity::Low => debug!("{err:?}"),
+                    ErrorSeverity::Low => {
+                        if let ExecutionError::MetadataCheck(e) = err {
+                            let _ = ctxt.cx.reply(format!(":warning: ``{e:#}``")).await;
+                        } else {
+                            debug!("{err}");
+                        }
+                    },
                     ErrorSeverity::High => {
                         let _ = ctxt.cx.reply(format!(":warning: ``{err:#}``")).await;
                     },
@@ -226,12 +238,14 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
             interaction_token: interaction.token.clone(),
         };
 
-        if let Some(cx) = ctxt { match cx.lock().await.handle_component_interaction(&component_data).await {
-            Err(e) => {
-                err!("Failed to handle component interaction: {e:?}");
-            },
-            _ => {},
-        } } else {
+        if let Some(cx) = ctxt {
+            match cx.lock().await.handle_component_interaction(&component_data).await {
+                Err(e) => {
+                    err!("Failed to handle component interaction: {e:?}");
+                },
+                _ => {},
+            }
+        } else {
             let response = InteractionResponse {
                 kind: InteractionResponseType::DeferredUpdateMessage,
                 data: None,
@@ -265,12 +279,14 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
             interaction_token: interaction.token.clone(),
         };
 
-        if let Some(cx) = ctxt { match cx.lock().await.handle_component_interaction(&component_data).await {
-            Err(e) => {
-                err!("Failed to handle component interaction: {e:?}");
-            },
-            _ => {},
-        } } else {
+        if let Some(cx) = ctxt {
+            match cx.lock().await.handle_component_interaction(&component_data).await {
+                Err(e) => {
+                    err!("Failed to handle component interaction: {e:?}");
+                },
+                _ => {},
+            }
+        } else {
             let response = InteractionResponse {
                 kind: InteractionResponseType::DeferredUpdateMessage,
                 data: None,

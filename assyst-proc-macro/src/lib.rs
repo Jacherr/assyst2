@@ -196,6 +196,7 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
     let context_menu_user_command = fields
         .remove("context_menu_user_command")
         .unwrap_or_else(|| str_expr(""));
+    let group_parent_name = fields.remove("group_parent_name").unwrap_or_else(|| str_expr(""));
 
     assert!(
         !(context_menu_message_command != str_expr("") && context_menu_user_command != str_expr("")),
@@ -233,7 +234,8 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
                     flag_descriptions: descriptions,
                     context_menu_message_command: #context_menu_message_command,
                     context_menu_user_command: #context_menu_user_command,
-                    guild_only: #guild_only
+                    guild_only: #guild_only,
+                    group_parent_name: #group_parent_name
                 })
             }
 

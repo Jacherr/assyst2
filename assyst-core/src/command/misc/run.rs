@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
-use anyhow::{anyhow, bail, Context};
-use assyst_common::util::process::{exec_sync, exec_sync_in_dir, CommandOutput};
+use anyhow::{Context, anyhow, bail};
+use assyst_common::util::process::{CommandOutput, exec_sync, exec_sync_in_dir};
 use assyst_proc_macro::command;
 use assyst_string_fmt::Markdown;
 use dash_rt::format_value;
+use dash_vm::Vm;
 use dash_vm::eval::EvalError;
 use dash_vm::value::Root;
-use dash_vm::Vm;
 use serde::Deserialize;
 use tokio::fs;
 use toml::from_str;
@@ -16,11 +16,11 @@ use twilight_util::builder::command::{BooleanBuilder, IntegerBuilder};
 
 use crate::command::arguments::{Codeblock, ParseArgument};
 use crate::command::errors::TagParseError;
-use crate::command::flags::{flags_from_str, FlagDecode, FlagType};
+use crate::command::flags::{FlagDecode, FlagType, flags_from_str};
 use crate::command::messagebuilder::{Attachment, MessageBuilder};
 use crate::command::{Availability, Category, CommandCtxt};
 use crate::downloader::download_content;
-use crate::rest::rust::{run_benchmark, run_binary, run_clippy, run_godbolt, run_miri, OptimizationLevel};
+use crate::rest::rust::{OptimizationLevel, run_benchmark, run_binary, run_clippy, run_godbolt, run_miri};
 use crate::{define_commandgroup, int_arg_bool, int_arg_u64};
 
 struct ExecutableDeletionDefer(String);
@@ -107,7 +107,12 @@ impl ParseArgument for ChargeFlags {
             )));
         }
 
-        Ok(Self { verbose, llir, opt, valgrind })
+        Ok(Self {
+            verbose,
+            llir,
+            opt,
+            valgrind,
+        })
     }
 }
 
@@ -290,7 +295,13 @@ impl ParseArgument for RustFlags {
         let clippy = int_arg_bool!(ctxt, "clippy", false);
         let bench = int_arg_bool!(ctxt, "bench", false);
 
-        Ok(Self { miri, asm, clippy, bench, release })
+        Ok(Self {
+            miri,
+            asm,
+            clippy,
+            bench,
+            release,
+        })
     }
 }
 

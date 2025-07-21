@@ -81,7 +81,8 @@ macro_rules! define_commandgroup {
                         guild_only: $crate::defaults!(guild_only $($guild_only)?),
                         flag_descriptions: std::collections::HashMap::new(),
                         context_menu_message_command: $crate::defaults!(context_menu_message_command),
-                        context_menu_user_command: $crate::defaults!(context_menu_user_command)
+                        context_menu_user_command: $crate::defaults!(context_menu_user_command),
+                        group_parent_name: ""
                     })
                 }
 

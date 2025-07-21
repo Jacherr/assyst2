@@ -37,12 +37,13 @@ use assyst_flux_iface::FluxHandler;
 use async_trait::async_trait;
 use autocomplete::AutocompleteData;
 use errors::TagParseError;
+use tracing::info;
 use twilight_model::application::command::{CommandOption, CommandOptionChoice};
 use twilight_model::application::interaction::application_command::{CommandDataOption, CommandOptionValue};
 use twilight_model::channel::{Attachment, Message};
 use twilight_model::http::interaction::InteractionResponse;
-use twilight_model::id::marker::{AttachmentMarker, ChannelMarker, GuildMarker, InteractionMarker};
 use twilight_model::id::Id;
+use twilight_model::id::marker::{AttachmentMarker, ChannelMarker, GuildMarker, InteractionMarker};
 use twilight_model::user::User;
 use twilight_util::builder::command::SubCommandBuilder;
 
@@ -109,6 +110,8 @@ pub struct CommandMetadata {
     pub context_menu_message_command: &'static str,
     pub context_menu_user_command: &'static str,
     pub guild_only: bool,
+    /// The parent command's name, if this is part of a command group. Empty otherwise
+    pub group_parent_name: &'static str,
 }
 
 #[derive(Debug)]
@@ -375,7 +378,10 @@ impl<'a> ParseCtxt<'a, RawMessageArgsIter<'a>> {
     }
 
     pub fn rest_all(&self, _: Label) -> String {
-        self.args.remainder().map(std::borrow::ToOwned::to_owned).unwrap_or_default()
+        self.args
+            .remainder()
+            .map(std::borrow::ToOwned::to_owned)
+            .unwrap_or_default()
     }
 }
 
@@ -430,10 +436,7 @@ impl<'a> CommandCtxt<'a> {
     }
 }
 
-pub async fn check_metadata(
-    metadata: &'static CommandMetadata,
-    ctxt: &mut CommandCtxt<'_>,
-) -> Result<(), ExecutionError> {
+pub async fn check_metadata(metadata: &'static CommandMetadata, ctxt: &CommandCtxt<'_>) -> Result<(), ExecutionError> {
     if metadata.age_restricted {
         let channel_age_restricted = ctxt
             .assyst()
@@ -462,14 +465,17 @@ pub async fn check_metadata(
     if let Some(g) = ctxt.data.guild_id {
         let disabled_entry = GuildDisabledCommand {
             guild_id: g.get() as i64,
-            command_name: metadata.name.to_owned(),
+            command_name: if !metadata.group_parent_name.is_empty() {
+                metadata.group_parent_name.to_owned()
+            } else {
+                metadata.name.to_owned()
+            },
         };
 
         if disabled_entry
             .is_disabled(&ctxt.assyst().database_handler)
             .await
             .map_err(|_| ExecutionError::MetadataCheck(MetadataCheckError::CommandDisabled))?
-            && !is_guild_manager
         {
             return Err(ExecutionError::MetadataCheck(MetadataCheckError::CommandDisabled));
         }

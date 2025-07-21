@@ -3,37 +3,37 @@ use std::fmt::Write;
 use std::io::{Cursor, Write as IoWrite};
 use std::time::Duration;
 
-use anyhow::{anyhow, bail, ensure, Context};
+use anyhow::{Context, anyhow, bail, ensure};
 use assyst_common::util::discord::{format_discord_timestamp, format_tag, get_avatar_url};
 use assyst_common::util::{string_from_likely_utf8, unix_timestamp};
 use assyst_database::model::tag::Tag;
 use assyst_proc_macro::command;
 use assyst_string_fmt::Markdown;
-use assyst_tag::parser::ParseMode;
 use assyst_tag::ParseResult;
+use assyst_tag::parser::ParseMode;
 use tokio::runtime::Handle;
+use twilight_model::channel::Message;
 use twilight_model::channel::message::component::{ActionRow, ButtonStyle, TextInput, TextInputStyle};
 use twilight_model::channel::message::{Component, EmojiReactionType};
-use twilight_model::channel::Message;
-use twilight_model::id::marker::{ChannelMarker, EmojiMarker, UserMarker};
 use twilight_model::id::Id;
+use twilight_model::id::marker::{ChannelMarker, EmojiMarker, UserMarker};
 use twilight_util::builder::command::IntegerBuilder;
-use zip::write::SimpleFileOptions;
 use zip::ZipWriter;
+use zip::write::SimpleFileOptions;
 
 use super::CommandCtxt;
 use crate::assyst::ThreadSafeAssyst;
 use crate::command::arguments::{Image, ImageUrl, ParseArgument, RestNoFlags, User, Word, WordAutocomplete};
 use crate::command::autocomplete::AutocompleteData;
 use crate::command::componentctxt::{
-    button_emoji_new, button_new, respond_modal, respond_update_text, ComponentCtxt, ComponentInteractionData,
-    ComponentMetadata,
+    ComponentCtxt, ComponentInteractionData, ComponentMetadata, button_emoji_new, button_new, respond_modal,
+    respond_update_text,
 };
 use crate::command::errors::TagParseError;
-use crate::command::flags::{flags_from_str, FlagDecode, FlagType};
+use crate::command::flags::{FlagDecode, FlagType, flags_from_str};
 use crate::command::messagebuilder::{Attachment, MessageBuilder};
 use crate::command::{Availability, Category};
-use crate::downloader::{download_content, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES};
+use crate::downloader::{ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES, download_content};
 use crate::rest::eval::fake_eval;
 use crate::{define_commandgroup, int_arg_u64};
 
@@ -48,7 +48,8 @@ const RESERVED_NAMES: &[&str] = &["create", "add", "edit", "raw", "remove", "del
     category = Category::Misc,
     usage = "[name] [contents]",
     examples = ["test hello", "script 1+2 is: {js:1+2}"],
-    guild_only = true
+    guild_only = true,
+    group_parent_name = "tag"
 )]
 pub async fn create(ctxt: CommandCtxt<'_>, name: Word, contents: RestNoFlags) -> anyhow::Result<()> {
     let author = ctxt.data.author.id.get();
@@ -94,7 +95,8 @@ pub async fn create(ctxt: CommandCtxt<'_>, name: Word, contents: RestNoFlags) ->
     category = Category::Misc,
     usage = "[name] [contents]",
     examples = ["test hello there", "script 2+2 is: {js:2+2}"],
-    guild_only = true
+    guild_only = true,
+    group_parent_name = "tag"
 )]
 pub async fn edit(
     ctxt: CommandCtxt<'_>,
@@ -135,7 +137,8 @@ pub async fn edit(
     category = Category::Misc,
     usage = "[name]",
     examples = ["test", "script"],
-    guild_only = true
+    guild_only = true,
+    group_parent_name = "tag"
 )]
 pub async fn delete(
     ctxt: CommandCtxt<'_>,
@@ -422,7 +425,8 @@ impl ParseArgument for TagListFlags {
     examples = ["@jacher"],
     flag_descriptions = [("page <page>", "start at this page number")],
     guild_only = true,
-    context_menu_user_command = "List Owned Tags"
+    context_menu_user_command = "List Owned Tags",
+    group_parent_name = "tag"
 )]
 pub async fn list(ctxt: CommandCtxt<'_>, user: Option<User>, flags: TagListFlags) -> anyhow::Result<()> {
     let Some(guild_id) = ctxt.data.guild_id else {
@@ -571,7 +575,8 @@ pub async fn list(ctxt: CommandCtxt<'_>, user: Option<User>, flags: TagListFlags
     category = Category::Misc,
     usage = "[name]",
     examples = ["test", "script"],
-    guild_only = true
+    guild_only = true,
+    group_parent_name = "tag"
 )]
 pub async fn info(
     ctxt: CommandCtxt<'_>,
@@ -609,7 +614,8 @@ pub async fn info(
     category = Category::Misc,
     usage = "[name]",
     examples = ["test", "script"],
-    guild_only = true
+    guild_only = true,
+    group_parent_name = "tag"
 )]
 pub async fn raw(
     ctxt: CommandCtxt<'_>,
@@ -786,7 +792,8 @@ pub async fn search(ctxt: CommandCtxt<'_>, query: Word, user: Option<User>) -> a
     category = Category::Misc,
     usage = "",
     examples = [""],
-    guild_only = true
+    guild_only = true,
+    group_parent_name = "tag"
 )]
 pub async fn backup(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
     let Some(guild_id) = ctxt.data.guild_id else {
@@ -842,7 +849,8 @@ pub async fn backup(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
     category = Category::Misc,
     usage = "[name]",
     examples = ["test", "script"],
-    guild_only = true
+    guild_only = true,
+    group_parent_name = "tag"
 )]
 pub async fn copy(
     ctxt: CommandCtxt<'_>,
@@ -877,7 +885,8 @@ pub async fn copy(
     category = Category::Misc,
     usage = "[name]",
     examples = ["test2"],
-    guild_only = true
+    guild_only = true,
+    group_parent_name = "tag"
 )]
 pub async fn paste(ctxt: CommandCtxt<'_>, name: Word) -> anyhow::Result<()> {
     let Some(guild_id) = ctxt.data.guild_id else {
@@ -950,7 +959,8 @@ pub async fn tag_names_autocomplete_for_user(assyst: ThreadSafeAssyst, data: Aut
     usage = "[tag name] <arguments...>",
     examples = ["test", "whatever"],
     send_processing = true,
-    guild_only = true
+    guild_only = true,
+    group_parent_name = "tag"
 )]
 pub async fn default(
     ctxt: CommandCtxt<'_>,
