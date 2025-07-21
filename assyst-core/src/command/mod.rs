@@ -476,6 +476,7 @@ pub async fn check_metadata(metadata: &'static CommandMetadata, ctxt: &CommandCt
             .is_disabled(&ctxt.assyst().database_handler)
             .await
             .map_err(|_| ExecutionError::MetadataCheck(MetadataCheckError::CommandDisabled))?
+            && !is_guild_manager
         {
             return Err(ExecutionError::MetadataCheck(MetadataCheckError::CommandDisabled));
         }
