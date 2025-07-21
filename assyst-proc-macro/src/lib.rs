@@ -1,15 +1,13 @@
-#![feature(let_chains)]
-
 use std::collections::HashMap;
 
 use proc_macro::TokenStream;
 use proc_macro2::Span;
-use quote::{quote, ToTokens};
+use quote::{ToTokens, quote};
 use syn::punctuated::Punctuated;
 use syn::token::{Bracket, Comma};
 use syn::{
-    parse_macro_input, parse_quote, Expr, ExprArray, ExprLit, FnArg, Ident, Item, Lit, LitBool, LitStr, Meta, Pat,
-    PatType, Token, Type,
+    Expr, ExprArray, ExprLit, FnArg, Ident, Item, Lit, LitBool, LitStr, Meta, Pat, PatType, Token, Type,
+    parse_macro_input, parse_quote,
 };
 
 struct CommandAttributes(syn::punctuated::Punctuated<syn::Meta, Token![,]>);
@@ -131,7 +129,10 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
             let mut visitor = AutocompleteVisitable(false);
             visitor.visit_type(param.2.as_ref());
 
-            assert!(!visitor.0, "autocomplete attr must be defined on WordAutocomplete arg type");
+            assert!(
+                !visitor.0,
+                "autocomplete attr must be defined on WordAutocomplete arg type"
+            );
         }
 
         for attr in param.1 {
@@ -160,7 +161,10 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
                 }
             } else if let Meta::Path(p) = attr.meta {
                 // add any value-less attrs here
-                panic!("fn arg attr: invalid attr ({:?})", p.get_ident().map(std::string::ToString::to_string));
+                panic!(
+                    "fn arg attr: invalid attr ({:?})",
+                    p.get_ident().map(std::string::ToString::to_string)
+                );
             }
         }
     }
@@ -193,7 +197,10 @@ pub fn command(attrs: TokenStream, func: TokenStream) -> TokenStream {
         .remove("context_menu_user_command")
         .unwrap_or_else(|| str_expr(""));
 
-    assert!(!(context_menu_message_command != str_expr("") && context_menu_user_command != str_expr("")), "command cannot be a context message and user command at the same time");
+    assert!(
+        !(context_menu_message_command != str_expr("") && context_menu_user_command != str_expr("")),
+        "command cannot be a context message and user command at the same time"
+    );
 
     let flag_descriptions = fields.remove("flag_descriptions").unwrap_or_else(empty_array_expr);
     let guild_only = fields.remove("guild_only").unwrap_or_else(false_expr);

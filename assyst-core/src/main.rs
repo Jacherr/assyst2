@@ -1,9 +1,7 @@
 #![feature(
-    let_chains,
     str_split_whitespace_remainder,
     round_char_boundary,
     trait_alias,
-    async_closure,
     if_let_guard,
     iterator_try_collect,
     str_split_remainder
@@ -15,7 +13,7 @@ use std::time::Duration;
 
 use assyst_common::config::config::LoggingWebhook;
 use assyst_common::config::{CONFIG, PATREON_REFRESH_LOCATION};
-use assyst_common::pipe::{Pipe, GATEWAY_PIPE_PATH};
+use assyst_common::pipe::{GATEWAY_PIPE_PATH, Pipe};
 use assyst_common::util::tracing_init;
 use assyst_common::{err, ok_or_break};
 use assyst_flux_iface::FluxHandler;
@@ -28,13 +26,13 @@ use task::tasks::reminders::handle_reminders;
 use tokio::spawn;
 use tracing::{info /* trace */};
 use twilight_gateway::EventTypeFlags;
-use twilight_model::id::marker::WebhookMarker;
 use twilight_model::id::Id;
+use twilight_model::id::marker::WebhookMarker;
 
 use crate::assyst::{Assyst, ThreadSafeAssyst};
+use crate::task::Task;
 use crate::task::tasks::get_premium_users::get_premium_users;
 use crate::task::tasks::top_gg_stats::post_top_gg_stats;
-use crate::task::Task;
 
 mod assyst;
 mod bad_translator;

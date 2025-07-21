@@ -12,11 +12,11 @@ use tokio::sync::RwLock;
 use twilight_http::error::ErrorType;
 use twilight_model::channel::message::{AllowedMentions, MessageType};
 use twilight_model::channel::{Message, Webhook};
-use twilight_model::id::marker::{ChannelMarker, UserMarker};
 use twilight_model::id::Id;
+use twilight_model::id::marker::{ChannelMarker, UserMarker};
 
 use crate::assyst::Assyst;
-use crate::rest::bad_translation::{bad_translate_target, TranslateError};
+use crate::rest::bad_translation::{TranslateError, bad_translate_target};
 
 const BT_RATELIMIT_LEN: u64 = 5000;
 const BT_RATELIMIT_MESSAGE: &str = "you are sending messages too fast.";
@@ -101,7 +101,7 @@ impl BadTranslator {
     }
 
     pub async fn _should_fetch(&self) -> bool {
-        !self.is_disabled().await && self.channels.read().await.len() == 0
+        !self.is_disabled().await && self.channels.read().await.is_empty()
     }
 
     pub async fn disable(&self) {
@@ -119,10 +119,10 @@ impl BadTranslator {
             let cache = self.channels.read().await;
 
             // In the perfect case where we already have the webhook cached, we can just return early
-            if let Some(entry) = cache.get(&id.get()).cloned() {
-                if let Some(entry) = entry.zip() {
-                    return Some(entry);
-                }
+            if let Some(entry) = cache.get(&id.get()).cloned()
+                && let Some(entry) = entry.zip()
+            {
+                return Some(entry);
             }
         }
 
@@ -247,10 +247,9 @@ impl BadTranslator {
             body: _,
             error: _,
         }) = delete_state.as_ref().map_err(twilight_http::Error::kind)
+            && status.get() == 404
         {
-            if status.get() == 404 {
-                return Ok(());
-            }
+            return Ok(());
         }
 
         let token = webhook.token.as_ref().context("Failed to extract token")?;

@@ -6,11 +6,11 @@ use assyst_string_fmt::markdown::parse_codeblock;
 use serde::Deserialize;
 use twilight_model::application::command::CommandOption;
 use twilight_model::application::interaction::application_command::CommandOptionValue;
-use twilight_model::channel::message::sticker::{MessageSticker, StickerFormatType};
 use twilight_model::channel::message::Embed;
+use twilight_model::channel::message::sticker::{MessageSticker, StickerFormatType};
 use twilight_model::channel::{Attachment, Channel as TwlChannel};
-use twilight_model::id::marker::{ChannelMarker, UserMarker};
 use twilight_model::id::Id;
+use twilight_model::id::marker::{ChannelMarker, UserMarker};
 use twilight_model::user::User as TwlUser;
 use twilight_util::builder::command::{
     AttachmentBuilder, ChannelBuilder, IntegerBuilder, NumberBuilder, StringBuilder, UserBuilder,
@@ -274,7 +274,7 @@ impl ParseArgument for Time {
     ) -> Result<Self, TagParseError> {
         let word = &ctxt.option_by_name(&label.unwrap().0)?.value;
 
-        if let CommandOptionValue::String(ref option) = word {
+        if let CommandOptionValue::String(option) = word {
             let millis = parse_to_millis(option)?;
 
             Ok(Time { millis })
@@ -306,7 +306,7 @@ impl ParseArgument for Word {
     ) -> Result<Self, TagParseError> {
         let word = &ctxt.option_by_name(&label.unwrap().0)?.value;
 
-        if let CommandOptionValue::String(ref option) = word {
+        if let CommandOptionValue::String(option) = word {
             Ok(Word(option.clone()))
         } else {
             Err(TagParseError::MismatchedCommandOptionType((
@@ -336,7 +336,7 @@ impl ParseArgument for WordAutocomplete {
     ) -> Result<Self, TagParseError> {
         let word = &ctxt.option_by_name(&label.unwrap().0)?.value;
 
-        if let CommandOptionValue::String(ref option) = word {
+        if let CommandOptionValue::String(option) = word {
             Ok(WordAutocomplete(option.clone()))
         } else {
             Err(TagParseError::MismatchedCommandOptionType((
@@ -376,7 +376,7 @@ impl ParseArgument for Codeblock {
     ) -> Result<Self, TagParseError> {
         let word = &ctxt.option_by_name(&label.unwrap().0)?.value;
 
-        if let CommandOptionValue::String(ref option) = word {
+        if let CommandOptionValue::String(option) = word {
             Ok(Codeblock(option.clone()))
         } else {
             Err(TagParseError::MismatchedCommandOptionType((
@@ -417,7 +417,7 @@ impl ParseArgument for User {
         ctxt: &mut InteractionCommandParseCtxt<'_>,
         label: Label,
     ) -> Result<Self, TagParseError> {
-        if let Some(ref us) = &ctxt.cx.data.resolved_users
+        if let Some(us) = &ctxt.cx.data.resolved_users
             && let Some(u) = us.first()
         {
             return Ok(User(u.clone()));
@@ -542,7 +542,7 @@ impl ParseArgument for Rest {
         // whitespace-delimited word
         let word = &ctxt.option_by_name(&label.unwrap().0)?.value;
 
-        if let CommandOptionValue::String(ref option) = word {
+        if let CommandOptionValue::String(option) = word {
             Ok(Rest(option.clone()))
         } else {
             Err(TagParseError::MismatchedCommandOptionType((
@@ -598,7 +598,7 @@ impl ParseArgument for RestNoFlags {
         // whitespace-delimited word
         let word = &ctxt.option_by_name(&label.unwrap().0)?.value;
 
-        if let CommandOptionValue::String(ref option) = word {
+        if let CommandOptionValue::String(option) = word {
             Ok(RestNoFlags(option.clone()))
         } else {
             Err(TagParseError::MismatchedCommandOptionType((
@@ -647,7 +647,7 @@ impl ImageUrl {
     ) -> Result<Self, TagParseError> {
         let word = &ctxt.option_by_name(&label.unwrap().0)?.value;
 
-        if let CommandOptionValue::String(ref option) = word {
+        if let CommandOptionValue::String(option) = word {
             let user_id = id_from_mention(option).ok_or(TagParseError::NoMention)?;
 
             if user_id == 0 {
@@ -691,7 +691,7 @@ impl ImageUrl {
     ) -> Result<Self, TagParseError> {
         let word = &ctxt.option_by_name(&label.unwrap().0)?.value;
 
-        if let CommandOptionValue::String(ref option) = word {
+        if let CommandOptionValue::String(option) = word {
             if regex::URL.is_match(option) {
                 Ok(Self(option.to_owned()))
             } else {
@@ -720,7 +720,7 @@ impl ImageUrl {
     ) -> Result<Self, TagParseError> {
         let word = &ctxt.option_by_name(&label.unwrap().0)?.value;
 
-        if let CommandOptionValue::Attachment(ref option) = word {
+        if let CommandOptionValue::Attachment(option) = word {
             let attachment = ctxt.cx.data.interaction_attachments.get(option);
             let attachment = attachment.ok_or(TagParseError::NoAttachment)?;
             Self::attachment(Some(attachment))
@@ -848,7 +848,7 @@ impl ImageUrl {
     ) -> Result<Self, TagParseError> {
         let word = &ctxt.option_by_name(&label.unwrap().0)?.value;
 
-        if let CommandOptionValue::String(ref option) = word {
+        if let CommandOptionValue::String(option) = word {
             if regex::URL.is_match(option) {
                 Ok(Self::emoji(&mut ctxt.cx, option).await?)
             } else {

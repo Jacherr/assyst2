@@ -3,20 +3,18 @@ use std::time::Instant;
 
 use assyst_common::err;
 use tracing::debug;
-use twilight_model::channel::message::MessageType;
 use twilight_model::channel::Message;
 use twilight_model::gateway::payload::incoming::MessageUpdate;
 use twilight_model::id::Id;
-use twilight_model::util::Timestamp;
 
 use super::after_command_execution_success;
+use crate::ThreadSafeAssyst;
 use crate::command::errors::{ExecutionError, TagParseError};
 use crate::command::source::Source;
 use crate::command::{CommandCtxt, CommandData, RawMessageParseCtxt};
 use crate::gateway_handler::message_parser::error::{ErrorSeverity, GetErrorSeverity, ParseError, PreParseError};
 use crate::gateway_handler::message_parser::parser::parse_message_into_command;
 use crate::replies::ReplyState;
-use crate::ThreadSafeAssyst;
 
 /// Handle a [`MessageUpdate`] event sent from the Discord gateway.
 ///
@@ -112,8 +110,7 @@ fn convert_message_update_to_message(event: MessageUpdate) -> Option<Message> {
     let mention_everyone = event.mention_everyone;
     let mention_roles = event.mention_roles.clone();
     let pinned = event.pinned;
-    let timestamp = event
-        .timestamp;
+    let timestamp = event.timestamp;
     Some(Message {
         application_id: None,
         interaction: None,
