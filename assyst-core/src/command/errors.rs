@@ -196,7 +196,7 @@ impl Display for TagParseError {
             },
             TagParseError::FlagParseError(x) => write!(f, "Error parsing command flags ({x})"),
             TagParseError::FailedToGetMessageHistory => f.write_str(
-                "Failed to get message history. Make sure Assyst has permission to do this. Assyst also cannot search for images through a global user install.",
+                "Failed to get message history. Message history cannot be fetched in DMs or through a user install. If trying from a server install, make sure Assyst has permission to get the message history.",
             ),
             TagParseError::MessageHistoryUnavailableInContext => f.write_str(
                 "Assyst can't search the channel for images in a user install. Please provide an image to operate on.",
