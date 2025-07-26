@@ -30,7 +30,7 @@ pub async fn refresh_entitlements(assyst: ThreadSafeAssyst) {
         additional
             .clone()
             .iter()
-            .map(|x| x.guild_id.unwrap_or(Id::<GuildMarker>::new(0)).get().to_string())
+            .map(|x| x.guild_id.map(|x| x.get()).unwrap_or(0).to_string())
             .collect::<Vec<_>>()
             .join(", ")
     );
