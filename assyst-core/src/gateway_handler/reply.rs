@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::time::Instant;
 
-use assyst_common::util::filetype::{get_sig, Type};
+use assyst_common::util::filetype::{Type, get_sig};
 use tokio::sync::Mutex;
 use twilight_model::channel::message::component::ActionRow;
 use twilight_model::channel::message::{AllowedMentions, Component};
@@ -10,11 +10,11 @@ use twilight_model::http::interaction::InteractionResponse;
 use twilight_model::id::Id;
 use twilight_util::builder::InteractionResponseDataBuilder;
 
-use crate::command::messagebuilder::MessageBuilder;
 use crate::command::CommandCtxt;
+use crate::command::messagebuilder::MessageBuilder;
 use crate::replies::{Reply, ReplyInUse, ReplyState};
-use crate::rest::filer::upload_to_filer;
 use crate::rest::NORMAL_DISCORD_UPLOAD_LIMIT_BYTES;
+use crate::rest::filer::upload_to_filer;
 
 /// Trims a `String` in-place such that it fits in Discord's 2000 character message limit.
 fn trim_content_fits(content: &mut String) {
@@ -84,7 +84,7 @@ pub async fn edit(ctxt: &CommandCtxt<'_>, builder: MessageBuilder, reply: ReplyI
 
     let mut content_clone = builder.content.clone();
 
-    if builder.attachment.is_none() && builder.content.as_ref().map_or(true, |x| x.trim().is_empty()) {
+    if builder.attachment.is_none() && builder.content.as_ref().is_none_or(|x| x.trim().is_empty()) {
         message = message.content(Some("[Empty Response]"));
     } else if let Some(content) = &mut content_clone {
         trim_content_fits(content);
@@ -138,7 +138,7 @@ async fn create_message(ctxt: &CommandCtxt<'_>, builder: MessageBuilder) -> anyh
 
     let mut content_clone = builder.content.clone();
 
-    if builder.attachment.is_none() && builder.content.as_ref().map_or(true, |x| x.trim().is_empty()) {
+    if builder.attachment.is_none() && builder.content.as_ref().is_none_or(|x| x.trim().is_empty()) {
         message = message.content("[Empty Response]");
     } else if let Some(content) = &mut content_clone {
         trim_content_fits(content);

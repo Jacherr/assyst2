@@ -37,7 +37,6 @@ use assyst_flux_iface::FluxHandler;
 use async_trait::async_trait;
 use autocomplete::AutocompleteData;
 use errors::TagParseError;
-use tracing::info;
 use twilight_model::application::command::{CommandOption, CommandOptionChoice};
 use twilight_model::application::interaction::application_command::{CommandDataOption, CommandOptionValue};
 use twilight_model::channel::{Attachment, Message};

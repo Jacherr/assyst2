@@ -7,7 +7,7 @@ use assyst_common::util::filetype::Type;
 use rand::prelude::ThreadRng;
 
 use crate::context::Context;
-use crate::errors::{err_res, BytePos, ErrorKind, TResult};
+use crate::errors::{BytePos, ErrorKind, TResult, err_res};
 use crate::subtags;
 
 /// Constants and helper functions for tag parser limits
@@ -225,11 +225,11 @@ impl<'a> Parser<'a> {
 
     /// Eats a byte
     pub fn eat(&mut self, bs: &[u8]) -> bool {
-        if let Some(b) = self.input.get(self.idx) {
-            if bs.contains(b) {
-                self.idx += 1;
-                return true;
-            }
+        if let Some(b) = self.input.get(self.idx)
+            && bs.contains(b)
+        {
+            self.idx += 1;
+            return true;
         }
         false
     }
@@ -402,12 +402,12 @@ impl<'a> Parser<'a> {
                 },
                 _ => {
                     // If we are escaping | or }, then only push *that* character, and not \
-                    if byte == b'\\' {
-                        if let Some(&next @ b'|' | &next @ b'}' | &next @ b'{') = self.input.get(self.idx + 1) {
-                            output.push(next);
-                            self.idx += 2;
-                            continue;
-                        }
+                    if byte == b'\\'
+                        && let Some(&next @ b'|' | &next @ b'}' | &next @ b'{') = self.input.get(self.idx + 1)
+                    {
+                        output.push(next);
+                        self.idx += 2;
+                        continue;
                     }
 
                     output.push(byte);

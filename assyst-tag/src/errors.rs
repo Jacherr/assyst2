@@ -128,7 +128,7 @@ struct LineData<'a> {
 }
 
 fn line_data(source: &str, span: Range<usize>) -> LineData<'_> {
-    let start_index = rfind(source[..span.start.min(source.len())].as_bytes(), b"\n")
+    let start_index = rfind(&source.as_bytes()[..span.start.min(source.len())], b"\n")
         .map(|x| x + 1)
         .unwrap_or(0);
 
@@ -136,7 +136,7 @@ fn line_data(source: &str, span: Range<usize>) -> LineData<'_> {
         // Allow pointing at one past the input buffer
         source.len()
     } else {
-        memchr::memchr(b'\n', source[span.end..].as_bytes())
+        memchr::memchr(b'\n', &source.as_bytes()[span.end..])
             .map(|x| x + span.end)
             .unwrap_or(source.len())
     };

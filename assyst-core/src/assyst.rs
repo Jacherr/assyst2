@@ -5,14 +5,14 @@ use assyst_common::config::CONFIG;
 use assyst_common::err;
 use assyst_common::metrics_handler::MetricsHandler;
 use assyst_common::pipe::CACHE_PIPE_PATH;
+use assyst_database::DatabaseHandler;
 use assyst_database::model::active_guild_premium_entitlement::ActiveGuildPremiumEntitlement;
 use assyst_database::model::badtranslator_channel::BadTranslatorChannel;
-use assyst_database::DatabaseHandler;
 use assyst_flux_iface::FluxHandler;
-use twilight_http::client::InteractionClient;
 use twilight_http::Client as HttpClient;
-use twilight_model::id::marker::ApplicationMarker;
+use twilight_http::client::InteractionClient;
 use twilight_model::id::Id;
+use twilight_model::id::marker::ApplicationMarker;
 
 use crate::bad_translator::{BadTranslator, BadTranslatorEntry};
 use crate::command::componentctxt::ComponentCtxts;
@@ -116,7 +116,7 @@ impl Assyst {
         self.flux_handler.set_premium_users(flux_prems);
     }
 
-    pub fn interaction_client(&self) -> InteractionClient {
+    pub fn interaction_client(&'_ self) -> InteractionClient<'_> {
         self.http_client.interaction(self.application_id)
     }
 

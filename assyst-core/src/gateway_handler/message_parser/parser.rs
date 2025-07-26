@@ -4,9 +4,9 @@ use twilight_model::channel::Message;
 
 use super::error::ParseError;
 use super::preprocess::preprocess;
+use crate::ThreadSafeAssyst;
 use crate::command::registry::find_command_by_name;
 use crate::command::{ExecutionTimings, TCommand};
-use crate::ThreadSafeAssyst;
 
 pub struct ParseResult<'a> {
     pub command: TCommand,
@@ -47,10 +47,10 @@ pub struct ParseResult<'a> {
 /// implementation, see [`crate::command::check_metadata`])
 pub async fn parse_message_into_command(
     assyst: ThreadSafeAssyst,
-    message: &Message,
+    message: &'_ Message,
     processing_time_start: Instant,
     from_edit: bool,
-) -> Result<Option<ParseResult>, ParseError> {
+) -> Result<Option<ParseResult<'_>>, ParseError> {
     let parse_start = Instant::now();
     let preprocess_start = Instant::now();
 

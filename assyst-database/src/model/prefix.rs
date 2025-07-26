@@ -46,7 +46,8 @@ impl Prefix {
         }
     }
 
-    #[must_use] pub fn size_of(&self) -> u64 {
-        self.prefix.as_bytes().len() as u64
+    #[must_use]
+    pub fn size_of(&self) -> u64 {
+        self.prefix.len() as u64
     }
 }

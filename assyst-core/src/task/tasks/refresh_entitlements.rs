@@ -4,8 +4,6 @@ use assyst_common::err;
 use assyst_common::macros::handle_log;
 use assyst_database::model::active_guild_premium_entitlement::ActiveGuildPremiumEntitlement;
 use tracing::info;
-use twilight_model::id::Id;
-use twilight_model::id::marker::GuildMarker;
 
 use crate::assyst::ThreadSafeAssyst;
 

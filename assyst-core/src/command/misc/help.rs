@@ -58,13 +58,12 @@ pub async fn help(
         groups.entry(c.clone()).or_default();
         let entry = groups.get_mut(&data.metadata().category);
 
-        if let Some(l) = entry {
-            if !l
+        if let Some(l) = entry
+            && !l
                 .iter()
                 .any(|x: &&&(dyn Command + Send + Sync)| x.metadata().name == data.metadata().name)
-            {
-                l.push(data);
-            }
+        {
+            l.push(data);
         }
     }
 

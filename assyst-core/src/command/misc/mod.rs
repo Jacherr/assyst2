@@ -1,7 +1,7 @@
 use std::fmt::Write;
 use std::time::{Duration, Instant};
 
-use anyhow::{bail, Context};
+use anyhow::{Context, bail};
 use assyst_common::config::CONFIG;
 use assyst_common::eval::FakeEvalImageResponse;
 use assyst_common::util::process::exec_sync;

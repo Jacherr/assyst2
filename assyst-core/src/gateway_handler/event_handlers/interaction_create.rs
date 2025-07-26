@@ -26,7 +26,6 @@ use crate::command::registry::find_command_by_name;
 use crate::command::source::Source;
 use crate::command::{
     CommandCtxt, CommandData, CommandGroupingInteractionInfo, ExecutionTimings, InteractionCommandParseCtxt,
-    check_metadata,
 };
 use crate::gateway_handler::message_parser::error::{ErrorSeverity, GetErrorSeverity};
 

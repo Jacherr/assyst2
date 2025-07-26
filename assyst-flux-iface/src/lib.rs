@@ -1,22 +1,20 @@
-#![feature(let_chains)]
-
 use std::collections::HashMap;
 use std::process::Stdio;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use anyhow::{bail, Context};
+use anyhow::{Context, bail};
 use assyst_common::config::CONFIG;
 use assyst_common::util::process::exec_sync;
 use assyst_common::util::{hash_buffer, string_from_likely_utf8};
+use assyst_database::DatabaseHandler;
 use assyst_database::model::active_guild_premium_entitlement::ActiveGuildPremiumEntitlement;
 use assyst_database::model::free_tier_2_requests::FreeTier2Requests;
-use assyst_database::DatabaseHandler;
 use flux_request::{FluxRequest, FluxStep};
 use jobs::FluxResult;
 use libc::pid_t;
-use limits::{premium_user_to_limits, LimitData, LIMITS_FREE, LIMITS_GUILD_TIER_1, LIMITS_USER_TIER_1};
+use limits::{LIMITS_FREE, LIMITS_GUILD_TIER_1, LIMITS_USER_TIER_1, LimitData, premium_user_to_limits};
 use tokio::fs;
 use tokio::process::Command;
 use tokio::time::timeout;
@@ -157,7 +155,9 @@ impl FluxHandler {
         let id = spawn.id();
         let output = timeout(time_limit, spawn.wait_with_output()).await;
 
-        let output = if let Ok(o) = output { o } else {
+        let output = if let Ok(o) = output {
+            o
+        } else {
             // send SIGTERM to flux to clean up child processes
             if let Some(id) = id {
                 unsafe { libc::kill(id as pid_t, libc::SIGTERM) };

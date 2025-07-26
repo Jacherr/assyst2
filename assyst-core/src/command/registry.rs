@@ -4,7 +4,7 @@ use std::sync::OnceLock;
 use tracing::debug;
 use twilight_model::application::command::{Command as InteractionCommand, CommandType};
 
-use super::{fun, image, misc, services, TCommand};
+use super::{TCommand, fun, image, misc, services};
 use crate::assyst::ThreadSafeAssyst;
 use crate::command::CommandMetadata;
 
@@ -86,7 +86,7 @@ declare_commands!(
     misc::command_command,
     misc::enlarge_command,
     misc::eval_command,
-//    misc::exec_command,
+    misc::exec_command,
     misc::help::help_command,
     misc::info_command,
     misc::invite_command,
