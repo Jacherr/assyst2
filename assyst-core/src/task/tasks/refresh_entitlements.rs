@@ -4,6 +4,8 @@ use assyst_common::err;
 use assyst_common::macros::handle_log;
 use assyst_database::model::active_guild_premium_entitlement::ActiveGuildPremiumEntitlement;
 use tracing::info;
+use twilight_model::id::Id;
+use twilight_model::id::marker::GuildMarker;
 
 use crate::assyst::ThreadSafeAssyst;
 
@@ -21,6 +23,17 @@ pub async fn refresh_entitlements(assyst: ThreadSafeAssyst) {
             vec![]
         },
     };
+
+    info!(
+        "Entitlement fetch yielded {} entitlements ({})",
+        additional.len(),
+        additional
+            .clone()
+            .iter()
+            .map(|x| x.guild_id.unwrap_or(Id::<GuildMarker>::new(0)).get().to_string())
+            .collect::<Vec<_>>()
+            .join(", ")
+    );
 
     for a in additional.clone() {
         if !assyst.entitlements.lock().unwrap().contains_key(&(a.id.get() as i64)) {
