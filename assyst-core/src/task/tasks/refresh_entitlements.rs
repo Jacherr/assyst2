@@ -62,6 +62,19 @@ pub async fn refresh_entitlements(assyst: ThreadSafeAssyst) {
         }
     }
 
+    info!(
+        "Active entitlements: {} ({})",
+        assyst.entitlements.lock().unwrap().len(),
+        assyst
+            .entitlements
+            .lock()
+            .unwrap()
+            .iter()
+            .map(|x| x.1.guild_id.to_string())
+            .collect::<Vec<_>>()
+            .join(", ")
+    );
+
     let db_entitlements = ActiveGuildPremiumEntitlement::get_all(&assyst.database_handler)
         .await
         .ok()
