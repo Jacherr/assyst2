@@ -147,7 +147,7 @@ pub async fn clippy(
     request(client, "clippy", code, channel, Some(opt.as_str()), None, None, None).await
 }
 
-pub fn prepend_code(code: &str) -> Cow<str> {
+pub fn prepend_code(code: &'_ str) -> Cow<'_, str> {
     if !code.contains("fn main") {
         Cow::Owned(format!("fn main() {{ println!(\"{{:?}}\", {{ {code} }});}}"))
     } else {

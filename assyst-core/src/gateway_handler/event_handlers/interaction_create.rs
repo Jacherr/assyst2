@@ -4,7 +4,7 @@ use std::time::{Duration, Instant};
 use assyst_common::config::CONFIG;
 use assyst_common::err;
 use assyst_database::model::active_guild_premium_entitlement::ActiveGuildPremiumEntitlement;
-use tracing::{debug, info, warn};
+use tracing::{debug, warn};
 use twilight_model::application::command::CommandType;
 use twilight_model::application::interaction::application_command::{
     CommandData as DiscordCommandData, CommandDataOption, CommandOptionValue,

@@ -55,23 +55,6 @@ impl GetErrorSeverity for PreParseError {
 impl std::error::Error for PreParseError {}
 
 #[derive(Debug)]
-pub enum MetadataCheckInvalidated {}
-impl GetErrorSeverity for MetadataCheckInvalidated {
-    fn get_severity(&self) -> ErrorSeverity {
-        match self {
-            _ => todo!(),
-        }
-    }
-}
-impl Display for MetadataCheckInvalidated {
-    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            _ => todo!(),
-        }
-    }
-}
-
-#[derive(Debug)]
 pub enum ParseError {
     /// Failure with preprocessing of the message.
     PreParseFail(PreParseError),
