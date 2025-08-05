@@ -17,12 +17,15 @@ bad_translation = ""
 # "primary" is always the first instance that is tried, if multiple are primary it selects the lowest index primary and rest are ignored
 # "primary" can also be excluded for no primary instance
 cobalt_api = [{ url = "", key = "", primary = true }]
+# URL for the eval services.
+eval = ""
 
 [authentication]
 # Token to authenticate with Discord.
 discord_token = ""
 # Token to get paying users from Patreon.
-patreon_token = ""
+patreon_client_id = ""
+patreon_client_secret = ""
 # Token to POST the stats for the bot to Top.gg
 top_gg_token = ""
 # Token that Top.gg uses to send webhooked votes to Assyst.
@@ -96,4 +99,4 @@ dev_guild = 0
 dev_channel = 0
 
 # Override the path to the Flux executable. Useful when doing dev work on Flux. Leave blank for default.
-flux_executable_path_override = ""
+flux_workspace_root_path_override = ""
