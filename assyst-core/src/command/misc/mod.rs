@@ -422,3 +422,25 @@ pub async fn chars(ctxt: CommandCtxt<'_>, chars: RestNoFlags) -> anyhow::Result<
 
     Ok(())
 }
+
+#[command(
+    description = "gets voting information",
+    cooldown = Duration::from_secs(1),
+    access = Availability::Public,
+    category = Category::Misc,
+)]
+pub async fn vote(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
+    ctxt.reply(format!(
+        "You can vote via {}.\n\
+    You can become a patron on {}\
+    \x20or get premium for a server {}.",
+        "top.gg".url("<https://vote.jacher.io/topgg>", Some("top.gg vote link for Assyst.")),
+        "Patreon".url("<https://www.patreon.com/jacher>", Some("Patreon link.")),
+        "here".url(
+            "<https://discord.com/application-directory/571661221854707713/store/1268916438215823411>",
+            Some("Premium server SKU link.")
+        )
+    ))
+    .await?;
+    Ok(())
+}

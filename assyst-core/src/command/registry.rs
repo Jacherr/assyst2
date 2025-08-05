@@ -99,6 +99,7 @@ declare_commands!(
     misc::tag::tag_command,
     misc::topcommands_command,
     misc::url_command,
+    misc::vote_command,
     services::burntext_command,
     services::cooltext::cooltext_command,
     services::download::download_command,
