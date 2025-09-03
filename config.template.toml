@@ -35,6 +35,10 @@ filer_key = ""
 notsoapi = ""
 # RapidAPI token for the `identify` command.
 rapidapi_token = ""
+# R34 api token.
+r34_token = ""
+# R34 user id.
+r34_uid = 0
 
 # Assyst database information.
 [database]

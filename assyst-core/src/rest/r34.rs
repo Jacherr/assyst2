@@ -1,4 +1,5 @@
-use anyhow::{bail, Context};
+use anyhow::{Context, bail};
+use assyst_common::config::CONFIG;
 use rand::prelude::SliceRandom;
 use reqwest::Client;
 use serde::Deserialize;
@@ -20,6 +21,8 @@ pub async fn get_random_r34(client: &Client, tags: &str) -> anyhow::Result<R34Re
             ("q", "index"),
             ("json", "1"),
             ("limit", "1000"),
+            ("api_key", &CONFIG.authentication.r34_token),
+            ("user_id", &CONFIG.authentication.r34_uid.to_string()),
         ])
         .send()
         .await?

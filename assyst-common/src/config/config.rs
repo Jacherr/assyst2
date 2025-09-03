@@ -46,6 +46,8 @@ pub struct Authentication {
     pub filer_key: String,
     pub notsoapi: String,
     pub rapidapi_token: String,
+    pub r34_token: String,
+    pub r34_uid: u64,
 }
 
 #[derive(Deserialize)]
