@@ -1,19 +1,17 @@
 use std::collections::HashMap;
 use std::time::Duration;
 
-use anyhow::{bail, Context};
-use assyst_common::util::{normalize_emojis, normalize_mentions, table};
+use anyhow::{Context, bail};
+use assyst_common::util::{normalize_emojis, normalize_mentions};
 use assyst_proc_macro::command;
-use assyst_string_fmt::Markdown;
 use twilight_util::builder::command::{BooleanBuilder, IntegerBuilder};
 
 use crate::command::arguments::{ParseArgument, Rest, Word};
 use crate::command::errors::TagParseError;
-use crate::command::flags::{flags_from_str, FlagDecode, FlagType};
+use crate::command::flags::{FlagDecode, FlagType, flags_from_str};
 use crate::command::{Availability, Category, CommandCtxt};
 use crate::rest::bad_translation::{
-    bad_translate as bad_translate_default, bad_translate_with_count, get_languages, translate_single, TranslateResult,
-    Translation,
+    TranslateResult, Translation, bad_translate as bad_translate_default, bad_translate_with_count, translate_single,
 };
 use crate::{int_arg_bool, int_arg_u64_opt};
 
@@ -88,12 +86,12 @@ impl ParseArgument for BadTranslateFlags {
 #[command(
     name = "badtranslate",
     aliases = ["bt"],
-    description = "Badly translate some text",
+    description = "Badly translate (bt) some text ",
     access = Availability::Public,
     cooldown = Duration::from_secs(5),
     category = Category::Fun,
-    usage = "[text|\"languages\"]",
-    examples = ["hello i love assyst", "languages"],
+    usage = "[text]",
+    examples = ["hello i love assyst", "meow"],
     flag_descriptions = [
         ("chain", "Show language chain"),
         ("count", "Set the amount of translations to perform")
@@ -102,18 +100,6 @@ impl ParseArgument for BadTranslateFlags {
     context_menu_message_command = "Bad Translate"
 )]
 pub async fn bad_translate(ctxt: CommandCtxt<'_>, text: Rest, flags: BadTranslateFlags) -> anyhow::Result<()> {
-    if text.0 == "languages" {
-        let languages = get_languages(&ctxt.assyst().reqwest_client)
-            .await
-            .context("Failed to fetch translation languages")?;
-
-        let formatted = table::generate_list("Code", "Name", &languages);
-
-        ctxt.reply(formatted.codeblock("")).await?;
-
-        return Ok(());
-    };
-
     let text = normalize_emojis(&text.0);
     let text = normalize_mentions(
         &text,

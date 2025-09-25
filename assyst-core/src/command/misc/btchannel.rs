@@ -1,23 +1,25 @@
 use std::time::Duration;
 
-use anyhow::{bail, ensure, Context};
+use anyhow::{Context, bail, ensure};
 use assyst_common::util::discord::ensure_same_guild;
+use assyst_common::util::table;
 use assyst_database::model::badtranslator_channel::BadTranslatorChannel;
 use assyst_proc_macro::command;
+use assyst_string_fmt::Markdown;
 
 use crate::command::arguments::{Channel, Word};
 use crate::command::{Availability, Category, CommandCtxt};
 use crate::define_commandgroup;
-use crate::rest::bad_translation::validate_language;
+use crate::rest::bad_translation::{get_languages, validate_language};
 
 #[command(
     description = "register a new badtranslator channel",
-    aliases = ["create"],
+    aliases = ["register", "make", "create"],
     cooldown = Duration::from_secs(10),
     access = Availability::ServerManagers,
     category = Category::Misc,
     usage = "[channel] [language]",
-    examples = ["#bt en"],
+    examples = ["#bt-channel en", "#bt-kanal de", "#bt-canal es", "#бт-канал uk"],
     guild_only = true
 )]
 pub async fn add(ctxt: CommandCtxt<'_>, channel: Channel, target_language: Word) -> anyhow::Result<()> {
@@ -66,12 +68,12 @@ pub async fn add(ctxt: CommandCtxt<'_>, channel: Channel, target_language: Word)
 
 #[command(
     description = "delete an existing badtranslator channel",
-    aliases = ["remove"],
+    aliases = ["delete"],
     cooldown = Duration::from_secs(10),
     access = Availability::ServerManagers,
     category = Category::Misc,
     usage = "[channel]",
-    examples = ["#bt"],
+    examples = ["#bt-channel", "#bt-kanal", "#bt-canal", "#бт-канал"],
     guild_only = true
 )]
 pub async fn remove(ctxt: CommandCtxt<'_>, channel: Channel) -> anyhow::Result<()> {
@@ -119,6 +121,26 @@ pub async fn remove(ctxt: CommandCtxt<'_>, channel: Channel) -> anyhow::Result<(
     Ok(())
 }
 
+#[command(
+    description = "list available languages for the final translation",
+    aliases = ["langs"],
+    cooldown = Duration::from_secs(1),
+    access = Availability::Public,
+    category = Category::Misc,
+    guild_only = true
+)]
+pub async fn languages(ctxt: CommandCtxt<'_>) -> anyhow::Result<()> {
+    let languages = get_languages(&ctxt.assyst().reqwest_client)
+        .await
+        .context("Failed to fetch translation languages")?;
+
+    let formatted = table::generate_list("Code", "Name", &languages);
+
+    ctxt.reply(formatted.codeblock("")).await?;
+
+    Ok(())
+}
+
 define_commandgroup! {
     name: btchannel,
     access: Availability::ServerManagers,
@@ -128,6 +150,7 @@ define_commandgroup! {
     guild_only: true,
     commands: [
         "add" => add,
-        "remove" => remove
+        "remove" => remove,
+        "languages" => languages
     ]
 }
