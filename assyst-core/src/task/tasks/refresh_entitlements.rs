@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::time::SystemTime;
 
 use assyst_common::err;
 use assyst_common::macros::handle_log;
@@ -44,6 +45,15 @@ pub async fn refresh_entitlements(assyst: ThreadSafeAssyst) {
             };
 
             if active.expired() {
+                use std::time::UNIX_EPOCH;
+
+                let current = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
+
+                info!(
+                    "Entitlement for guild {} has expired! Current time: {}, expiry unix: {}",
+                    active.guild_id, current, active.expiry_unix_ms
+                );
+
                 break;
             }
 
