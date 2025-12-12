@@ -166,7 +166,7 @@ async fn create_message(ctxt: &CommandCtxt<'_>, builder: MessageBuilder) -> anyh
 
     let cs;
     if let Some(components) = builder.components {
-        cs = vec![Component::ActionRow(ActionRow { components })];
+        cs = vec![Component::ActionRow(ActionRow { id: None, components })];
         message = message.components(&cs);
     }
 

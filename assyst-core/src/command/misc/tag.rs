@@ -12,6 +12,7 @@ use assyst_string_fmt::Markdown;
 use assyst_tag::ParseResult;
 use assyst_tag::parser::ParseMode;
 use tokio::runtime::Handle;
+use twilight_model::application::interaction::modal::{ModalInteractionActionRow, ModalInteractionComponent};
 use twilight_model::channel::Message;
 use twilight_model::channel::message::component::{ActionRow, ButtonStyle, TextInput, TextInputStyle};
 use twilight_model::channel::message::{Component, EmojiReactionType};
@@ -218,9 +219,11 @@ impl TagPaginatorComponentMetadata {
                 &data.interaction_token,
                 "Jump to page",
                 vec![Component::ActionRow(ActionRow {
+                    id: None,
                     components: vec![Component::TextInput(TextInput {
+                        id: None,
                         custom_id: self.jump_modal_text_cid.clone(),
-                        label: "Page".to_string(),
+                        label: Some("Page".to_string()),
                         max_length: Some(pages_digits as u16),
                         min_length: Some(1),
                         placeholder: None,
@@ -237,23 +240,40 @@ impl TagPaginatorComponentMetadata {
         } else if data.custom_id == self.jump_modal_cid {
             let modal = data.modal_submit_interaction_data.clone().context("No modal data??")?;
             let action_row = modal.components.first().context("No modal components??")?;
-            let text_component = action_row
-                .components
-                .iter()
-                .find(|c| c.custom_id == self.jump_modal_text_cid)
-                .context("No page jump component??")?;
-            let parsed = text_component
-                .value
-                .clone()
-                .context("No value in text field??")?
-                .parse::<u64>()
-                .context("Invalid page number")?;
+            if let ModalInteractionComponent::ActionRow(ar) = action_row {
+                let text_component = ar
+                    .components
+                    .iter()
+                    .find(|c| {
+                        if let ModalInteractionComponent::TextInput(cc) = c {
+                            cc.custom_id == self.jump_modal_text_cid
+                        } else {
+                            false
+                        }
+                    })
+                    .map(|c| {
+                        if let ModalInteractionComponent::TextInput(cc) = c {
+                            cc
+                        } else {
+                            panic!("??");
+                        }
+                    })
+                    .context("No page jump component??")?;
 
-            if parsed > pages as u64 || parsed < 1 {
-                bail!("That page doesn't exist.");
-            };
+                let parsed = text_component
+                    .value
+                    .clone()
+                    .parse::<u64>()
+                    .context("Invalid page number")?;
 
-            self.current_page = parsed;
+                if parsed > pages as u64 || parsed < 1 {
+                    bail!("That page doesn't exist.");
+                };
+
+                self.current_page = parsed;
+            } else {
+                bail!("Somehow, this wasn't an action row.")
+            }
         }
 
         if data.custom_id == self.page_next_cid {

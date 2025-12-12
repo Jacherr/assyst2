@@ -31,7 +31,7 @@ impl TryFrom<GatewayEvent> for IncomingEvent {
                 DispatchEvent::GuildCreate(guild) => Ok(IncomingEvent::GuildCreate(guild)),
                 DispatchEvent::GuildDelete(guild) => Ok(IncomingEvent::GuildDelete(guild)),
                 DispatchEvent::GuildUpdate(guild) => Ok(IncomingEvent::GuildUpdate(*guild)),
-                DispatchEvent::Ready(ready) => Ok(IncomingEvent::ShardReady(*ready)),
+                DispatchEvent::Ready(ready) => Ok(IncomingEvent::ShardReady(ready)),
                 DispatchEvent::ChannelUpdate(channel) => Ok(IncomingEvent::ChannelUpdate(*channel)),
                 DispatchEvent::InteractionCreate(interaction) => Ok(IncomingEvent::InteractionCreate(interaction)),
                 DispatchEvent::EntitlementCreate(e) => Ok(IncomingEvent::EntitlementCreate(e)),

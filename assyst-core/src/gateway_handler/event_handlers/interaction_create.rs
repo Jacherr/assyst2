@@ -267,7 +267,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
             assyst: assyst.clone(),
             custom_id: component.custom_id.clone(),
             message_interaction_data: None,
-            modal_submit_interaction_data: Some(component),
+            modal_submit_interaction_data: Some(*component),
             invocation_guild_id: interaction.guild_id,
             invocation_user_id: interaction
                 .member

@@ -8,8 +8,8 @@ use twilight_model::application::interaction::modal::ModalInteractionData;
 use twilight_model::channel::message::component::{Button, ButtonStyle};
 use twilight_model::channel::message::{AllowedMentions, Component, EmojiReactionType, MessageFlags};
 use twilight_model::http::interaction::{InteractionResponse, InteractionResponseType};
-use twilight_model::id::marker::{GuildMarker, InteractionMarker, UserMarker};
 use twilight_model::id::Id;
+use twilight_model::id::marker::{GuildMarker, InteractionMarker, UserMarker};
 use twilight_util::builder::InteractionResponseDataBuilder;
 
 use super::misc::tag::TagPaginatorComponentMetadata;
@@ -32,8 +32,8 @@ pub struct ComponentInteractionData {
 
 /// A component context is a context in which a component interaction is handled under.\
 /// It contains basic information required to action on the button.\
-/// Because components are responded to via interactions, minimal metadata (e.g., from `CommandData`)
-/// is required.
+/// Because components are responded to via interactions, minimal metadata (e.g., from
+/// `CommandData`) is required.
 #[derive(Clone)]
 pub struct ComponentCtxt {
     pub assyst: ThreadSafeAssyst,
@@ -143,6 +143,7 @@ pub enum ComponentMetadata {
 
 pub fn button_emoji_new(custom_id: &str, emoji: EmojiReactionType, style: ButtonStyle) -> Button {
     Button {
+        id: None,
         custom_id: Some(custom_id.to_owned()),
         disabled: false,
         emoji: Some(emoji),
@@ -155,6 +156,7 @@ pub fn button_emoji_new(custom_id: &str, emoji: EmojiReactionType, style: Button
 
 pub fn button_new(custom_id: &str, label: &str, style: ButtonStyle) -> Button {
     Button {
+        id: None,
         custom_id: Some(custom_id.to_owned()),
         disabled: false,
         emoji: None,
