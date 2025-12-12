@@ -54,7 +54,7 @@ pub async fn refresh_entitlements(assyst: ThreadSafeAssyst) {
                     active.guild_id, current, active.expiry_unix_ms
                 );
 
-                break;
+                continue;
             }
 
             if let Err(e) = active.set(&assyst.database_handler).await {
