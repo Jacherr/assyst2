@@ -8,21 +8,21 @@ use assyst_common::config::CONFIG;
 use assyst_common::util::{filetype, format_duration, sanitise_filename};
 use assyst_proc_macro::command;
 use assyst_string_fmt::Markdown;
-use rand::{thread_rng, Rng};
+use rand::{Rng, thread_rng};
 use tokio::sync::Mutex;
 use tokio::task::JoinSet;
 use tokio::time::{sleep, timeout};
 use twilight_util::builder::command::{BooleanBuilder, IntegerBuilder};
-use zip::write::SimpleFileOptions;
 use zip::ZipWriter;
+use zip::write::SimpleFileOptions;
 
 use crate::command::arguments::{ParseArgument, Word};
 use crate::command::errors::TagParseError;
-use crate::command::flags::{flags_from_str, FlagDecode, FlagType};
+use crate::command::flags::{FlagDecode, FlagType, flags_from_str};
 use crate::command::messagebuilder::Attachment;
 use crate::command::{Availability, Category, CommandCtxt};
 //use crate::flag_parse_argument;
-use crate::rest::web_media_download::{download_web_media, get_youtube_playlist_entries, WebDownloadOpts};
+use crate::rest::web_media_download::{WebDownloadOpts, download_web_media, get_youtube_playlist_entries};
 use crate::{int_arg_bool, int_arg_u64};
 
 #[derive(Default)]
@@ -180,6 +180,7 @@ pub async fn download(ctxt: CommandCtxt<'_>, url: Word, options: DownloadFlags) 
                 .await;
                 match media {
                     Ok(Ok(m)) => {
+                        let m = m.0;
                         let mut z_lock = z.lock().await;
                         let r#type = if let Some(t) = filetype::get_sig(&m) {
                             t
@@ -274,13 +275,14 @@ pub async fn download(ctxt: CommandCtxt<'_>, url: Word, options: DownloadFlags) 
         let result = download_web_media(&ctxt.assyst().reqwest_client, &url.0, opts).await?;
 
         ctxt.reply((
-            result,
+            result.0,
             &format!(
                 "Took {}\n{}\n",
                 format_duration(&ctxt.data.execution_timings.processing_time_start.elapsed()),
                 format!(
-                    "Downloaded with {}",
-                    "cobalt.tools".url("<https://cobalt.tools>", Some("Link to cobalt.tools"))
+                    "Downloaded with {} via {}",
+                    "cobalt.tools".url("<https://cobalt.tools>", Some("Link to cobalt.tools")),
+                    result.1
                 )
                 .subtext()
             )[..],

@@ -1,7 +1,7 @@
 use std::fmt::Display;
 use std::time::Duration;
 
-use anyhow::{bail, Context};
+use anyhow::{Context, bail};
 use assyst_common::config::config::CobaltApiInstance;
 use assyst_common::util::string_from_likely_utf8;
 use rand::seq::SliceRandom;
@@ -14,7 +14,7 @@ use tokio::time::timeout;
 use tracing::debug;
 
 use crate::command::services::download::DownloadFlags;
-use crate::downloader::{download_content, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES};
+use crate::downloader::{ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES, download_content};
 
 #[derive(Default, Clone)]
 pub struct WebDownloadOpts {
@@ -114,7 +114,11 @@ pub struct WebDownloadErrorContext {
 
 /// Attempts to download web media. Will try all APIs until one succeeds, unless
 /// `opts.api_url_override` is set.
-pub async fn download_web_media(client: &Client, url: &str, opts: WebDownloadOpts) -> anyhow::Result<Vec<u8>> {
+pub async fn download_web_media(
+    client: &Client,
+    url: &str,
+    opts: WebDownloadOpts,
+) -> anyhow::Result<(Vec<u8>, String)> {
     let urls = {
         let mut urls = opts.urls;
         if urls.is_empty() {
@@ -128,6 +132,7 @@ pub async fn download_web_media(client: &Client, url: &str, opts: WebDownloadOpt
 
     let mut result: Option<Vec<u8>> = None;
     let mut err: String = String::new();
+    let mut u = "";
 
     for route in urls {
         let key = route.key.clone();
@@ -217,11 +222,16 @@ pub async fn download_web_media(client: &Client, url: &str, opts: WebDownloadOpt
             }
 
             result = Some(media);
+            u = url;
             break;
         }
     }
 
-    if let Some(r) = result { Ok(r) } else { bail!(err) }
+    if let Some(r) = result {
+        Ok((r, u.to_string()))
+    } else {
+        bail!(err)
+    }
 }
 
 pub async fn get_youtube_playlist_entries(url: &str) -> anyhow::Result<Vec<(String, String)>> {
