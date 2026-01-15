@@ -60,6 +60,7 @@ pub struct WebDownloadResult {
 #[derive(Deserialize)]
 pub struct WebDownloadError {
     pub error: WebDownloadErrorContext,
+    pub inst: String,
 }
 impl Display for WebDownloadError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -102,8 +103,11 @@ impl Display for WebDownloadError {
             "error.api.youtube.login" => f.write_str("That video requires a logged in account, which we do not have."),
             "error.api.youtube.token_expired" => f.write_str("Our YouTube token expired (try again later)"),
             "error.api.youtube.temporary_disabled" => f.write_str("YouTube support is temporarily disabled. Try again later."),
+            "error.api.auth.key.ip_not_allowed" => f.write_str("The request was blocked. Try again later."),
             _ => f.write_str(inner),
-        }
+        }?;
+
+        write!(f, " (Instance: {})", self.inst)
     }
 }
 
@@ -173,7 +177,8 @@ pub async fn download_web_media(
                         Ok(e) => {
                             let try_json = from_str::<WebDownloadError>(&e);
                             match try_json {
-                                Ok(j) => {
+                                Ok(mut j) => {
+                                    j.inst = route.clone();
                                     err = format!("Download request failed: {j}");
                                 },
                                 Err(d_e) => err = format!("Download request failed: {d_e} (raw error: {e})"),
