@@ -11,7 +11,7 @@ use serde::Deserialize;
 use serde_json::{from_str, json};
 use tokio::process::Command;
 use tokio::time::timeout;
-use tracing::debug;
+use tracing::{debug, info};
 
 use crate::command::services::download::DownloadFlags;
 use crate::downloader::{ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES, download_content};
@@ -138,7 +138,7 @@ pub async fn download_web_media(
         let key = route.key.clone();
         let route = route.url.clone();
 
-        debug!("trying url: {route} for web media {url}");
+        info!("trying url: {route} for web media {url}");
 
         let res = client
             .post(route.clone())
