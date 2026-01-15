@@ -60,7 +60,6 @@ pub struct WebDownloadResult {
 #[derive(Deserialize)]
 pub struct WebDownloadError {
     pub error: WebDownloadErrorContext,
-    pub inst: String,
 }
 impl Display for WebDownloadError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -105,9 +104,7 @@ impl Display for WebDownloadError {
             "error.api.youtube.temporary_disabled" => f.write_str("YouTube support is temporarily disabled. Try again later."),
             "error.api.auth.key.ip_not_allowed" => f.write_str("The request was blocked. Try again later."),
             _ => f.write_str(inner),
-        }?;
-
-        write!(f, " (Instance: {})", self.inst)
+        }
     }
 }
 
@@ -177,8 +174,7 @@ pub async fn download_web_media(
                         Ok(e) => {
                             let try_json = from_str::<WebDownloadError>(&e);
                             match try_json {
-                                Ok(mut j) => {
-                                    j.inst = route.clone();
+                                Ok(j) => {
                                     err = format!("Download request failed: {j}");
                                 },
                                 Err(d_e) => err = format!("Download request failed: {d_e} (raw error: {e})"),
@@ -193,6 +189,10 @@ pub async fn download_web_media(
             },
         };
 
+        if !err.is_empty() && !err.ends_with(")") {
+            err = format!("{err} (Instance: {})", route.clone())
+        }
+
         if let Some(r) = req_result_url {
             debug!("downloading from url {r} for web media {url}");
 
@@ -204,7 +204,7 @@ pub async fn download_web_media(
             {
                 Ok(Ok(m)) => m,
                 Ok(Err(e)) => {
-                    err = format!("Failed to download media: {e}");
+                    err = format!("Failed to download media: {e} (Instance: {})", route.clone());
                     continue;
                 },
                 Err(_) => {
@@ -219,7 +219,10 @@ pub async fn download_web_media(
                 err = "Failed to download media: cloudlflare threw an error".to_owned();
                 continue;
             } else if let Ok(s) = String::from_utf8(media.clone()) {
-                err = format!("Failed to download media: response was: {s}");
+                err = format!(
+                    "Failed to download media: response was: {s} (Instance: {})",
+                    route.clone()
+                );
                 continue;
             } else if media.is_empty() {
                 err = "Failed to download media: resultant file was empty".to_owned();
