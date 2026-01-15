@@ -132,7 +132,7 @@ pub async fn download_web_media(
 
     let mut result: Option<Vec<u8>> = None;
     let mut err: String = String::new();
-    let mut u = "";
+    let mut u = String::new();
 
     for route in urls {
         let key = route.key.clone();
@@ -141,7 +141,7 @@ pub async fn download_web_media(
         debug!("trying url: {route} for web media {url}");
 
         let res = client
-            .post(route)
+            .post(route.clone())
             .header("accept", "application/json")
             .header("content-type", "application/json")
             .header("User-Agent", "Assyst Discord Bot (https://github.com/jacherr/assyst2)")
@@ -222,7 +222,7 @@ pub async fn download_web_media(
             }
 
             result = Some(media);
-            u = url;
+            u = route.clone();
             break;
         }
     }
