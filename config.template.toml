@@ -42,6 +42,7 @@ rapidapi_token = ""
 r34_token = ""
 # R34 user id.
 r34_uid = 0
+klipy_api = ""
 
 # Assyst database information.
 [database]

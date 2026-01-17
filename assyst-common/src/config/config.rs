@@ -48,6 +48,7 @@ pub struct Authentication {
     pub rapidapi_token: String,
     pub r34_token: String,
     pub r34_uid: u64,
+    pub klipy_api: String,
 }
 
 #[derive(Deserialize)]

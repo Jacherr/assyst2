@@ -115,6 +115,7 @@ pub async fn download_content(
         "twimg.com",
         "cdninstagram.com",
         "imput.net",
+        "klipy.com",
     ];
 
     let config = &CONFIG;

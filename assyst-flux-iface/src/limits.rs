@@ -42,7 +42,8 @@ pub const LIMITS_GUILD_TIER_1: LimitData = LimitData {
     video_decode_enabled: true,
 };
 
-#[must_use] pub fn premium_user_to_limits(tier: u64) -> LimitData {
+#[must_use]
+pub fn premium_user_to_limits(tier: u64) -> LimitData {
     match tier {
         0 => LIMITS_FREE,
         1 => LIMITS_GUILD_TIER_1,

@@ -5,8 +5,8 @@ use assyst_common::util::string_from_likely_utf8;
 use serde::Deserialize;
 use serde_json::from_str;
 
-use super::flux_request::FluxRequest;
 use super::FluxHandler;
+use super::flux_request::FluxRequest;
 
 #[derive(Deserialize)]
 pub struct ImageInfo {

@@ -22,6 +22,7 @@ use crate::assyst::Assyst;
 use crate::commit_if_ok;
 use crate::downloader::{self, ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES};
 use crate::gateway_handler::message_parser::error::{ErrorSeverity, GetErrorSeverity};
+use crate::rest::klipy;
 
 pub trait ParseArgument: Sized {
     /// Parses `Self`, given a command, where the source is a raw message.
@@ -790,6 +791,12 @@ impl ImageUrl {
             return Ok(Self(url.clone()));
         }
 
+        if let Some(url) = &embed.url
+            && url.starts_with("https://klipy.com")
+        {
+            return Ok(Self(url.clone()));
+        }
+
         if let Some(image) = &embed.image {
             return Ok(Self(image.url.clone()));
         }
@@ -952,6 +959,14 @@ impl ParseArgument for ImageUrl {
             url = gif_url.as_str().to_owned();
         }
 
+        if url.starts_with("https://klipy.com") {
+            let data = klipy::get_klipy_gif_url_from_url(&ctxt.cx.assyst().reqwest_client, &url)
+                .await
+                .or(Err(TagParseError::MediaDownloadFail))?;
+
+            url = data;
+        }
+
         Ok(Self(url))
     }
 
@@ -1017,6 +1032,14 @@ impl ParseArgument for ImageUrl {
 
             let gif_url = regex::TENOR_GIF.find(&page).ok_or(TagParseError::MediaDownloadFail)?;
             url = gif_url.as_str().to_owned();
+        }
+
+        if url.starts_with("https://klipy.com") {
+            let data = klipy::get_klipy_gif_url_from_url(&ctxt.cx.assyst().reqwest_client, &url)
+                .await
+                .or(Err(TagParseError::MediaDownloadFail))?;
+
+            url = data;
         }
 
         Ok(Self(url))
