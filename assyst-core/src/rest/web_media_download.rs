@@ -139,7 +139,7 @@ pub async fn download_web_media(
         let key = route.key.clone();
         let route = route.url.clone();
 
-        info!("trying url: {route} for web media {url} (err={err})");
+        debug!("trying url: {route} for web media {url} (err={err})");
 
         let res = client
             .post(route.clone())
