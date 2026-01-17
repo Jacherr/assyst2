@@ -21,6 +21,16 @@ pub async fn get_premium_users(assyst: ThreadSafeAssyst) {
             },
         };
 
+        info!(
+            "Patrons: {}",
+            patrons
+                .iter()
+                .cloned()
+                .map(|x| { format!("{}: tier {}", x.user_id, x.tier as i32) })
+                .collect::<Vec<_>>()
+                .join(", ")
+        );
+
         premium_users.extend(patrons.into_iter());
 
         info!("Synchronised patrons from Patreon: total {}", premium_users.len());
