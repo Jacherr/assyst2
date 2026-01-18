@@ -93,7 +93,7 @@ pub async fn refresh_entitlements(assyst: ThreadSafeAssyst) {
             .any(|x| x.id.get() as i64 == entitlement.entitlement_id)
             || entitlement.expired()
         {
-            assyst.entitlements.lock().unwrap().remove(&entitlement.entitlement_id);
+            assyst.entitlements.lock().unwrap().remove(&entitlement.guild_id);
             info!(
                 "Removed expired entitlement {} (guild {})",
                 entitlement.entitlement_id, entitlement.guild_id
