@@ -5,11 +5,13 @@ use tracing::info;
 use twilight_model::gateway::payload::incoming::EntitlementUpdate;
 use twilight_model::guild::Guild;
 use twilight_model::id::marker::GuildMarker;
-use twilight_model::id::Id;
+use twilight_model::id::{self, Id};
 
 use crate::assyst::ThreadSafeAssyst;
 
 pub async fn handle(assyst: ThreadSafeAssyst, event: EntitlementUpdate) {
+    let id = event.0.id;
+
     // no expiry/created = test entitlement, requires special handling
     let new = match ActiveGuildPremiumEntitlement::try_from(event.0) {
         Err(e) => {
@@ -42,7 +44,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: EntitlementUpdate) {
         },
     }
 
-    assyst.entitlements.lock().unwrap().insert(guild_id.get() as i64, new);
+    assyst.entitlements.lock().unwrap().insert(id.get() as i64, new);
 
     info!("Updated entitlement: {entitlement_id} for guild {guild_id}");
 }

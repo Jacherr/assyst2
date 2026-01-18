@@ -27,7 +27,7 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: EntitlementDelete) {
         return;
     };
 
-    assyst.entitlements.lock().unwrap().remove(&(guild_id.get() as i64));
+    assyst.entitlements.lock().unwrap().remove(&(event.id.get() as i64));
     match ActiveGuildPremiumEntitlement::delete(&assyst.database_handler, event.id.get() as i64).await {
         Err(e) => {
             err!("Error deleting existing entitlement {}: {e:?}", event.id);

@@ -50,7 +50,9 @@ pub async fn handle(assyst: ThreadSafeAssyst, InteractionCreate(interaction): In
         if let Some(guild_id) = interaction.guild_id
             && let Some(user_id) = entitlement.user_id
             && entitlement.sku_id.get() == CONFIG.entitlements.premium_server_sku_id
-            && !lock.contains_key(&(guild_id.get() as i64))
+            && !lock
+                .iter()
+                .all(|x| interaction.entitlements.iter().all(|y| y.id.get() != *x.0 as u64))
         {
             warn!("New entitlement for guild {}, registering", guild_id.get());
             let active = ActiveGuildPremiumEntitlement {

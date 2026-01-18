@@ -4,8 +4,8 @@ use assyst_database::model::active_guild_premium_entitlement::ActiveGuildPremium
 use tracing::info;
 use twilight_model::gateway::payload::incoming::EntitlementCreate;
 use twilight_model::guild::Guild;
-use twilight_model::id::marker::GuildMarker;
 use twilight_model::id::Id;
+use twilight_model::id::marker::GuildMarker;
 
 use crate::assyst::ThreadSafeAssyst;
 
@@ -47,7 +47,11 @@ pub async fn handle(assyst: ThreadSafeAssyst, event: EntitlementCreate) {
     let guild_id = Id::<GuildMarker>::new(active.guild_id as u64);
     let entitlement_id = active.entitlement_id;
 
-    assyst.entitlements.lock().unwrap().insert(active.guild_id, active);
+    assyst
+        .entitlements
+        .lock()
+        .unwrap()
+        .insert(active.entitlement_id, active);
 
     let g: anyhow::Result<Guild> = match assyst.http_client.guild(guild_id).await {
         Ok(g) => g.model().await.map_err(std::convert::Into::into),
