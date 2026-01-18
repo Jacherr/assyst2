@@ -35,7 +35,9 @@ pub async fn refresh_entitlements(assyst: ThreadSafeAssyst) {
     );
 
     for a in additional.clone() {
-        if !assyst.entitlements.lock().unwrap().contains_key(&(a.id.get() as i64)) {
+        if let Some(g) = a.guild_id
+            && !assyst.entitlements.lock().unwrap().contains_key(&(g.get() as i64))
+        {
             let active = match ActiveGuildPremiumEntitlement::try_from(a) {
                 Ok(a) => a,
                 Err(e) => {
@@ -62,11 +64,7 @@ pub async fn refresh_entitlements(assyst: ThreadSafeAssyst) {
             };
             handle_log(format!("New entitlement! Guild: {}", active.guild_id));
 
-            assyst
-                .entitlements
-                .lock()
-                .unwrap()
-                .insert(active.entitlement_id, active);
+            assyst.entitlements.lock().unwrap().insert(active.guild_id, active);
         }
     }
 
