@@ -60,7 +60,7 @@ However, for completeness, the entire tech stack of Assyst is as follows:
 
 ## Acknowledgements
 
-Special thanks to [y21](https://github.com/y21) and [Mina](https://github.com/trueharuu) for their invaluable help and contributions towards this version of Assyst. \
+Special thanks to [y21](https://github.com/y21) and [mina](https://github.com/trueharuu) for their invaluable help and contributions towards this version of Assyst. \
 Thank you to the team developing [cobalt.tools](https://github.com/imputnet/cobalt) for creating such a versatile and easy-to-use downloading tool. \
 Thank you to the countless developers of the libraries and programs powering both Assyst and Flux, in particular:
 - [Tokio](https://github.com/tokio/tokio) - the asynchronous runtime that Assyst uses,
