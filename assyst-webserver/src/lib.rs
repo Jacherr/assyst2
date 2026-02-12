@@ -1,14 +1,14 @@
 use std::sync::Arc;
 
-use assyst_common::config::config::LoggingWebhook;
 use assyst_common::config::CONFIG;
+use assyst_common::config::config::LoggingWebhook;
 use assyst_common::err;
 use assyst_common::metrics_handler::MetricsHandler;
+use assyst_database::DatabaseHandler;
 use assyst_database::model::free_tier_2_requests::FreeTier2Requests;
 use assyst_database::model::user_votes::UserVotes;
-use assyst_database::DatabaseHandler;
 use axum::extract::State;
-use axum::http::StatusCode;
+use axum::http::{StatusCode, header};
 use axum::response::{IntoResponse, Redirect, Response};
 use axum::routing::{get, post};
 use axum::{Json, Router};
@@ -18,8 +18,8 @@ use serde::Deserialize;
 use tokio::net::TcpListener;
 use tokio::spawn;
 use twilight_http::Client as HttpClient;
-use twilight_model::id::marker::{UserMarker, WebhookMarker};
 use twilight_model::id::Id;
+use twilight_model::id::marker::{UserMarker, WebhookMarker};
 
 const FREE_TIER_2_REQUESTS_ON_VOTE: u64 = 15;
 lazy_static! {
@@ -92,6 +92,7 @@ async fn prometheus_metrics(State(route_state): State<RouteState>) -> String {
 
 async fn top_gg_webhook(
     State(route_state): State<RouteState>,
+    headers: axum::http::HeaderMap,
     Json(body): Json<TopGgWebhookBody>,
 ) -> Result<(), AppError> {
     let user_id = body
@@ -99,6 +100,24 @@ async fn top_gg_webhook(
         .clone()
         .parse::<u64>()
         .inspect_err(|e| err!("Failed to parse user id {}: {}", body.user, e.to_string()))?;
+
+    if headers
+        .get("Authorization")
+        .and_then(|h| h.to_str().ok())
+        .map(|h| h == CONFIG.authentication.top_gg_webhook_token)
+        .unwrap_or(false)
+    {
+        err!(
+            "Received invalid authorization token in top.gg webhook for user ID {}: {}",
+            user_id,
+            headers
+                .get("Authorization")
+                .unwrap_or(&axum::http::HeaderValue::from_static("None"))
+                .to_str()
+                .unwrap_or("Invalid UTF-8")
+        );
+        return Ok(());
+    }
 
     FreeTier2Requests::new(user_id)
         .change_free_tier_2_requests(&route_state.database, FREE_TIER_2_REQUESTS_ON_VOTE as i64)
