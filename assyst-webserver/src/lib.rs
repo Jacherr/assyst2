@@ -105,7 +105,7 @@ async fn top_gg_webhook(
         .get("Authorization")
         .and_then(|h| h.to_str().ok())
         .map(|h| h != CONFIG.authentication.top_gg_webhook_token)
-        .unwrap_or(false)
+        .unwrap_or(true)
     {
         err!(
             "Received invalid authorization token in top.gg webhook for user ID {}: {}",
