@@ -34,6 +34,7 @@ pub async fn refresh_entitlements(assyst: ThreadSafeAssyst) {
             .join(", ")
     );
 
+    let existing = assyst.entitlements.lock().unwrap().clone();
     for a in additional.clone() {
         if a.guild_id.is_some() && !assyst.entitlements.lock().unwrap().contains_key(&(a.id.get() as i64)) {
             let active = match ActiveGuildPremiumEntitlement::try_from(a) {
@@ -60,7 +61,16 @@ pub async fn refresh_entitlements(assyst: ThreadSafeAssyst) {
             if let Err(e) = active.set(&assyst.database_handler).await {
                 err!("Error adding new entitlement for ID {}: {e:?}", active.entitlement_id);
             };
-            handle_log(format!("New entitlement! Guild: {}", active.guild_id));
+            handle_log(format!(
+                "New entitlement from refresh! Guild: {}, entitlement_id: {} (existing: {})",
+                active.guild_id,
+                active.entitlement_id,
+                existing
+                    .iter()
+                    .map(|x| x.1.entitlement_id.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ));
 
             assyst
                 .entitlements
