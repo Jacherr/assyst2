@@ -9,7 +9,10 @@ use tracing::info;
 use crate::assyst::ThreadSafeAssyst;
 
 pub async fn refresh_entitlements(assyst: ThreadSafeAssyst) {
-    let additional = match assyst.http_client.entitlements(assyst.application_id).await {
+    let req = assyst.http_client.entitlements(assyst.application_id);
+    let req = req.exclude_ended(true);
+
+    let additional = match req.await {
         Ok(x) => match x.model().await {
             Ok(e) => e,
             Err(e) => {
