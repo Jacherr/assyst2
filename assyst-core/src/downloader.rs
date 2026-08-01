@@ -7,6 +7,7 @@ use bytes::Bytes;
 use futures_util::{Stream, StreamExt};
 use human_bytes::human_bytes;
 use reqwest::{Client, StatusCode, Url};
+use url::Host;
 
 pub const ABSOLUTE_INPUT_FILE_SIZE_LIMIT_BYTES: usize = 250_000_000;
 static PROXY_NUM: AtomicUsize = AtomicUsize::new(0);
@@ -121,6 +122,21 @@ pub async fn download_content(
     let config = &CONFIG;
 
     let url_p = Url::parse(url).map_err(DownloadError::Url)?;
+
+    match url_p.host() {
+        Some(Host::Ipv4(_) | Host::Ipv6(_)) => {
+            if untrusted {
+                return Err(DownloadError::NoHost);
+            }
+        },
+        Some(Host::Domain("localhost")) => {
+            if untrusted {
+                return Err(DownloadError::NoHost);
+            }
+        },
+        _ => {},
+    }
+
     let host = url_p.host_str().ok_or(DownloadError::NoHost)?;
 
     let is_whitelisted = WHITELISTED_DOMAINS.iter().any(|d| host.contains(d));
@@ -131,12 +147,14 @@ pub async fn download_content(
 
         if let Ok(stream) = stream {
             return read_stream(stream, limit).await;
+        } else {
+            // If proxy download fails, error
+            return Err(stream.err().unwrap_or(DownloadError::ProxyNetworkError));
         }
     }
 
     // Conditions for downloading with no proxy:
     // - Proxy not configured,
-    // - Proxy failed,
     // - Domain is whitelisted
     let stream = download_no_proxy(client, url).await?;
     read_stream(stream, limit).await
