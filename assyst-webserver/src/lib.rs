@@ -202,7 +202,7 @@ pub async fn run(database: Arc<DatabaseHandler>, http_client: Arc<HttpClient>, m
         });
 
     spawn(async move {
-        let listener = TcpListener::bind(&format!("0.0.0.0:{}", CONFIG.authentication.top_gg_webhook_port))
+        let listener = TcpListener::bind(&format!("127.0.0.1:{}", CONFIG.authentication.top_gg_webhook_port))
             .await
             .unwrap();
         axum::serve(listener, router).await.unwrap();
